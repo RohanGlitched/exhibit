@@ -32,6 +32,7 @@
   min-height: 420px;
 }
 .paperHead {
+  position: relative;
   padding-bottom: 16px;
   margin-bottom: 22px;
   border-bottom: 1px solid var(--rule-soft);
@@ -177,8 +178,8 @@
 }
 .stampSlot {
   position: absolute;
-  right: 22px;
-  top: 14px;
+  right: -18px;
+  top: -22px;
   z-index: 3;
 }
 .stampSlot > div {
@@ -490,6 +491,14 @@
   }
   .compact .ledger {
     display: none;
+  }
+  .stampSlot {
+    right: -8px;
+    top: auto;
+    bottom: 6px;
+  }
+  .stampSlot > div {
+    width: 128px;
   }
   .compact .tally {
     border-top: 0;

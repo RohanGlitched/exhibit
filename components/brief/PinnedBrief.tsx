@@ -117,8 +117,8 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
     <div className={`${styles.board} ${compact ? styles.compact : ""}`} ref={board}>
       <div className={styles.column}>
       <article className={`sheet ${styles.paper}`} ref={sheet as React.RefObject<HTMLElement>}>
-        {stamp && <div className={styles.stampSlot}>{stamp}</div>}
         <header className={styles.paperHead}>
+          {stamp && <div className={styles.stampSlot}>{stamp}</div>}
           <p className={styles.caseLine}>
             <span className="bates">{head.id}</span>
             <span>{head.reason}</span>
