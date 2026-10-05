@@ -1,0 +1,159 @@
+:root {
+  --backing: #dce4ef;
+  --backing-deep: #cfd9e7;
+  --sheet: #fbfcfd;
+  --ink: #13203a;
+  --ink-soft: #57627a;
+  --ink-faint: #8792a8;
+  --rule: #c2cddc;
+  --rule-soft: #dbe2ec;
+  --claimant: #f3cf3a;
+  --claimant-ink: #6b5200;
+  --respondent: #2b63e8;
+  --respondent-ink: #1d4bc4;
+  --respondent-wash: #e6edfd;
+  --due: #d3242c;
+  --won: #17845a;
+  --gutter: clamp(16px, 4vw, 56px);
+  --max: 1320px;
+  --radius-sheet: 3px;
+  --shadow-sheet: 0 1px 0 rgba(19, 32, 58, 0.05), 0 18px 40px -26px rgba(19, 32, 58, 0.45);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--backing);
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--backing);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--respondent);
+  outline-offset: 3px;
+}
+::selection {
+  background: rgba(43, 99, 232, 0.2);
+}
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+button {
+  font: inherit;
+}
+
+.shell {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Buttons: one primary per screen (respondent blue), a quiet secondary. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 15.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.btnPrimary {
+  background: var(--respondent);
+  color: #fff;
+}
+.btnPrimary:hover:not([disabled]) {
+  background: var(--respondent-ink);
+}
+.btnQuiet {
+  background: transparent;
+  border-color: var(--rule);
+  color: var(--ink);
+}
+.btnQuiet:hover:not([disabled]) {
+  border-color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.4);
+}
+.btnDanger {
+  background: var(--ink);
+  color: #fff;
+}
+.btnDanger:hover:not([disabled]) {
+  background: #000;
+}
+
+/* A sheet of paper on the blue backing. */
+.sheet {
+  background: var(--sheet);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-sheet);
+}
+
+/* Bates / case numbers: a stamp, not code. */
+.bates {
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--due);
+  font-variant-numeric: tabular-nums;
+}
+
+.serif {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

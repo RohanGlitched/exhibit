@@ -1,0 +1,165 @@
+.wrap {
+  display: grid;
+  gap: 14px;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.counts {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.counts strong {
+  color: var(--ink);
+}
+.controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search input {
+  height: 40px;
+  width: 280px;
+  max-width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--sheet);
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+.toggle input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--respondent);
+}
+.grid {
+  overflow: hidden;
+}
+.cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+}
+.card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+.card[data-mine="true"] {
+  border-left-color: var(--respondent);
+}
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+}
+.card strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+@media (max-width: 760px) {
+  .cards {
+    display: grid;
+  }
+  .grid {
+    display: none;
+  }
+  .search input {
+    width: 100%;
+  }
+  .controls,
+  .search {
+    width: 100%;
+  }
+}
+.row {
+  cursor: pointer;
+}
+.mine {
+  box-shadow: inset 3px 0 0 var(--respondent);
+}
+.muted {
+  color: var(--ink-faint);
+}
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.dueBar {
+  width: 54px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--rule-soft);
+  overflow: hidden;
+}
+.dueBar i {
+  display: block;
+  height: 100%;
+  background: var(--ink-soft);
+}
+.due[data-soon="true"] {
+  color: var(--due);
+  font-weight: 600;
+}
+.due[data-soon="true"] .dueBar i {
+  background: var(--due);
+}
+.odds {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.oddsBar {
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--claimant);
+  overflow: hidden;
+}
+.oddsBar i {
+  display: block;
+  height: 100%;
+  background: var(--respondent);
+}
+.odds b {
+  font-weight: 650;
+  min-width: 46px;
+}
+.status {
+  font-weight: 500;
+}
+.status[data-status="WAITING_FOR_SELLER_RESPONSE"] {
+  color: var(--respondent-ink);
+  font-weight: 650;
+}
+.status[data-status="RESOLVED"] {
+  color: var(--ink-faint);
+}
