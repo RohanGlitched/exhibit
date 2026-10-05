@@ -13,6 +13,9 @@
   font-size: 15px;
   color: var(--ink-soft);
 }
+.pool {
+  color: var(--ink-faint);
+}
 .counts strong {
   color: var(--ink);
 }

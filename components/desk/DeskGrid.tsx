@@ -98,7 +98,10 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
     [],
   );
 
-  const shown = mineOnly ? rows.filter((r) => r.mine) : rows;
+  // Pool cases are stock waiting for the next visitor; count them, don't list them.
+  const pooled = rows.filter((r) => r.pooled).length;
+  const live = rows.filter((r) => !r.pooled);
+  const shown = mineOnly ? live.filter((r) => r.mine) : live;
   const open = shown.filter((r) => r.status === "WAITING_FOR_SELLER_RESPONSE").length;
   const atStake = shown.filter((r) => r.status !== "RESOLVED").reduce((s, r) => s + r.amount, 0);
 
@@ -107,6 +110,7 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
       <div className={styles.toolbar}>
         <p className={styles.counts}>
           <strong>{open}</strong> waiting on the seller, <strong>{usd(atStake)}</strong> at stake
+          {pooled > 0 && <span className={styles.pool}>, plus {pooled} opened ahead for the next visitors</span>}
         </p>
         <div className={styles.controls}>
           <label className={styles.search}>
