@@ -8,7 +8,11 @@ import type { BriefSentence, Exhibit, TallyItem } from "./types";
 
 const MONEY = /\$\s?\d[\d,]*(?:\.\d{2})?/g;
 const DATE = /\b\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}\b/g;
+// The exhibits write "3 Oct 2026, 13:02"; a model may still write "October 3, 2026", "2026-10-03" or "1:02 pm".
+const US_DATE = /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2}(?:st|nd|rd|th)?,? \d{4}\b/g;
+const ISO_DATE = /\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b/g;
 const TIME = /\b\d{2}:\d{2}\b/g;
+const TIME12 = /\b\d{1,2}(?::\d{2})?\s?[ap]\.?m\.?(?![a-z])/gi;
 const DATETIME = /\b(\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}),? (?:at )?(\d{2}:\d{2})\b/g;
 const ID = /\b(?=[A-Z0-9-]*\d)(?=[A-Z0-9-]*[A-Z])[A-Z0-9-]{8,}\b|\b\d{9,}\b/g;
 
@@ -21,16 +25,32 @@ const MONTH_FULL: Record<string, string> = {
   january: "jan", february: "feb", march: "mar", april: "apr", june: "jun", july: "jul",
   august: "aug", september: "sep", october: "oct", november: "nov", december: "dec",
 };
-const normDate = (s: string) => {
+const MON = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const mon = (m: string) => MONTH_FULL[m.toLowerCase().replace(".", "")] ?? m.toLowerCase().slice(0, 3);
+
+/** Any written date as "3 oct 2026", the form the exhibits use. */
+export const normDate = (s: string) => {
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${Number(iso[3])} ${MON[Number(iso[2]) - 1]} ${iso[1]}`;
+  const us = s.match(/^([A-Za-z]+)\.? (\d{1,2})(?:st|nd|rd|th)?,? (\d{4})$/);
+  if (us) return `${Number(us[2])} ${mon(us[1])} ${us[3]}`;
   const [d, m, y] = s.toLowerCase().split(" ");
-  return `${d} ${MONTH_FULL[m] ?? m.slice(0, 3)} ${y}`;
+  return `${Number(d)} ${mon(m)} ${y}`;
+};
+
+/** Any written time as "13:02". */
+export const normTime = (s: string) => {
+  const t = s.match(/^(\d{1,2})(?::(\d{2}))?\s?([ap])/i);
+  if (!t) return s;
+  const h = (Number(t[1]) % 12) + (t[3].toLowerCase() === "p" ? 12 : 0);
+  return `${String(h).padStart(2, "0")}:${t[2] ?? "00"}`;
 };
 
 export function figures(text: string) {
   return {
     money: [...text.matchAll(MONEY)].map((m) => m[0]),
-    dates: [...text.matchAll(DATE)].map((m) => m[0]),
-    times: [...text.matchAll(TIME)].map((m) => m[0]),
+    dates: [DATE, US_DATE, ISO_DATE].flatMap((re) => [...text.matchAll(re)].map((m) => m[0])),
+    times: [TIME, TIME12].flatMap((re) => [...text.matchAll(re)].map((m) => m[0])),
     ids: [...text.matchAll(ID)].map((m) => m[0]),
   };
 }
@@ -59,7 +79,7 @@ export function checkSentence(
   }
   for (const m of f.money) if (!amounts.has(money(m))) return { text: s.text, cites: known, kept: false, why: `${m} isn't in Exhibit ${known.join(", ")}.` };
   for (const d of f.dates) if (!dates.has(normDate(d))) return { text: s.text, cites: known, kept: false, why: `${d} isn't in Exhibit ${known.join(", ")}.` };
-  for (const t of f.times) if (!hay.includes(t)) return { text: s.text, cites: known, kept: false, why: `${t} isn't in Exhibit ${known.join(", ")}.` };
+  for (const t of f.times) if (!hay.includes(normTime(t))) return { text: s.text, cites: known, kept: false, why: `${t} isn't in Exhibit ${known.join(", ")}.` };
   for (const id of f.ids) if (!hay.includes(id.toLowerCase())) return { text: s.text, cites: known, kept: false, why: `${id} isn't in Exhibit ${known.join(", ")}.` };
   return { text: s.text, cites: known, kept: true };
 }

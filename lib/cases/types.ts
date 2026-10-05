@@ -67,6 +67,7 @@ export interface CaseRecord {
   openedAt: string; // when the case was opened in the sandbox
   claimedBy?: string; // short id of the browser that took it from the pool; unset while it waits in the pool
   claimedAt?: string;
+  retired?: string; // why it left the house pool: PayPal closed it, or its deadline was about to pass
   refundId?: string; // a refund Exhibit made (accept, offer, or the duplicate-charge story)
   brief?: Brief;
   filings: Filing[];

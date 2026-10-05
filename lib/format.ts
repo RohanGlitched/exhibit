@@ -3,7 +3,7 @@
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TZ = "America/Los_Angeles"; // the shop is in Portland; every date in a case is the shop's local date
 
-function parts(d: Date) {
+export function clockParts(d: Date) {
   const f = new Intl.DateTimeFormat("en-US", {
     timeZone: TZ,
     year: "numeric",
@@ -17,18 +17,28 @@ function parts(d: Date) {
   return { y: get("year"), m: get("month"), d: get("day"), h: get("hour"), min: get("minute") };
 }
 
+/** The instant when the shop's wall clock reads y-m-d h:min, on either side of a clock change. */
+export function zonedToUtc(y: number, m: number, d: number, h: number, min = 0): Date {
+  let t = Date.UTC(y, m - 1, d, h, min);
+  for (let i = 0; i < 2; i++) {
+    const p = clockParts(new Date(t));
+    t += Date.UTC(y, m - 1, d, h, min) - Date.UTC(p.y, p.m - 1, p.d, p.h, p.min);
+  }
+  return new Date(t);
+}
+
 export const day = (iso: string | Date) => {
-  const p = parts(new Date(iso));
+  const p = clockParts(new Date(iso));
   return `${p.d} ${MONTHS[p.m - 1]} ${p.y}`;
 };
 
 export const dayTime = (iso: string | Date) => {
-  const p = parts(new Date(iso));
+  const p = clockParts(new Date(iso));
   return `${p.d} ${MONTHS[p.m - 1]} ${p.y}, ${String(p.h).padStart(2, "0")}:${String(p.min).padStart(2, "0")}`;
 };
 
 export const shortDay = (iso: string | Date) => {
-  const p = parts(new Date(iso));
+  const p = clockParts(new Date(iso));
   return `${p.d} ${MONTHS[p.m - 1]}`;
 };
 

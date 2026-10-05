@@ -50,6 +50,7 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
   const cards = useRef(new Map<string, HTMLElement>());
   const [threads, setThreads] = useState<Thread[]>([]);
   const [hoverExhibit, setHoverExhibit] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null); // a mark clicked on a wide screen keeps its exhibit lit
   const [hoverSentence, setHoverSentence] = useState<number | null>(null);
   const [inline, setInline] = useState<{ s: number; e: string } | null>(null);
   const seen = useRef(new Set<string>());
@@ -109,9 +110,14 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
     return () => cancelAnimationFrame(id);
   }, [threads]);
 
+  useEffect(() => {
+    if (sentences.length === 0) setPinned(null);
+  }, [sentences.length]);
+  const threadsOn = () => Boolean(board.current && getComputedStyle(board.current).getPropertyValue("--threads").trim() === "on");
+  const litExhibit = hoverExhibit ?? pinned;
   const citedBy = (exhibitId: string) => sentences.some((s, i) => s.kept && s.cites.includes(exhibitId) && (hoverSentence === null || hoverSentence === i));
-  const lit = (t: Thread) => (hoverExhibit ? t.exhibit === hoverExhibit : hoverSentence !== null ? t.sentence === hoverSentence : false);
-  const anyHover = hoverExhibit !== null || hoverSentence !== null;
+  const lit = (t: Thread) => (litExhibit ? t.exhibit === litExhibit : hoverSentence !== null ? t.sentence === hoverSentence : false);
+  const anyHover = litExhibit !== null || hoverSentence !== null;
 
   return (
     <div className={`${styles.board} ${compact ? styles.compact : ""}`} ref={board}>
@@ -138,8 +144,8 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
             <Fragment key={si}>
               <p
                 className={`${styles.sentence} ${s.kept ? "" : styles.struck} ${hoverSentence === si ? styles.sentenceLit : ""} ${
-                  hoverExhibit && s.kept && s.cites.includes(hoverExhibit) ? styles.sentenceLit : ""
-                } ${anyHover && !(hoverSentence === si || (hoverExhibit && s.cites.includes(hoverExhibit))) ? styles.sentenceDim : ""}`}
+                  litExhibit && s.kept && s.cites.includes(litExhibit) ? styles.sentenceLit : ""
+                } ${anyHover && !(hoverSentence === si || (litExhibit && s.cites.includes(litExhibit))) ? styles.sentenceDim : ""}`}
                 onMouseEnter={() => s.kept && setHoverSentence(si)}
                 onMouseLeave={() => setHoverSentence(null)}
               >
@@ -156,8 +162,15 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
                         if (el) marks.current.set(`${si}-${c}`, el);
                         else marks.current.delete(`${si}-${c}`);
                       }}
-                      onClick={() => setInline((cur) => (cur?.s === si && cur.e === c ? null : { s: si, e: c }))}
+                      onClick={() => {
+                        if (threadsOn()) {
+                          // Wide screens: light the exhibit on the rail and bring it into view. Narrow: open it in place.
+                          setPinned((cur) => (cur === c ? null : c));
+                          cards.current.get(c)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                        } else setInline((cur) => (cur?.s === si && cur.e === c ? null : { s: si, e: c }));
+                      }}
                       aria-expanded={inline?.s === si && inline.e === c}
+                      aria-pressed={pinned === c}
                       aria-label={`Exhibit ${c}${ex ? `: ${ex.title}` : ""}`}
                     >
                       {c}
@@ -198,10 +211,13 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
             key={e.id}
             exhibit={e}
             fresh
-            active={hoverExhibit === e.id || (hoverSentence !== null && sentences[hoverSentence]?.cites.includes(e.id))}
-            dim={anyHover && !(hoverExhibit === e.id || (hoverSentence !== null && citedBy(e.id)))}
+            active={litExhibit === e.id || (hoverSentence !== null && sentences[hoverSentence]?.cites.includes(e.id))}
+            dim={anyHover && !(litExhibit === e.id || (hoverSentence !== null && citedBy(e.id)))}
             onEnter={() => setHoverExhibit(e.id)}
-            onLeave={() => setHoverExhibit(null)}
+            onLeave={() => {
+              setHoverExhibit(null);
+              if (pinned === e.id) setPinned(null);
+            }}
             cardRef={(el) => {
               if (el) cards.current.set(e.id, el);
               else cards.current.delete(e.id);

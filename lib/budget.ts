@@ -5,7 +5,7 @@ import { get, put } from "@vercel/blob";
  * Spend guards for the public demo, so visitors can't run up the model bill:
  * - per visitor (IP): 12 briefs per 10 minutes, kept in memory per server instance;
  * - per day: DAILY_MODEL_CAP briefs in total (default 400, about a dollar of Haiku), counted in memory and
- *   flushed to a private blob every 10 calls so the cap holds across instances.
+ *   flushed to a private blob every 10 calls (every call once 80% is spent) so the cap holds across instances.
  * When either runs out, cases are still argued, by the rules engine.
  */
 const IP_WINDOW_MS = 10 * 60_000;
@@ -82,7 +82,7 @@ export async function takeDaily(): Promise<boolean> {
   }
   if (persisted + local >= DAILY_CAP) return false;
   local++;
-  // Sync every 20 calls, and on every call once the day is 80% spent, so instances can't overshoot by much.
+  // Sync every 10 calls, and on every call once the day is 80% spent, so instances can't overshoot by much.
   const near = persisted + local >= DAILY_CAP * 0.8;
   if (local >= FLUSH_EVERY || near) await flush().catch(() => {});
   return true;

@@ -58,7 +58,7 @@ flowchart LR
 1. **Read the case.** `GET /v1/customer/disputes/{id}`: reason, amount, stage, deadline, and the HATEOAS links that say which responses PayPal will take right now. Exhibit only offers an action when PayPal's links allow it.
 2. **Gather the records.** `GET /v2/checkout/orders/{id}` (items, ship-to, trackers), `GET /v2/payments/captures/{id}` (amount, fees, the issuer's address and security-code checks), `GET /v2/payments/refunds/{id}` (when a refund exists), plus the store's own records: carrier scans, the inbox, the listing, the policy shown at checkout and the customer's history. Each becomes a lettered exhibit with its source.
 3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced function call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), three to seven weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it.
-4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) extracts every amount, date, time, id and tracking number from a sentence and requires each to appear in the exhibits it cites (a date written with a time must match one record's date and time together). Uncited or unmatched sentences are struck before filing, and the brief shows why. The odds come from the tally's weights, not from the model.
+4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) extracts every amount, date, time, id and tracking number from a sentence, however it is written ("3 Oct 2026", "October 3, 2026", "2026-10-03", "1:02 pm"), and requires each to appear in the exhibits it cites (a date written with a time must match one record's date and time together). Uncited or unmatched sentences are struck before filing, and the brief shows why. The odds come from the tally's weights, not from the model.
 5. **File it.** `POST /v1/customer/disputes/{id}/provide-evidence` (multipart: the response as notes, tracking or refund details, and a PDF with every exhibit Bates-stamped HC-000001…), or `POST /accept-claim` for a full refund. In the sandbox, `POST /adjudicate` then asks PayPal's simulator for a ruling.
 
 If the model is unavailable or the day's budget is spent, a rules engine argues from the same exhibits through the same checks, so the desk never stops.
@@ -74,7 +74,7 @@ Every case on the desk was opened with three sandbox calls and no human:
 | "Charged twice" only: the double click and its refund | a second order, then `POST /v2/payments/captures/{id}/refund` |
 | The issuer files a chargeback | `POST /v2/customer-support/process-chargeback` (sandbox only), with Visa or Mastercard reason codes that PayPal maps to *not received* (13.1, 4855), *not as described* (C2), *unauthorised* (4837) and *duplicate* (4834) |
 
-PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a cron keeps two cases per story opened ahead of time (`POST /api/pool`), and a visitor is handed one that's ready.
+PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a cron keeps two cases per story opened ahead of time (`POST /api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place.
 
 ## Run it yourself
 
@@ -91,7 +91,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                      # the fact-checker's tests
+npm test                                      # the fact-checker's tests (14)
 node scripts/e2e.cjs http://localhost:3600     # open, argue and file a case in a real browser
 ```
 
@@ -114,7 +114,7 @@ node scripts/e2e.cjs http://localhost:3600     # open, argue and file a case in 
 - Sandbox only. Payments, tracking, chargebacks, evidence, acceptances and rulings are real sandbox API calls; the carrier scans, inbox, listing and order book belong to the fictional shop, and each exhibit says where it came from.
 - A sandbox payment is made when a case is opened, so the store's order dates (from its records) are earlier than PayPal's payment timestamps. The exhibits say so.
 - In the sandbox nobody at PayPal reads evidence. The ruling Exhibit requests follows its own filing: for the seller when it fought with the records on its side, for the buyer when it accepted.
-- Spend guards: twelve briefs per visitor per ten minutes, a daily cap on model calls, and eight case openings per visitor per hour.
+- Spend guards: twelve model briefs and thirty arguments or filings per visitor per ten minutes, a daily cap on model calls, and eight case openings per visitor per hour.
 
 ## License
 

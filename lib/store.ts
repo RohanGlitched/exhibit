@@ -50,6 +50,7 @@ export async function loadCase(id: string): Promise<CaseRecord | null> {
 
 export async function saveCase(rec: CaseRecord): Promise<void> {
   await writeRaw(rec);
+  memo = null;
 }
 
 /**
@@ -68,6 +69,7 @@ export async function updateCase(id: string, fn: (rec: CaseRecord) => CaseRecord
     const last = attempt === ATTEMPTS - 1;
     try {
       await writeRaw(next, last ? undefined : cur.etag);
+      memo = null;
       return next;
     } catch (e) {
       if (last) throw new Error(`Couldn't save the case (${(e as Error).message}). Try again.`);
@@ -77,8 +79,11 @@ export async function updateCase(id: string, fn: (rec: CaseRecord) => CaseRecord
   return null;
 }
 
-/** Every case record Exhibit holds, newest first. */
-export async function listCases(): Promise<CaseRecord[]> {
+let memo: { at: number; recs: CaseRecord[] } | null = null;
+
+/** Every case record Exhibit holds, newest first. Remembered for ten seconds unless `fresh`. */
+export async function listCases(fresh = false): Promise<CaseRecord[]> {
+  if (!fresh && memo && Date.now() - memo.at < 10_000) return memo.recs;
   let recs: CaseRecord[] = [];
   if (!useBlob()) {
     const files = await fs.readdir(LOCAL_DIR).catch(() => [] as string[]);
@@ -93,5 +98,7 @@ export async function listCases(): Promise<CaseRecord[]> {
     } while (cursor);
     recs = (await Promise.all(ids.map((id) => loadCase(id).catch(() => null)))).filter((r): r is CaseRecord => Boolean(r));
   }
-  return recs.sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+  recs.sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+  memo = { at: Date.now(), recs };
+  return recs;
 }

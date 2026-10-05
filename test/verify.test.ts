@@ -75,6 +75,23 @@ test("accepts full month names for a date in the exhibit", () => {
   assert.equal(checkSentence({ text: "It arrived on 27 September 2026.", cites: ["E"] }, EX, text).kept, true);
 });
 
+test("reads a date written the American way or as ISO", () => {
+  assert.equal(checkSentence({ text: "It arrived on September 27, 2026.", cites: ["E"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "It arrived on Sept. 27th, 2026.", cites: ["E"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "It arrived on 2026-09-27.", cites: ["E"] }, EX, text).kept, true);
+  const s = checkSentence({ text: "It arrived on Sep 29, 2026.", cites: ["E"] }, EX, text);
+  assert.equal(s.kept, false);
+  assert.match(s.why!, /Sep 29, 2026/);
+  assert.equal(checkSentence({ text: "It arrived on 2026-09-29.", cites: ["E"] }, EX, text).kept, false);
+});
+
+test("reads a 12-hour time", () => {
+  assert.equal(checkSentence({ text: "USPS delivered it at 1:00 pm.", cites: ["E"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "USPS delivered it at 1 p.m.", cites: ["E"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "USPS delivered it at 11:00 am.", cites: ["E"] }, EX, text).kept, false);
+  assert.equal(checkSentence({ text: "USPS delivered it at 11 PM.", cites: ["E"] }, EX, text).kept, true);
+});
+
 test("strikes a tracking number with one digit changed", () => {
   const s = checkSentence({ text: "Tracking number 9405511206213859470036 shows it shipped.", cites: ["D"] }, EX, text);
   assert.equal(s.kept, false);

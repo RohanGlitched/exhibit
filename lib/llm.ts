@@ -57,7 +57,7 @@ async function azure<T>(req: StructuredRequest): Promise<{ value: T; usage?: Usa
       max_output_tokens: req.maxTokens ?? 8000,
       store: false,
     }),
-    signal: AbortSignal.timeout(req.timeoutMs ?? 55_000),
+    signal: AbortSignal.timeout(req.timeoutMs ?? 40_000),
   });
   const body = (await res.json().catch(() => ({}))) as {
     output?: { type: string; name?: string; arguments?: string }[];
@@ -88,7 +88,7 @@ async function bedrock<T>(req: StructuredRequest): Promise<{ value: T; usage?: U
       },
       inferenceConfig: { maxTokens: req.maxTokens ?? 2500, temperature: 0.2 },
     }),
-    signal: AbortSignal.timeout(req.timeoutMs ?? 45_000),
+    signal: AbortSignal.timeout(req.timeoutMs ?? 40_000),
   });
   const body = (await res.json().catch(() => ({}))) as {
     output?: { message?: { content: { toolUse?: { input: unknown } }[] } };

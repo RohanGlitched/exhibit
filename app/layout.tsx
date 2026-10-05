@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description:
     "Exhibit reads every PayPal dispute, gathers the order, payment and tracking, and writes a response where every sentence points to the record that proves it. Fight the cases you should win; refund the rest.",
   openGraph: { type: "website", siteName: "Exhibit" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = { themeColor: "#dce4ef" };

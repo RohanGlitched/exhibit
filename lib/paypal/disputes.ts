@@ -97,11 +97,19 @@ export function allowed(d: Pick<Dispute, "links">): Set<string> {
   return new Set((d.links ?? []).map((l) => l.rel.replace(/-/g, "_")));
 }
 
-export async function listDisputes(opts: { pageSize?: number; state?: string[] } = {}): Promise<DisputeSummary[]> {
+/** Newest first; `pages` follows PayPal's next links, 50 cases a page. */
+export async function listDisputes(opts: { pageSize?: number; state?: string[]; pages?: number } = {}): Promise<DisputeSummary[]> {
   const q = new URLSearchParams({ page_size: String(opts.pageSize ?? 50) });
   if (opts.state?.length) q.set("dispute_state", opts.state.join(","));
-  const r = await paypal<{ items?: DisputeSummary[] }>(`/v1/customer/disputes?${q}`, { what: "Listing disputes" });
-  return r.items ?? [];
+  const out: DisputeSummary[] = [];
+  let path: string | undefined = `/v1/customer/disputes?${q}`;
+  for (let page = 0; path && page < (opts.pages ?? 1); page++) {
+    const r: { items?: DisputeSummary[]; links?: Link[] } = await paypal(path, { what: "Listing disputes" });
+    out.push(...(r.items ?? []));
+    const next = r.links?.find((l) => l.rel === "next")?.href;
+    path = next ? next.replace(/^https?:\/\/[^/]+/, "") : undefined;
+  }
+  return out;
 }
 
 export const getDispute = (id: string) =>

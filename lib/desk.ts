@@ -26,11 +26,12 @@ export interface DeskRow {
 
 export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
   const [disputes, records] = await Promise.all([
-    listDisputes({ pageSize: 50 }).catch(() => [] as DisputeSummary[]),
+    listDisputes({ pageSize: 50, pages: 4 }).catch(() => [] as DisputeSummary[]),
     listCases().catch(() => [] as CaseRecord[]),
   ]);
-  const byId = new Map(records.map((r) => [r.disputeId, r]));
-  // Only cases opened through Exhibit: the sandbox account also holds raw API test disputes with no story.
+  // Only cases opened through Exhibit (the sandbox account also holds raw API test disputes with no story),
+  // and not the pool stock that went stale before anyone took it.
+  const byId = new Map(records.filter((r) => !r.retired).map((r) => [r.disputeId, r]));
   return disputes.filter((d) => byId.has(d.dispute_id)).map((d) => {
     const r = byId.get(d.dispute_id);
     const s = r?.scenarioId ? findScenario(r.scenarioId) : undefined;

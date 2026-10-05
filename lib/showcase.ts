@@ -35,7 +35,7 @@ function shiftedDates(text: string): string[] {
  */
 export const showcase = unstable_cache(
   async (): Promise<Showcase | null> => {
-    const cases = (await listCases()).filter((c) => c.brief && c.scenarioId);
+    const cases = (await listCases()).filter((c) => c.brief && c.scenarioId && !c.retired);
     const rank = (c: (typeof cases)[number]) =>
       (c.scenarioId === "delivered" ? 4 : 0) + (c.filings.length ? 2 : 0) + (c.brief?.engine === "model" ? 1 : 0);
     const pick = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt))[0];
@@ -75,14 +75,17 @@ export const showcase = unstable_cache(
 /** Live numbers for the landing strip, from Exhibit's records and PayPal's dispute list. */
 export const deskStats = unstable_cache(
   async () => {
-    const [cases, disputes] = await Promise.all([listCases(), listDisputes({ pageSize: 50 }).catch(() => [])]);
+    const [all, disputes] = await Promise.all([listCases(), listDisputes({ pageSize: 50, pages: 4 }).catch(() => [])]);
+    const cases = all.filter((c) => !c.retired);
     const argued = cases.filter((c) => c.brief);
+    // "On the desk": cases someone has taken or argued, the same rows the desk shows, not the pool stock.
+    const onDesk = new Set(cases.filter((c) => c.claimedBy || c.brief).map((c) => c.disputeId));
     return {
       argued: argued.length,
       sentences: argued.reduce((n, c) => n + c.brief!.sentences.length, 0),
       struck: argued.reduce((n, c) => n + c.brief!.sentences.filter((s) => !s.kept).length, 0),
       filed: cases.filter((c) => c.filings.some((f) => f.ok)).length,
-      atStake: disputes.filter((d) => d.status !== "RESOLVED").reduce((n, d) => n + Number(d.dispute_amount.value), 0),
+      atStake: disputes.filter((d) => onDesk.has(d.dispute_id) && d.status !== "RESOLVED").reduce((n, d) => n + Number(d.dispute_amount.value), 0),
     };
   },
   ["desk-stats-v2"],

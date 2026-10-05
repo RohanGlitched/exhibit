@@ -97,7 +97,11 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
   page.drawText("Exhibits", { x: M, y, size: 10, font: sansBold, color: INK });
   y -= 15;
   for (const e of exhibits) {
-    if (y < 80) break;
+    if (y < 80) {
+      stamp(page);
+      page = doc.addPage([W, H]);
+      y = H - M;
+    }
     page.drawText(clean(`${e.id}  ${e.title}`), { x: M, y, size: 9.5, font: sans, color: INK });
     y -= 13;
   }
@@ -105,7 +109,14 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
   page.drawText(clean(`${SHOP.owner}, ${SHOP.name} · ${SHOP.email}`), { x: M, y: Math.max(y, 60), size: 9.5, font: sans, color: SOFT });
   stamp(page);
 
-  // One page per exhibit.
+  // One page per exhibit (a long one runs on to the next, stamped too).
+  const room = (need: number) => {
+    if (y - need < 60) {
+      stamp(page);
+      page = doc.addPage([W, H]);
+      y = H - M;
+    }
+  };
   for (const e of exhibits) {
     page = doc.addPage([W, H]);
     y = H - M;
@@ -119,9 +130,9 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
     page.drawText(clean(e.source), { x: M, y, size: 8.5, font: sans, color: SOFT });
     y -= 22;
     for (const f of e.facts) {
-      if (y < 90) break;
-      page.drawText(clean(f.label), { x: M, y, size: 9.5, font: sans, color: SOFT });
       const lines = wrap(f.value, sans, 10, W - 2 * M - 150);
+      room(lines.length * 14 + 3);
+      page.drawText(clean(f.label), { x: M, y, size: 9.5, font: sans, color: SOFT });
       for (const l of lines) {
         page.drawText(l, { x: M + 150, y, size: 10, font: sans, color: INK });
         y -= 14;
@@ -132,16 +143,17 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
       y -= 8;
       for (const t of e.lines) {
         for (const l of wrap(t, serif, 11, W - 2 * M)) {
-          if (y < 90) break;
+          room(15);
           page.drawText(l, { x: M, y, size: 11, font: serif, color: INK });
           y -= 15;
         }
         y -= 5;
       }
     }
-    if (e.sandbox && y > 100) {
+    if (e.sandbox) {
       y -= 8;
       for (const l of wrap(`Note: ${e.sandbox}`, sans, 8.5, W - 2 * M)) {
+        room(12);
         page.drawText(l, { x: M, y, size: 8.5, font: sans, color: SOFT });
         y -= 12;
       }

@@ -3,7 +3,7 @@ import type { Dispute } from "../paypal/disputes";
 import type { Capture, Order, Refund } from "../paypal/orders";
 import type { Scenario } from "../shop/scenarios";
 import { SHOP, product } from "../shop/catalog";
-import { day, dayTime, reasonLabel, usd } from "../format";
+import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
 import type { Exhibit, Fact } from "./types";
 
 /**
@@ -34,9 +34,10 @@ function storyClock(openedAt: string, s: Scenario) {
   const opened = new Date(openedAt).getTime();
   const orderAt = opened - s.orderDaysAgo * 86_400_000;
   const at = (dayN: number, hour: number) => {
-    const d = new Date(orderAt + dayN * 86_400_000);
-    d.setUTCHours(hour + 7, 0, 0, 0); // Portland local hour, near enough across DST for a story
-    return d;
+    // The story's calendar day (its UTC date, as every record on file was written), at the shop's wall-clock
+    // hour, so a scan reads the same on either side of the clock change.
+    const u = new Date(orderAt + dayN * 86_400_000);
+    return zonedToUtc(u.getUTCFullYear(), u.getUTCMonth() + 1, u.getUTCDate(), hour);
   };
   return { orderAt: new Date(orderAt), at };
 }

@@ -19,8 +19,8 @@ const STEPS = [
   },
   {
     title: "Argue it",
-    text: "A GPT model on Azure OpenAI weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
-    api: "Azure OpenAI chat completions, one forced function call",
+    text: "GPT-5.6 on Azure OpenAI weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
+    api: "Azure OpenAI Responses API, one forced function call",
   },
   {
     title: "Check every sentence",

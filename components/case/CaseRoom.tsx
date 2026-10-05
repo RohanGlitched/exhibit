@@ -38,6 +38,12 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
     if (r?.ok) setView(await r.json());
   }, [view.id]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3600);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   // Keep PayPal's side current: status, allowed actions, outcome.
   useEffect(() => {
     if (view.status === "RESOLVED") return;
