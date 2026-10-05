@@ -70,7 +70,7 @@ function plainError(status: number, body: PayPalErrorBody, what: string): PayPal
   const issue = detail?.issue ?? body.name;
   const known = (issue && PLAIN[issue]) || (body.name && PLAIN[body.name]);
   const fields = (body.details ?? []).map((d) => [d.field, d.issue].filter(Boolean).join(": ")).filter(Boolean).join("; ");
-  if (body.details?.length) console.error(`PayPal ${what} ${status}`, JSON.stringify(body.details), body.debug_id);
+  if (body.details?.length && status !== 404) console.error(`PayPal ${what} ${status}`, JSON.stringify(body.details), body.debug_id);
   const said = known ?? detail?.description ?? (fields ? `${body.message ?? "invalid request"} (${fields})` : undefined) ?? body.message ?? body.error_description ?? `HTTP ${status}`;
   return new PayPalError(known ? said : `${what} failed: ${said}`, status, issue, body.debug_id);
 }

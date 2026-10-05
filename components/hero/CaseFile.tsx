@@ -39,7 +39,8 @@ export default function CaseFile({ head, exhibits, brief, filedAt, onPhase }: Pr
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
-    const fit = () => setScale(Math.min(1, el.clientWidth / W));
+    // Perspective pushes the stack's far edge past the design box, so fit to a little more than W.
+    const fit = () => setScale(Math.min(1, el.clientWidth / (W + 130)));
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);

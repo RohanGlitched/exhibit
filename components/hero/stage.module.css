@@ -147,14 +147,11 @@
 }
 @media (max-width: 760px) {
   .stage {
-    padding: 22px 0 0;
-    background: none;
-    box-shadow: none;
-    color: var(--ink);
+    --thread: #8fb0ff;
+    padding: 22px 14px 64px;
+    gap: 16px;
+    margin: 0 calc(var(--gutter) * -1);
     border-radius: 0;
-  }
-  .stage::before {
-    display: none;
   }
   .desk,
   .phases,
@@ -164,17 +161,7 @@
   .narrow {
     display: block;
   }
-  .live {
-    color: var(--ink-soft);
-  }
   .caseId {
-    color: var(--due);
     font-size: 18px;
-  }
-  .meta {
-    color: var(--ink-soft);
-  }
-  .open {
-    color: var(--respondent-ink);
   }
 }

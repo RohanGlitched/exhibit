@@ -13,6 +13,9 @@
   --rail: 290px;
   --channel: 64px;
 }
+.compact .paper {
+  min-height: 0;
+}
 
 .column {
   position: relative;
@@ -484,5 +487,13 @@
   .mark {
     min-width: 26px;
     height: 24px;
+  }
+  .compact .ledger {
+    display: none;
+  }
+  .compact .tally {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 8px;
   }
 }
