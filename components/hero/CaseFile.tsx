@@ -65,7 +65,7 @@ export default function CaseFile({ head, exhibits, brief, filedAt, onPhase }: Pr
         started = true;
         tick(0);
       }
-    }, { threshold: 0.3 });
+    }, { threshold: 0.7 });
     if (wrap.current) io.observe(wrap.current);
     return () => {
       io.disconnect();

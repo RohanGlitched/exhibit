@@ -57,19 +57,24 @@ export async function saveCase(rec: CaseRecord): Promise<void> {
  * when someone else already claimed it). Returns the record as written, or null.
  */
 export async function updateCase(id: string, fn: (rec: CaseRecord) => CaseRecord | null): Promise<CaseRecord | null> {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  // Blob ETags can lag for a moment after an overwrite, so a conditional write may keep failing even with no
+  // real conflict. Back off a few times, then write the freshly read record unconditionally.
+  const ATTEMPTS = 5;
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
     const cur = await readRaw(id);
     if (!cur) return null;
     const next = fn(structuredClone(cur.rec));
     if (!next) return null;
+    const last = attempt === ATTEMPTS - 1;
     try {
-      await writeRaw(next, cur.etag);
+      await writeRaw(next, last ? undefined : cur.etag);
       return next;
-    } catch {
-      await new Promise((r) => setTimeout(r, 150 * (attempt + 1) + Math.random() * 100));
+    } catch (e) {
+      if (last) throw new Error(`Couldn't save the case (${(e as Error).message}). Try again.`);
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1) + Math.random() * 150));
     }
   }
-  throw new Error("Couldn't save the case: it kept changing underneath us. Try again.");
+  return null;
 }
 
 /** Every case record Exhibit holds, newest first. */
