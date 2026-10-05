@@ -1,5 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import HomeStage from "@/components/hero/HomeStage";
+import Docket from "@/components/home/Docket";
+import ExhibitWall from "@/components/home/ExhibitWall";
+import PdfSpread from "@/components/home/PdfSpread";
+import Pleading from "@/components/home/Pleading";
 import { deskStats, showcase } from "@/lib/showcase";
 import { usd } from "@/lib/format";
 import styles from "./home.module.css";
@@ -112,30 +117,45 @@ export default async function Home() {
           </p>
           <p>The model argues. The records decide what it&apos;s allowed to say.</p>
         </div>
-        {show?.strikeDemo ? (
-          <figure className={`sheet ${styles.strike}`}>
-            <p className={`serif ${styles.kept}`}>
-              {show.strikeDemo.original.text}
-              {show.strikeDemo.original.cites.map((c) => (
-                <span key={c} className={styles.cite}>
-                  {c}
-                </span>
-              ))}
-            </p>
-            <p className={`serif ${styles.struck}`}>{show.strikeDemo.altered.text}</p>
-            <figcaption>
-              {show.strikeDemo.altered.kept
-                ? "The checker passed this one too."
-                : `Struck: ${show.strikeDemo.altered.why} We moved one date in the sentence above by a few days and ran the same checker the filing uses.`}
-            </figcaption>
-          </figure>
-        ) : (
-          <figure className={`sheet ${styles.strike}`}>
-            <p className={`serif ${styles.struck}`}>USPS delivered it on 29 Sep 2026, signed for at the front desk.</p>
-            <figcaption>Struck when no cited exhibit contains 29 Sep 2026.</figcaption>
-          </figure>
-        )}
+        <Pleading lines={11}>
+          {show?.strikeDemo ? (
+            <figure className={styles.strike}>
+              <p className={`serif ${styles.kept}`}>
+                {show.strikeDemo.original.text}
+                {show.strikeDemo.original.cites.map((c) => (
+                  <span key={c} className={styles.cite}>
+                    {c}
+                  </span>
+                ))}
+              </p>
+              <p className={`serif ${styles.struck}`}>{show.strikeDemo.altered.text}</p>
+              <figcaption>
+                {show.strikeDemo.altered.kept
+                  ? "The checker passed this one too."
+                  : `Struck: ${show.strikeDemo.altered.why} We moved one date in the sentence above by a few days and ran the same checker the filing uses.`}
+              </figcaption>
+            </figure>
+          ) : (
+            <figure className={styles.strike}>
+              <p className={`serif ${styles.struck}`}>USPS delivered it on 29 Sep 2026, signed for at the front desk.</p>
+              <figcaption>Struck when no cited exhibit contains 29 Sep 2026.</figcaption>
+            </figure>
+          )}
+        </Pleading>
       </section>
+
+      {show && (
+        <section className={`shell ${styles.section}`}>
+          <div className={styles.lede}>
+            <h2>Every record becomes an exhibit</h2>
+            <p>
+              The case on the desk, as a PayPal reviewer would get it: {show.exhibits.length} lettered records. The yellow tab is the buyer&apos;s claim.
+              What comes from PayPal is quoted as the API returned it, with its id; what comes from the store says so.
+            </p>
+          </div>
+          <ExhibitWall exhibits={show.exhibits} />
+        </section>
+      )}
 
       <section id="how" className={`shell ${styles.section}`}>
         <h2>How a case moves</h2>
@@ -149,6 +169,37 @@ export default async function Home() {
             </li>
           ))}
         </ol>
+      </section>
+
+      {show && (
+        <section className={`shell ${styles.section} ${styles.split}`}>
+          <div>
+            <h2>What reaches PayPal</h2>
+            <p>
+              One multipart call to <span className={styles.code}>provide-evidence</span>: the response as notes, the tracking or refund details, and a PDF
+              with the response on page one and every exhibit on its own page, each Bates-stamped HC-000001 onwards, the way exhibits are marked in a
+              filing.
+            </p>
+            <p>When the call is to refund, it&apos;s <span className={styles.code}>accept-claim</span> instead, and PayPal refunds the buyer.</p>
+            <p className={styles.readPdf}>
+              <a className="btn btnQuiet" href={`/api/cases/${show.head.id}/pdf`} target="_blank" rel="noreferrer">
+                Read the PDF for {show.head.id}
+              </a>
+            </p>
+          </div>
+          <PdfSpread head={show.head} brief={show.brief} exhibits={show.exhibits} />
+        </section>
+      )}
+
+      <section className={`shell ${styles.section}`}>
+        <div className={styles.lede}>
+          <h2>Built on the PayPal platform</h2>
+          <p>
+            Twelve calls, all in the free sandbox with test money. A case is opened, read, argued, filed and ruled on without anyone touching the
+            PayPal website.
+          </p>
+        </div>
+        <Docket />
       </section>
 
       <section className={`shell ${styles.section} ${styles.split}`}>
@@ -177,6 +228,19 @@ export default async function Home() {
             <span data-rec="accept">Refund it</span>
           </li>
         </ul>
+      </section>
+
+      <section className={`shell ${styles.section} ${styles.split} ${styles.phoneSec}`}>
+        <div>
+          <h2>Made for the phone in your apron pocket</h2>
+          <p>
+            Most sellers read a dispute notice on their phone. The brief reads the same there: tap an exhibit letter and the record opens in place under
+            the sentence that cites it; the desk becomes a list of cards.
+          </p>
+        </div>
+        <div className={styles.phoneFrame}>
+          <Image src="/phone-case.png" alt="A case on a phone: the response with exhibit marks, and Exhibit E opened under its sentence" width={585} height={1266} />
+        </div>
       </section>
 
       <section className={`shell ${styles.section} ${styles.final}`}>
