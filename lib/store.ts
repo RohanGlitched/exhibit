@@ -1,15 +1,16 @@
 import "server-only";
-import { get, list, put } from "@vercel/blob";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { CaseRecord } from "./cases/types";
+import { storage } from "./storage";
 
 /**
  * One JSON document per case: Exhibit's own notes on a PayPal dispute (which scenario opened it, the order and
  * capture behind it, the brief, and everything filed). PayPal stays the source of truth for the dispute itself.
- * In production it's a private Vercel Blob written with an ETag check; locally, a file under .data/.
+ * In production it's an object in the configured store (Google Cloud Storage or Vercel Blob) written with a
+ * version check; locally, a file under .data/.
  */
-const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const useBlob = () => storage() !== null;
 const LOCAL_DIR = path.join(process.cwd(), ".data", "cases");
 const key = (id: string) => `cases/${id}.json`;
 export const CASE_ID = /^PP-[A-Z0-9-]{4,40}$/;
@@ -23,13 +24,10 @@ async function readRaw(id: string): Promise<{ rec: CaseRecord; etag?: string } |
       return null;
     }
   }
-  const r = await get(key(id), { access: "private", useCache: false }).catch(() => null);
-  if (!r?.stream) return null;
-  return { rec: JSON.parse(await new Response(r.stream).text()) as CaseRecord, etag: strong(r.blob.etag) };
+  const r = await storage()!.read(key(id)).catch(() => null);
+  if (!r) return null;
+  return { rec: JSON.parse(r.text) as CaseRecord, etag: r.etag };
 }
-
-/** Larger (compressed) reads come back with a weak ETag, W/"…"; If-Match needs the strong form or it never matches. */
-const strong = (etag?: string) => etag?.replace(/^W\//, "");
 
 /*
  * The case index: every record in one blob, so listing the cases (the pool job runs every ten minutes) is one
@@ -38,20 +36,13 @@ const strong = (etag?: string) => etag?.replace(/^W\//, "");
 const INDEX = "index/cases.json";
 
 async function readIndex(): Promise<{ recs: CaseRecord[]; etag?: string } | null> {
-  const r = await get(INDEX, { access: "private", useCache: false }).catch(() => null);
-  if (!r?.stream) return null;
-  return { recs: (JSON.parse(await new Response(r.stream).text()) as { recs: CaseRecord[] }).recs, etag: strong(r.blob.etag) };
+  const r = await storage()!.read(INDEX).catch(() => null);
+  if (!r) return null;
+  return { recs: (JSON.parse(r.text) as { recs: CaseRecord[] }).recs, etag: r.etag };
 }
 
 function writeIndex(recs: CaseRecord[], etag?: string) {
-  return put(INDEX, JSON.stringify({ at: new Date().toISOString(), recs }), {
-    access: "private",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    cacheControlMaxAge: 60,
-    ...(etag ? { ifMatch: etag } : {}),
-  });
+  return storage()!.write(INDEX, JSON.stringify({ at: new Date().toISOString(), recs }), { ifMatch: etag });
 }
 
 /** Puts one record into the index (ETag-checked, retried; a conflict means another write landed first). */
@@ -76,13 +67,7 @@ async function indexCase(rec: CaseRecord): Promise<void> {
 }
 
 async function rebuildIndex(): Promise<CaseRecord[]> {
-  const ids: string[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await list({ prefix: "cases/", cursor, limit: 1000 });
-    ids.push(...page.blobs.map((b) => b.pathname.slice(6, -5)));
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
+  const ids = (await storage()!.list("cases/", 5000)).filter((n) => n.endsWith(".json")).map((n) => n.slice(6, -5));
   const recs = (await Promise.all(ids.map((id) => loadCase(id).catch(() => null)))).filter((r): r is CaseRecord => Boolean(r));
   await writeIndex(recs);
   return recs;
@@ -94,14 +79,7 @@ async function writeRaw(rec: CaseRecord, etag?: string): Promise<void> {
     await fs.writeFile(path.join(LOCAL_DIR, `${rec.disputeId}.json`), JSON.stringify(rec, null, 2));
     return;
   }
-  await put(key(rec.disputeId), JSON.stringify(rec), {
-    access: "private",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    cacheControlMaxAge: 60,
-    ...(etag ? { ifMatch: etag } : {}),
-  });
+  await storage()!.write(key(rec.disputeId), JSON.stringify(rec), { ifMatch: etag });
 }
 
 export async function loadCase(id: string): Promise<CaseRecord | null> {
