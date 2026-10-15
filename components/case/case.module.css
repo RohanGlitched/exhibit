@@ -1,5 +1,7 @@
 .room {
   padding-top: 26px;
+  /* The stamp thumps down from 1.9x; keep it from widening the page while it lands. */
+  overflow-x: clip;
 }
 .topline {
   display: flex;
