@@ -31,6 +31,9 @@ export default async function Desk() {
           <Link className="btn btnPrimary" href="/new">
             Open a sandbox case
           </Link>
+          <Link className="btn btnQuiet" href="/desk/analytics">
+            Analytics
+          </Link>
         </div>
       </header>
       <dl className={styles.strip}>

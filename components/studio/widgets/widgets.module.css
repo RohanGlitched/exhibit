@@ -1,0 +1,467 @@
+/* Exhibit's custom AG Studio widgets: paperwork drawn in the site's tokens (app/globals.css). */
+
+.paper {
+  height: 100%;
+  overflow: auto;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums lining-nums;
+  scrollbar-width: thin;
+  container-type: inline-size;
+}
+.paper button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: inherit;
+  cursor: pointer;
+}
+.paper button:focus-visible {
+  outline: 2px solid var(--respondent);
+  outline-offset: 2px;
+}
+.paper [data-dim="true"] {
+  opacity: 0.38;
+}
+.empty {
+  margin: 0;
+  padding: 18px 4px;
+  color: var(--ink-soft);
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: italic;
+}
+.bates {
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--due);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.due {
+  color: var(--due);
+  font-weight: 650;
+}
+.faint {
+  color: var(--ink-faint);
+}
+
+/* Deadline ladder: two rails, one rung per case, the ten-day window as ten boxes. */
+.ladderHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 14px;
+  margin: 0 0 8px;
+  padding: 0 2px;
+  color: var(--ink-soft);
+}
+.ladderHead strong {
+  color: var(--ink);
+}
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  position: relative;
+}
+.ladder::before,
+.ladder::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+.ladder::before {
+  left: 3px;
+}
+.ladder::after {
+  right: 3px;
+}
+.ladder li {
+  position: relative;
+  padding-right: 14px;
+}
+.ladder li::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  right: 3px;
+  top: 50%;
+  height: 1px;
+  background: var(--rule);
+}
+.rung {
+  position: relative;
+  z-index: 1;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "id days amount" "win win win";
+  align-items: center;
+  gap: 6px 14px;
+  width: 100%;
+  margin: 3px 0 !important;
+  padding: 7px 10px !important;
+  background: var(--sheet) !important;
+  border: 1px solid var(--rule-soft) !important;
+  border-radius: 3px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.rung:hover {
+  border-color: var(--respondent) !important;
+}
+.rung[aria-pressed="true"] {
+  border-color: var(--respondent) !important;
+  background: var(--respondent-wash) !important;
+}
+.rung[data-soon="true"] {
+  border-left: 3px solid var(--due) !important;
+}
+.rungId {
+  grid-area: id;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.rungLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+.window {
+  grid-area: win;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  height: 9px;
+}
+.window i {
+  border: 1px solid var(--rule);
+  border-radius: 1px;
+  background: transparent;
+}
+.window i[data-left="true"] {
+  background: var(--respondent);
+  border-color: var(--respondent);
+}
+.rung[data-soon="true"] .window i[data-left="true"] {
+  background: var(--due);
+  border-color: var(--due);
+}
+.rungDays {
+  grid-area: days;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.rung[data-soon="true"] .rungDays {
+  color: var(--due);
+}
+.rungAmount {
+  grid-area: amount;
+  min-width: 52px;
+  text-align: right;
+  font-weight: 600;
+}
+.more {
+  margin: 8px 0 0 14px;
+  color: var(--ink-soft);
+}
+.scale {
+  margin: 10px 0 0 14px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* The ledger slip: faint blue rules, a red margin line, dotted leaders to the figures. */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 6px 6px 22px;
+  background:
+    linear-gradient(to right, transparent 13px, rgba(211, 36, 44, 0.45) 13px, rgba(211, 36, 44, 0.45) 14px, transparent 14px),
+    repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(43, 99, 232, 0.13) 31px, rgba(43, 99, 232, 0.13) 32px);
+}
+.lines {
+  margin: 0;
+}
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  height: 32px;
+  padding-top: 7px;
+}
+.line dt {
+  white-space: nowrap;
+}
+.line dd {
+  margin: 0;
+  font-weight: 650;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.leader {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 1.5px dotted var(--ink-faint);
+  transform: translateY(-3px);
+}
+.line[data-tone="won"] dd {
+  color: var(--won);
+}
+.line[data-tone="due"] dd {
+  color: var(--due);
+}
+.line[data-tone="respondent"] dd {
+  color: var(--respondent-ink);
+}
+.subtotal {
+  border-top: 1px solid var(--ink);
+}
+.subtotal dt,
+.total dt {
+  font-weight: 650;
+}
+.total {
+  border-top: 3px double var(--ink);
+}
+.total dd {
+  font-size: 18px;
+  font-weight: 700;
+}
+.strip {
+  display: flex;
+  height: 10px;
+  gap: 2px;
+}
+.strip i {
+  min-width: 4px;
+  border-radius: 1px;
+}
+.strip i[data-tone="won"] {
+  background: var(--won);
+}
+.strip i[data-tone="ink"] {
+  background: var(--ink);
+}
+.strip i[data-tone="due"] {
+  background: var(--due);
+}
+.strip i[data-tone="respondent"] {
+  background: var(--respondent);
+}
+.ledgerNote {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 14px;
+}
+
+/* Pleading paper: line numbers in the margin, a double red rule, struck lines crossed out in red. */
+.pleading {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 15px;
+  background:
+    linear-gradient(to right, transparent 40px, rgba(211, 36, 44, 0.75) 40px, rgba(211, 36, 44, 0.75) 41px, transparent 41px, transparent 44px, rgba(211, 36, 44, 0.75) 44px, rgba(211, 36, 44, 0.75) 45px, transparent 45px);
+}
+.pleadLines {
+  list-style: none;
+  counter-reset: plead;
+  margin: 0;
+  padding: 0 6px 0 0;
+}
+.pleadLines li {
+  counter-increment: plead;
+  position: relative;
+  min-height: 30px;
+  padding: 4px 0 4px 58px;
+  line-height: 22px;
+}
+.pleadLines li::before {
+  content: counter(plead);
+  position: absolute;
+  left: 0;
+  width: 30px;
+  top: 4px;
+  text-align: right;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+.pleadLines li[data-struck="true"]::before {
+  color: var(--due);
+  font-weight: 700;
+}
+.pleadLines b[data-tone="due"] {
+  color: var(--due);
+}
+.pleadButton {
+  border-radius: 2px;
+}
+.pleadButton:hover span {
+  text-decoration-color: var(--respondent);
+}
+.pleadButton[aria-pressed="true"] {
+  background: var(--respondent-wash) !important;
+}
+.strike {
+  text-decoration: line-through;
+  text-decoration-color: var(--due);
+  text-decoration-thickness: 2px;
+  color: var(--ink-soft);
+}
+.clerk {
+  color: var(--due);
+  font-style: italic;
+}
+
+/* Rubber stamps. */
+.stamps {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 6px 14px;
+  padding: 6px;
+  overflow: hidden;
+}
+.stamp {
+  width: clamp(100px, calc(50% - 12px), 210px);
+  aspect-ratio: 300 / 130;
+  color: var(--due);
+  mix-blend-mode: multiply;
+  opacity: 0.92;
+  transition: opacity 140ms ease;
+}
+.stamp svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.stamp:hover {
+  opacity: 1;
+}
+.stamp[data-tone="due"] {
+  color: var(--due);
+}
+.stamp[data-tone="won"] {
+  color: var(--won);
+}
+.stamp[data-tone="ink"] {
+  color: var(--ink);
+}
+.stamp[data-tone="respondent"] {
+  color: var(--respondent-ink);
+}
+.stamp[aria-pressed="true"] {
+  opacity: 1;
+  filter: drop-shadow(0 0 0.5px currentColor);
+}
+.stamp[data-dim="true"] {
+  opacity: 0.25 !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stamp {
+    animation: thump 520ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  }
+  .stamp:nth-child(3) {
+    animation-delay: 90ms;
+  }
+  .stamp:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .stamp:nth-child(5) {
+    animation-delay: 270ms;
+  }
+  .stamp:nth-child(6) {
+    animation-delay: 360ms;
+  }
+}
+@keyframes thump {
+  0% {
+    opacity: 0;
+    scale: 1.8;
+  }
+  60% {
+    opacity: 0.95;
+    scale: 0.96;
+  }
+  100% {
+    opacity: 0.88;
+    scale: 1;
+  }
+}
+
+/* Cells in Studio's grid widget. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--respondent-wash);
+  color: var(--respondent-ink);
+}
+.chip[data-tone="won"] {
+  background: rgba(23, 132, 90, 0.12);
+  color: var(--won);
+}
+.chip[data-tone="due"] {
+  background: rgba(211, 36, 44, 0.1);
+  color: var(--due);
+}
+.chip[data-tone="ink"] {
+  background: rgba(19, 32, 58, 0.08);
+  color: var(--ink);
+}
+.daysCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.daysCell[data-soon="true"] {
+  color: var(--due);
+}
+.dueBar {
+  display: inline-block;
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--rule-soft);
+  overflow: hidden;
+}
+.dueBar i {
+  display: block;
+  height: 100%;
+  background: var(--respondent);
+}
+.daysCell[data-soon="true"] .dueBar i {
+  background: var(--due);
+}
+
+@container (max-width: 380px) {
+  .rung {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "id amount" "win days";
+    gap: 4px 10px;
+  }
+}
+@container (max-width: 260px) {
+  .rungLabel {
+    display: none;
+  }
+}
