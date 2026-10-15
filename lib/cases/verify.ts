@@ -55,12 +55,18 @@ export function figures(text: string) {
   };
 }
 
+/** Exhibit letters as the model gave them: usually an array, sometimes one string ("B, D") or a bare letter. */
+export function citeList(raw: unknown): string[] {
+  const parts = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.split(/[\s,;&]+|\band\b/) : [];
+  return [...new Set(parts.map((c) => String(c).replace(/^Exhibits?\s*/i, "").trim().toUpperCase()).filter((c) => /^[A-Z]$/.test(c)))];
+}
+
 export function checkSentence(
-  s: { text: string; cites: string[] },
+  s: { text: string; cites: string[] | string },
   exhibits: Exhibit[],
   textOf: (e: Exhibit) => string,
 ): BriefSentence {
-  const cites = [...new Set((s.cites ?? []).map((c) => c.trim().toUpperCase()))];
+  const cites = citeList(s.cites);
   const known = cites.filter((c) => exhibits.some((e) => e.id === c));
   if (!known.length) return { text: s.text, cites, kept: false, why: "No exhibit cited." };
   const unknown = cites.filter((c) => !known.includes(c));
@@ -86,7 +92,7 @@ export function checkSentence(
 
 export function checkTally(items: TallyItem[], exhibits: Exhibit[]): TallyItem[] {
   return items
-    .map((t) => ({ ...t, cites: [...new Set((t.cites ?? []).map((c) => c.trim().toUpperCase()))].filter((c) => exhibits.some((e) => e.id === c)) }))
+    .map((t) => ({ ...t, cites: citeList(t.cites).filter((c) => exhibits.some((e) => e.id === c)) }))
     .filter((t) => t.cites.length > 0 && (t.side === "seller" || t.side === "buyer"))
     .map((t) => ({ ...t, weight: Math.min(3, Math.max(1, Math.round(t.weight))) as 1 | 2 | 3 }));
 }

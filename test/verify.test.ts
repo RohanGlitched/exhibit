@@ -128,3 +128,14 @@ test("odds follow the weight on each side and stay off the extremes", () => {
     75,
   );
 });
+
+test("cites given as one string are read as letters", async () => {
+  const { citeList } = await import("../lib/cases/verify.ts");
+  assert.deepEqual(citeList("B, D"), ["B", "D"]);
+  assert.deepEqual(citeList("Exhibit E"), ["E"]);
+  assert.deepEqual(citeList("D and E"), ["D", "E"]);
+  assert.deepEqual(citeList(["e", "E"]), ["E"]);
+  assert.deepEqual(citeList(undefined), []);
+  const s = checkSentence({ text: "USPS delivered it on 27 Sep 2026, 13:00, signed for.", cites: "E" }, EX, text);
+  assert.equal(s.kept, true);
+});
