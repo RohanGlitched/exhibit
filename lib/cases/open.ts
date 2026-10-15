@@ -107,7 +107,9 @@ async function poolProblem(c: CaseRecord): Promise<string | null> {
     return null; // a PayPal hiccup: judge it on the next refill
   }
   if (d.status === READY) return daysLeft(d) < MIN_DAYS_LEFT ? "the response deadline is about to pass" : null;
-  if (d.status === "OPEN") return ageHours > 3 ? "PayPal never handed the case to the seller" : null;
+  // A new chargeback sits with PayPal (OPEN, or UNDER_REVIEW with nothing filed) for a few minutes first.
+  const withPayPal = d.status === "OPEN" || (d.status === "UNDER_REVIEW" && !(d.evidences ?? []).some((e) => e.source === "SUBMITTED_BY_SELLER"));
+  if (withPayPal) return ageHours > 3 ? "PayPal never handed the case to the seller" : null;
   return `PayPal shows it as ${d.status.toLowerCase().replace(/_/g, " ")}`;
 }
 

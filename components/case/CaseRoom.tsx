@@ -44,7 +44,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
   // Keep PayPal's side current: status, allowed actions, outcome. Faster while PayPal is still handing it over.
   useEffect(() => {
     if (view.status === "RESOLVED") return;
-    const t = setInterval(refresh, view.where === "open" ? 20_000 : 60_000);
+    const t = setInterval(refresh, view.where === "open" || view.where === "reviewing" ? 20_000 : 60_000);
     return () => clearInterval(t);
   }, [refresh, view.status, view.where]);
 
@@ -132,7 +132,8 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
   const can = new Set(view.actions);
   // PayPal's record decides: a case is filed when PayPal holds the seller's response, whoever filed it.
   const filed = view.filings.some((f) => f.action === "evidence" || f.action === "accept");
-  const waiting = view.where === "open";
+  // A new chargeback stays with PayPal (open, or under review with nothing filed) for a few minutes.
+  const waiting = (view.where === "open" || view.where === "reviewing") && Date.now() - new Date(view.created).getTime() < 3 * 3_600_000;
   const closed = view.status === "RESOLVED";
   const pdfHref = view.filedPdf ? `/api/cases/${view.id}/filed` : `/api/cases/${view.id}/pdf`;
   const rec = verdict?.recommendation;

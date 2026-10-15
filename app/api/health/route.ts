@@ -43,7 +43,7 @@ export async function GET() {
       story: s.id,
       stock: stock.length,
       ready: ready.length,
-      withPayPal: stock.filter((c) => byId.get(c.disputeId)?.status === "OPEN").length,
+      withPayPal: stock.filter((c) => ["OPEN", "UNDER_REVIEW"].includes(byId.get(c.disputeId)?.status ?? "")).length,
       target: POOL_PER_SCENARIO,
       soonestDueHours: dues.length ? Math.min(...dues.map(hoursUntil)) : null,
     };
