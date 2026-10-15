@@ -14,10 +14,12 @@
     "node": "22.x"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
     "@vercel/blob": "^2.8.0",
     "@vercel/oidc": "3.8.10",
     "ag-grid-community": "^36.2.0",
     "ag-grid-react": "^36.2.0",
+    "mcp-handler": "2.2.0",
     "next": "^15.5.27",
     "pdf-lib": "^1.17.1",
     "react": "^19.3.0",

@@ -278,6 +278,11 @@ export default async function Home() {
             Inside the mandate, the purchase was authorised: fight. Past the limit the cardholder signed, the shop took an order nobody allowed: refund.
             Both are stories you can open.
           </p>
+          <p>
+            The seller can have an agent too. Exhibit is an MCP server at <span className={styles.code}>/api/mcp</span>: any assistant that speaks
+            the Model Context Protocol can list the cases, read one, have Exhibit argue it, and file the response or the refund, through the same
+            checks and PayPal&apos;s own links.
+          </p>
         </div>
         <div className={`sheet ${styles.mandate}`}>
           <p className={styles.mandateHead}>
