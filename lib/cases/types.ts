@@ -5,7 +5,7 @@ export interface Fact {
   value: string;
 }
 
-export type ExhibitKind = "claim" | "order" | "payment" | "refund" | "tracking" | "scans" | "inbox" | "history" | "listing" | "policy" | "note";
+export type ExhibitKind = "claim" | "order" | "payment" | "refund" | "tracking" | "scans" | "inbox" | "history" | "listing" | "policy" | "note" | "mandate" | "check" | "transcript";
 
 export interface Exhibit {
   id: string; // "A", "B", ...
@@ -47,6 +47,7 @@ export interface Brief {
   model?: string;
   ms: number;
   createdAt: string;
+  tokens?: { input: number; output: number };
 }
 
 export interface Filing {

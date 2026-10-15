@@ -7,6 +7,8 @@ import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
 
 const STAGES: Record<string, string> = { INQUIRY: "Inquiry", CHARGEBACK: "Chargeback", PRE_ARBITRATION: "Pre-arbitration", ARBITRATION: "Arbitration" };
 import type { Exhibit, Fact } from "./types";
+import { agentMandates, shipLine } from "../agentic/story";
+import { fingerprint, signatureValid, verifyAgentOrder } from "../agentic/mandate";
 
 /**
  * Turns the records behind a case into numbered exhibits. PayPal records (the dispute, the order, the payment,
@@ -136,6 +138,83 @@ export function buildExhibits(src: Sources): Exhibit[] {
     out.push({ kind: "payment", title: "The payment", source: `PayPal Payments v2 · GET /v2/payments/captures/${capture.id}`, ref: capture.id, facts });
   }
 
+  // An order the buyer's shopping agent placed: the signed mandates, Exhibit's checks, and the agent's log.
+  if (s?.agent && clock) {
+    const invoice = order?.purchase_units[0]?.invoice_id ?? src.invoiceId ?? "";
+    const m = agentMandates(s, invoice, clock.orderAt);
+    if (m) {
+      const i = m.intent.mandate;
+      const c = m.cart.mandate;
+      out.push({
+        kind: "mandate",
+        title: "Intent mandate, signed by the cardholder",
+        source: `Buyer's agent platform · intent ${i.id}`,
+        ref: i.id,
+        facts: [
+          { label: "Mandate", value: i.id },
+          { label: "Cardholder", value: i.cardholder },
+          { label: "Allowed", value: i.item },
+          { label: "Limit", value: usd(i.maxTotal) },
+          { label: "Ship to", value: i.shipTo },
+          { label: "Issued", value: dayTime(i.issuedAt) },
+          { label: "Expires", value: dayTime(i.expiresAt) },
+          { label: "Signed with key", value: fingerprint(m.intent.publicKey) },
+          { label: "Signature", value: signatureValid(m.intent) ? "Valid (Ed25519)" : "Does not verify" },
+        ],
+        lines: [`Request: “${i.request}”`],
+        sandbox: "Signed in the sandbox with a stand-in key for the cardholder's wallet, derived from the order number.",
+      });
+      out.push({
+        kind: "mandate",
+        title: "Cart mandate, signed by the shopping agent",
+        source: `Buyer's agent platform · cart ${c.id}`,
+        ref: c.id,
+        facts: [
+          { label: "Mandate", value: c.id },
+          { label: "Answers intent", value: c.intentId },
+          { label: "Agent", value: c.agent },
+          { label: "Total", value: usd(c.total) },
+          { label: "Ship to", value: c.shipTo },
+          { label: "Signed", value: dayTime(c.signedAt) },
+          { label: "Signed with key", value: fingerprint(m.cart.publicKey) },
+          { label: "Signature", value: signatureValid(m.cart) ? "Valid (Ed25519)" : "Does not verify" },
+        ],
+        lines: c.items.map((x) => `${x.quantity} × ${x.name}, ${usd(x.price)}`).concat(`Shipping ${usd(c.shipping)}`),
+        sandbox: "Signed in the sandbox with a stand-in key for the agent, derived from the order number.",
+      });
+      const pu = order?.purchase_units[0];
+      const checks = verifyAgentOrder(
+        m.intent,
+        m.cart,
+        order && pu
+          ? {
+              id: order.id,
+              customId: pu.custom_id,
+              total: pu.amount.value,
+              shipTo: pu.shipping?.address ? shipLine(pu.shipping.address) : "",
+              items: (pu.items ?? []).map((x) => ({ sku: x.sku, quantity: x.quantity })),
+              createdAt: order.create_time,
+            }
+          : null,
+      );
+      out.push({
+        kind: "check",
+        title: "Mandate check by Exhibit",
+        source: "Exhibit · signatures verified and the cart compared with the intent and the PayPal order, by code",
+        facts: [{ label: "Passed", value: `${checks.filter((x) => x.ok).length} of ${checks.length}` }],
+        lines: checks.map((x) => `${x.ok ? "Pass" : "Fail"}: ${x.label}. ${x.detail}.`),
+      });
+      out.push({
+        kind: "transcript",
+        title: "The agent's log of the purchase",
+        source: `Buyer's agent platform · ${s.agent.name}`,
+        facts: [{ label: "Steps", value: String(s.agent.transcript.length) }],
+        lines: s.agent.transcript,
+        sandbox: "The agent's log is part of the story; the payment it describes is real in the sandbox.",
+      });
+    }
+  }
+
   // A refund already made through PayPal (the duplicate charge).
   if (src.refund) {
     const r = src.refund;
@@ -206,10 +285,11 @@ export function buildExhibits(src: Sources): Exhibit[] {
         { label: "Price", value: usd(p.price) },
         { label: "Photos", value: String(p.photos) },
       ],
-      lines: [p.listing],
+      lines: [s.listing ?? p.listing],
     });
-    const policyLines =
-      s.reason === "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED"
+    const policyLines = s.policies
+      ? s.policies
+      : s.reason === "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED"
         ? [`Returns: ${SHOP.policies.returns}`, `Handmade variation: ${SHOP.policies.variation}`]
         : s.reason === "MERCHANDISE_OR_SERVICE_NOT_RECEIVED"
           ? [`Shipping: ${SHOP.policies.shipping}`]

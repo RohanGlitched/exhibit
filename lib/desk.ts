@@ -76,7 +76,7 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
     const s = r?.scenarioId
       ? findScenario(r.scenarioId, { buyer: r.buyer ?? 0 })
       : /^HC-\d/.test(full?.disputed_transactions?.[0]?.invoice_number ?? "")
-        ? storyForSku(full?.disputed_transactions?.[0]?.items?.[0]?.item_id, d.reason)
+        ? storyForSku(full?.disputed_transactions?.[0]?.items?.[0]?.item_id, d.reason, /^cart_/.test(full?.disputed_transactions?.[0]?.custom ?? ""))
         : undefined;
     const merged = { ...d, ...(full ? { dispute_outcome: full.dispute_outcome, fund_movements: full.fund_movements } : {}) };
     const where = stageOf(merged, filings);

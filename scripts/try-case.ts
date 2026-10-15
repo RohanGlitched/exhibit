@@ -1,6 +1,7 @@
 // Usage: npx tsx --conditions=react-server scripts/try-case.ts open <scenario> | argue <disputeId> [model]
 import { readFileSync } from "node:fs";
-for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) { const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) process.env[m[1]] = m[2]; }
+for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) { const m = line.match(/^([A-Z_]+)=(.*)$/); if (m) process.env[m[1]] = m[2].replace(/^"|"$/g, ""); }
+delete process.env.BLOB_READ_WRITE_TOKEN; // a laptop never writes to the shared store
 const [cmd, arg, mode] = process.argv.slice(2);
 const { openCase } = await import("../lib/cases/open.ts");
 const { caseContext } = await import("../lib/cases/service.ts");

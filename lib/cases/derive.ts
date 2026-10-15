@@ -145,7 +145,9 @@ export function storyFromPayPal(d: Dispute, order?: Order | null): Scenario | un
   const invoice = tx?.invoice_number ?? order?.purchase_units[0]?.invoice_id;
   if (!invoice || !/^HC-\d/.test(invoice)) return undefined;
   const sku = tx?.items?.[0]?.item_id ?? order?.purchase_units[0]?.items?.[0]?.sku;
-  const base = storyForSku(sku, d.reason);
+  // An order placed by a shopping agent carries its cart mandate id in custom_id.
+  const agent = /^cart_[0-9a-f]{12}$/.test(order?.purchase_units[0]?.custom_id ?? tx?.custom ?? "");
+  const base = storyForSku(sku, d.reason, agent);
   if (!base) return undefined;
   const name = tx?.buyer?.name ?? order?.purchase_units[0]?.shipping?.name?.full_name;
   return findScenario(base.id, { buyer: name ?? 0, tracking: trackerNumber(order, tx?.seller_transaction_id) });

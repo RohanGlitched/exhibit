@@ -81,6 +81,7 @@ export async function cardCheckout(opts: {
   shippingCost: string;
   invoiceId: string;
   description: string;
+  customId?: string; // e.g. the cart mandate id of an agent-placed order
 }): Promise<Order> {
   const itemTotal = opts.items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
   const total = (itemTotal + Number(opts.shippingCost)).toFixed(2);
@@ -94,6 +95,7 @@ export async function cardCheckout(opts: {
         {
           reference_id: opts.invoiceId,
           invoice_id: opts.invoiceId,
+          ...(opts.customId ? { custom_id: opts.customId } : {}),
           description: opts.description,
           amount: {
             currency_code: "USD",

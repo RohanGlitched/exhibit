@@ -65,6 +65,20 @@ export interface Scenario {
   claim: string; // what the buyer told their bank
   notes: string[]; // store-side facts a seller would know (refund issued, return received, ...)
   expected: "fight" | "offer" | "accept"; // what a careful seller would do; used by tests and the eval, never shown to the model
+  agent?: AgentPurchase; // the order was placed by the buyer's AI shopping agent under signed mandates
+  listing?: string; // the listing text, when it differs from the catalogue's (eval variants only)
+  policies?: string[]; // the policy lines shown at checkout, when they differ (eval variants only)
+}
+
+/** An order the buyer's AI shopping agent placed: what the cardholder asked it for, and the limits they signed. */
+export interface AgentPurchase {
+  name: string; // the agent, as the buyer's agent platform names it
+  request: string; // the cardholder's request, in their words
+  item: string; // the kind of item the intent allows (checked against the cart's item names)
+  maxTotal: string; // USD including shipping
+  transcript: string[]; // the agent's own log of the purchase
+  intentShipTo?: string; // where the intent said to ship, when it differs from the order (eval variants only)
+  validHours?: number; // how long the intent stayed valid (default 48)
 }
 
 type Story = Omit<Scenario, "buyer" | "buyerIndex">;
@@ -284,6 +298,107 @@ const STORIES: Story[] = [
     notes: ["The checkout page froze and took the payment twice. The second charge, $46.00, was refunded in full the next day."],
     expected: "fight",
   },
+  {
+    id: "agent-mandate",
+    title: "“I didn't authorise this”, but their own shopping agent bought it",
+    blurb: "Dinner plates, $180. The buyer's AI agent placed the order under a spending mandate the cardholder signed, and the cart matches it.",
+    reason: "UNAUTHORISED",
+    reasonCode: "4837",
+    cardBrand: "MASTERCARD",
+    buyers: [
+      home("Nina Petrova", addr("1520 East Pine Street, Apt 402", "Seattle", "WA", "98122"), TEST_MC),
+      home("Caleb Turner", addr("2817 Lafayette Street", "Denver", "CO", "80205"), TEST_MC),
+      home("Imani Clarke", addr("745 Ponce de Leon Avenue, Apt 3", "Atlanta", "GA", "30306"), TEST_MC),
+      home("Ryan Choi", addr("3306 Bryant Avenue South", "Minneapolis", "MN", "55408"), TEST_MC),
+      home("Zoe Fischer", addr("1118 Jenifer Street", "Madison", "WI", "53703"), TEST_MC),
+    ],
+    items: [item("HC-PLATE-DIN")],
+    shipping: "12.00",
+    orderDaysAgo: 8,
+    carrier: {
+      code: "USPS",
+      name: "USPS",
+      number: "9405511206213859470080",
+      service: "Ground Advantage, signature confirmation",
+      scans: [
+        { day: 1, hour: 15, status: "Accepted", place: "Portland, OR 97214" },
+        { day: 4, hour: 9, status: "Out for delivery", place: "{city}" },
+        { day: 4, hour: 14, status: "Delivered, signed", place: "{city}", detail: "Signed for by {signature}" },
+      ],
+    },
+    inbox: [],
+    history: [],
+    claim: "Cardholder says they did not authorise this transaction.",
+    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries the agent's cart mandate id."],
+    agent: {
+      name: "Personal shopping agent",
+      request: "Find me a set of four dinner plates in a grey or speckled glaze, handmade if possible, under $200 delivered to my home.",
+      item: "dinner plates",
+      maxTotal: "200.00",
+      transcript: [
+        "Searched 6 shops for handmade dinner plates, set of four, grey or speckled.",
+        "Shortlisted Halden Ceramics: Dinner plates, set of four, slate speckle, $168.00 plus $12.00 shipping.",
+        "Checked the cart against the signed intent: dinner plates, $180.00 total, under the $200.00 limit, shipping to the cardholder's home.",
+        "Signed the cart mandate and paid with the cardholder's card through PayPal.",
+        "Told the cardholder: ordered slate speckle dinner plates from Halden Ceramics, $180.00, arriving in about four days.",
+      ],
+    },
+    expected: "fight",
+  },
+  {
+    id: "agent-overreach",
+    title: "“My agent bought the wrong thing”",
+    blurb: "Pour-over set, $104. The cardholder told their agent to buy a dripper under $60; it bought the $104 set with the carafe.",
+    reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED",
+    reasonCode: "C2",
+    cardBrand: "VISA",
+    buyers: [
+      home("Leah Goldberg", addr("2034 North Halsted Street, Apt 2", "Chicago", "IL", "60614")),
+      home("Diego Alvarez", addr("1411 North 7th Street", "Phoenix", "AZ", "85006")),
+      home("Hana Sato", addr("3420 West 6th Street, Apt 512", "Los Angeles", "CA", "90020")),
+      home("Owen Mitchell", addr("5214 Southeast Woodstock Boulevard", "Portland", "OR", "97206")),
+      home("Victor Nguyen", addr("1903 Westheimer Road, Apt 7", "Houston", "TX", "77098")),
+    ],
+    items: [item("HC-SET-POUR")],
+    shipping: "8.00",
+    orderDaysAgo: 10,
+    carrier: {
+      code: "USPS",
+      name: "USPS",
+      number: "9405511206213859470097",
+      service: "Ground Advantage, signature confirmation",
+      scans: [
+        { day: 1, hour: 16, status: "Accepted", place: "Portland, OR 97214" },
+        { day: 4, hour: 12, status: "Delivered, signed", place: "{city}", detail: "Signed for by {signature}" },
+      ],
+    },
+    inbox: [
+      {
+        day: 5,
+        hour: 18,
+        from: "buyer",
+        text: "My shopping agent ordered this by mistake. I asked it for a dripper under $60, not a $104 set with a carafe. Can you take it back?",
+      },
+      { day: 6, hour: 10, from: "shop", text: "Hi {first}, returns are accepted within 30 days for unused pieces; return shipping is on the buyer." },
+    ],
+    history: [],
+    claim: "Cardholder says the merchandise was not as described.",
+    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries the agent's cart mandate id.", "The set arrived unused and undamaged, per the buyer."],
+    agent: {
+      name: "Personal shopping agent",
+      request: "Buy me a ceramic pour-over dripper that fits #2 filters. Keep it under $60 shipped.",
+      item: "dripper",
+      maxTotal: "60.00",
+      transcript: [
+        "Searched 4 shops for a ceramic pour-over dripper that fits #2 filters.",
+        "Halden Ceramics lists the dripper only as part of a set: Pour-over set, dripper and carafe, $96.00 plus $8.00 shipping.",
+        "Chose the set because it contains the requested dripper.",
+        "Signed the cart mandate and paid with the cardholder's card through PayPal.",
+        "Told the cardholder: ordered a pour-over dripper from Halden Ceramics, $104.00.",
+      ],
+    },
+    expected: "accept",
+  },
 ];
 
 const STATE_NAMES: Record<string, string> = { OH: "Ohio", IN: "Indiana", WI: "Wisconsin", PA: "Pennsylvania", KY: "Kentucky" };
@@ -316,6 +431,7 @@ function cast(s: Story, buyerIndex: number, tracking?: string): Scenario {
       : undefined,
     inbox: s.inbox.map((m) => ({ ...m, text: fill(m.text, b) })),
     notes: s.notes.map((n) => fill(n, b)),
+    agent: s.agent ? { ...s.agent, transcript: s.agent.transcript.map((t) => fill(t, b)) } : undefined,
   };
 }
 
@@ -331,9 +447,11 @@ export function scenario(id: string, opts: { buyer?: number | string; tracking?:
 }
 
 /** The story whose product (and reason) a PayPal dispute is about, for cases Exhibit holds no record of. */
-export function storyForSku(sku: string | undefined, reason?: string): Scenario | undefined {
+export function storyForSku(sku: string | undefined, reason?: string, agent = false): Scenario | undefined {
   if (!sku) return undefined;
-  const s = STORIES.find((x) => x.items[0].sku === sku && (!reason || x.reason === reason)) ?? STORIES.find((x) => x.items[0].sku === sku);
+  // Agent stories share products with the others; they are told apart by the cart mandate on the order.
+  const pool = STORIES.filter((x) => Boolean(x.agent) === Boolean(agent));
+  const s = pool.find((x) => x.items[0].sku === sku && (!reason || x.reason === reason)) ?? pool.find((x) => x.items[0].sku === sku);
   return s ? cast(s, 0) : undefined;
 }
 

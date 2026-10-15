@@ -2,6 +2,7 @@ import "server-only";
 import { addTracking, cardCheckout, refundCapture } from "../paypal/orders";
 import { getDispute, simulateChargeback, type Dispute } from "../paypal/disputes";
 import type { PayPalError } from "../paypal/client";
+import { cartMandateId } from "../agentic/story";
 import { SCENARIOS, newCaseCast, scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { listCases, saveCase, updateCase } from "../store";
 import type { CaseRecord } from "./types";
@@ -49,7 +50,8 @@ export async function openCase(story: Scenario): Promise<CaseRecord> {
     items: s.items,
     shippingCost: s.shipping,
     invoiceId,
-    description: `Halden Ceramics order ${invoiceId}`,
+    description: s.agent ? `Halden Ceramics order ${invoiceId}, placed by the buyer's shopping agent` : `Halden Ceramics order ${invoiceId}`,
+    customId: s.agent ? cartMandateId(invoiceId) : undefined,
   });
   const capture = order.purchase_units[0]?.payments?.captures?.[0];
   if (!capture || capture.status !== "COMPLETED") throw new Error("The sandbox payment didn't complete.");

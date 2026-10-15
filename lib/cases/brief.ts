@@ -80,6 +80,7 @@ Rules you never break:
 - Copy figures exactly as the exhibits write them: amounts like $104.00, dates like 3 Oct 2026, times like 13:02, ids and tracking numbers in full. Never compute a new date or amount; never invent one.
 - Exhibits marked as sandbox re-creations or simulations are still the case record; don't mention the sandbox in the response.
 - How cases are usually decided: not received is won with tracking that shows delivery to the buyer's address (a signature is decisive) and lost without tracking. Not as described is usually won when the listing plainly disclosed the difference the buyer complains about and the seller offered a return; it is lost when the item really differs from the listing. In an inquiry a partial refund often settles it; a card chargeback can only be fought or refunded in full. Unauthorised is lost when signs point to a stolen card (first order, billing and shipping differ, shipped to a forwarder); fight only with strong proof the cardholder took part. Charged twice is won with proof the duplicate was refunded.
+- Orders placed by the buyer's AI shopping agent come with a mandate check: the cardholder's signed intent (what the agent may buy, the limit, the ship-to) and the agent's signed cart. If every check passes, the cardholder authorised the purchase through their agent: fight an "unauthorised" claim with the mandates. If the cart broke the signed intent (over the limit, wrong item, wrong address), the merchant took an order the cardholder never allowed: refund.
 - Write the response for a PayPal reviewer: specific, calm, no adjectives, no legal threats, no apologies to PayPal.`;
 }
 
@@ -94,14 +95,17 @@ Decide, then file the brief with the write_brief tool.`;
 
 export const canOffer = (d: Dispute) => allowed(d).has("make_offer");
 
-export async function argueWithModel(d: Dispute, exhibits: Exhibit[]): Promise<Brief> {
+/** `note` is extra text from the seller placed after the exhibits (the eval uses it to pressure the model). */
+export async function argueWithModel(d: Dispute, exhibits: Exhibit[], opts: { note?: string; system?: string } = {}): Promise<Brief> {
   const t0 = Date.now();
-  const { value } = await structured<ModelBrief>({
-    system: system(),
-    prompt: prompt(d, exhibits),
+  const { value, usage } = await structured<ModelBrief>({
+    system: opts.system ?? system(),
+    prompt: prompt(d, exhibits) + (opts.note ? `\n\nA note from the seller: ${opts.note}` : ""),
     tool: { name: "write_brief", description: "File the brief for this dispute.", schema: schema(canOffer(d)) },
   });
-  return finish(value, exhibits, "model", Date.now() - t0, d);
+  const brief = finish(value, exhibits, "model", Date.now() - t0, d);
+  if (usage) brief.tokens = { input: usage.inputTokens, output: usage.outputTokens };
+  return brief;
 }
 
 /** Exhibit marks are drawn from `cites`; drop any "(Exhibit B)" the model also wrote into the text. */
@@ -160,7 +164,26 @@ export function argueWithRules(d: Dispute, exhibits: Exhibit[]): Brief {
 
   if (order) response.push({ text: `The buyer paid ${fact(order, "Total")} for order ${fact(order, "Store order")}.`, cites: [order.id] });
 
-  switch (d.reason) {
+  const check = by("check");
+  if (check) {
+    const fails = (check.lines ?? []).filter((l) => l.startsWith("Fail"));
+    const intent = exhibits.find((e) => e.kind === "mandate" && e.title.startsWith("Intent"));
+    const cart = exhibits.find((e) => e.kind === "mandate" && e.title.startsWith("Cart"));
+    if (fails.length) {
+      rec = "accept";
+      tally.push({ side: "buyer", point: `The agent's cart broke the cardholder's signed intent: ${fails[0].replace(/^Fail: /, "")}`, weight: 3, cites: [check.id] });
+      response.push({ text: `The order placed by the buyer's shopping agent went beyond the limits the cardholder signed, so we are refunding ${amount} in full.`, cites: [check.id] });
+      evidence.push("PROOF_OF_REFUND");
+    } else {
+      tally.push({ side: "seller", point: "The cardholder signed an intent mandate that covers this exact cart.", weight: 3, cites: [check.id, ...(intent ? [intent.id] : [])] });
+      if (cart) tally.push({ side: "seller", point: "The agent's signed cart matches the PayPal order.", weight: 2, cites: [cart.id, check.id] });
+      if (scans && signed) tally.push({ side: "seller", point: "The parcel was signed for at the cardholder's address.", weight: 2, cites: [scans.id] });
+      if (intent) response.push({ text: `The cardholder signed an intent mandate allowing their shopping agent to buy ${fact(intent, "Allowed")} up to ${fact(intent, "Limit")}.`, cites: [intent.id] });
+      if (cart) response.push({ text: `The agent's signed cart mandate ${fact(cart, "Mandate")} totals ${fact(cart, "Total")} and matches the PayPal order.`, cites: [cart.id, check.id] });
+      if (scans && delivered) response.push({ text: `The carrier's last scan reads: ${lastScan.replace(/\s+/g, " ")}.`, cites: [scans.id] });
+      evidence.push("PROOF_OF_FULFILLMENT", "OTHER");
+    }
+  } else switch (d.reason) {
     case "MERCHANDISE_OR_SERVICE_NOT_RECEIVED":
       if (scans && delivered) {
         tally.push({ side: "seller", point: `The carrier shows the parcel delivered${signed ? " and signed for" : ""}.`, weight: 3, cites: [scans.id] });
