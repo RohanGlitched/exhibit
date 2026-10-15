@@ -64,6 +64,7 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     invoiceId: ctx.invoiceId ?? null,
     mine: Boolean(visitor && ctx.record?.claimedBy === visitor),
     openedAt: ctx.record?.openedAt ?? d.create_time,
-    restored: Boolean(ctx.record?.restored) || (!ctx.record && ctx.filings.some((f) => f.source === "paypal")),
+    // The page says the response is PayPal's only when it is: read back from the evidence PayPal holds.
+    restored: ctx.brief?.engine === "paypal",
   };
 }

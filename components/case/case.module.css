@@ -156,6 +156,7 @@
 .filed li span {
   display: inline-block;
   min-width: 150px;
+  margin-right: 12px;
   color: var(--ink-soft);
 }
 .after {

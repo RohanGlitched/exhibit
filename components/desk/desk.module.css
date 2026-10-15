@@ -117,7 +117,7 @@
   font-variant-numeric: tabular-nums;
 }
 .dueBar {
-  width: 54px;
+  width: 40px;
   height: 5px;
   border-radius: 3px;
   background: var(--rule-soft);
@@ -138,10 +138,10 @@
 .odds {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .oddsBar {
-  width: 48px;
+  width: 34px;
   height: 5px;
   border-radius: 3px;
   background: var(--claimant);

@@ -112,22 +112,23 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
 
   const cols = useMemo<ColDef<DeskRow>[]>(
     () => [
-      { field: "id", headerName: "Case", width: 190, cellClass: "bates", pinned: "left" },
-      { field: "reason", headerName: "Reason", width: 160, valueFormatter: (p) => reasonLabel(p.value ?? "") },
-      { field: "amount", headerName: "Amount", width: 110, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
-      { field: "buyer", headerName: "Buyer", width: 160, valueFormatter: (p) => p.value ?? "—" },
-      { field: "where", headerName: "Where it stands", width: 170, cellRenderer: Status },
-      { field: "due", headerName: "Respond in", width: 140, cellRenderer: Due, sort: "asc", comparator: (a, b) => (a ?? "9").localeCompare(b ?? "9") },
-      { field: "odds", headerName: "Exhibit's call", width: 190, cellRenderer: Odds },
+      { field: "id", headerName: "Case", width: 205, cellClass: "bates", pinned: "left" },
+      { field: "reason", headerName: "Reason", width: 132, valueFormatter: (p) => reasonLabel(p.value ?? "") },
+      { field: "amount", headerName: "Amount", width: 94, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
+      { field: "buyer", headerName: "Buyer", width: 140, valueFormatter: (p) => p.value ?? "—" },
+      { field: "where", headerName: "Where it stands", width: 136, cellRenderer: Status },
+      { field: "due", headerName: "Respond in", width: 108, cellRenderer: Due, sort: "asc", comparator: (a, b) => (a ?? "9").localeCompare(b ?? "9") },
+      { field: "odds", headerName: "Exhibit's call", width: 152, cellRenderer: Odds },
       {
         field: "filed",
         headerName: "Filed",
         flex: 1,
-        minWidth: 240,
+        minWidth: 150,
+        tooltipValueGetter: (p) => p.data?.filed ?? null,
         valueFormatter: (p) =>
           p.data?.source === "probe" ? `Build-day API probe. ${p.value ?? ""}` : (p.value ?? (p.data?.where === "lost" ? "Nothing before the deadline" : "Nothing yet")),
       },
-      { field: "opened", headerName: "Opened", width: 110, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
+      { field: "opened", headerName: "Opened", width: 92, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
     ],
     [],
   );

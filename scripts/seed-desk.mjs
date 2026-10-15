@@ -5,6 +5,7 @@
 //   node scripts/seed-desk.mjs stale            argue + file every shop case close to its deadline that nobody answered
 //   node scripts/seed-desk.mjs claim <story> [n] open n cases of a story, argue and file them
 //   node scripts/seed-desk.mjs rule [max]       ask for a ruling on filed cases PayPal has opened for one
+//   node scripts/seed-desk.mjs case <id>        argue and file one case
 //   node scripts/seed-desk.mjs status           the desk, as counts
 //
 // Paced to stay inside the site's per-visitor limits (a model brief a minute). BASE defaults to production.
@@ -76,6 +77,9 @@ if (cmd === "status") {
     count[k] = (count[k] ?? 0) + 1;
   }
   console.log(count);
+} else if (cmd === "case") {
+  // Argue and file one case by id.
+  await work(arg);
 } else if (cmd === "stale") {
   // Shop cases waiting on the seller, inside two days of the deadline, that nobody has argued.
   const all = await rows();
