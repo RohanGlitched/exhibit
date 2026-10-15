@@ -2,7 +2,7 @@ import Pleading from "./Pleading";
 import styles from "./home-art.module.css";
 
 const CALLS: { when: string; method: string; path: string; does: string }[] = [
-  { when: "Opening", method: "POST", path: "/v2/checkout/orders", does: "The buyer pays the shop by card: one call with intent CAPTURE, returns COMPLETED." },
+  { when: "Opening", method: "POST", path: "/v2/checkout/orders", does: "The buyer pays the shop by card: one call with intent CAPTURE. An agent's order carries its cart mandate id in custom_id." },
   { when: "Opening", method: "POST", path: "/v2/checkout/orders/{id}/track", does: "The shop adds the carrier and tracking number to the order." },
   { when: "Opening", method: "POST", path: "/v2/payments/captures/{id}/refund", does: "“Charged twice” only: the duplicate charge is refunded in full, a real refund." },
   { when: "Opening", method: "POST", path: "/v2/customer-support/process-chargeback", does: "The card issuer files a chargeback (sandbox simulator, Visa and Mastercard reason codes)." },
@@ -11,6 +11,7 @@ const CALLS: { when: string; method: string; path: string; does: string }[] = [
   { when: "Reading", method: "GET", path: "/v2/checkout/orders/{id}", does: "Items, ship-to address and trackers: Exhibits B and D." },
   { when: "Reading", method: "GET", path: "/v2/payments/captures/{id}", does: "Amount, fees, and the issuer's address and security-code checks: Exhibit C." },
   { when: "Reading", method: "GET", path: "/v2/payments/refunds/{id}", does: "A refund already made, as an exhibit of its own." },
+  { when: "Reading", method: "GET", path: "/v2/content/documents/{id}/files/1/download", does: "The PDF PayPal holds on file for a filed case, served as filed." },
   { when: "Filing", method: "POST", path: "/v1/customer/disputes/{id}/provide-evidence", does: "The response, tracking or refund details, and the Bates-stamped PDF, in one multipart call." },
   { when: "Filing", method: "POST", path: "/v1/customer/disputes/{id}/accept-claim", does: "A full refund when the records point the buyer's way." },
   { when: "Filing", method: "POST", path: "/v1/customer/disputes/{id}/adjudicate", does: "Sandbox only: ask PayPal's simulator for a ruling once the case is under review." },

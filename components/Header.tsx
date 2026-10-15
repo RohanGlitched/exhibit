@@ -12,6 +12,7 @@ export default function Header() {
         </Link>
         <nav className={styles.nav} aria-label="Main">
           <Link href="/desk">Desk</Link>
+          <Link href="/proof">Proof</Link>
           <Link href="/#how" className={styles.hideSm}>
             How it works
           </Link>

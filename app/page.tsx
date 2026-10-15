@@ -7,6 +7,11 @@ import PdfSpread from "@/components/home/PdfSpread";
 import Pleading from "@/components/home/Pleading";
 import { deskStats, showcase } from "@/lib/showcase";
 import { usd } from "@/lib/format";
+import { FIGURES } from "@/lib/impact";
+import { agentMandates } from "@/lib/agentic/story";
+import { verifyAgentOrder } from "@/lib/agentic/mandate";
+import { scenario } from "@/lib/shop/scenarios";
+import proof from "@/data/proof.json";
 import styles from "./home.module.css";
 
 export const revalidate = 300;
@@ -39,8 +44,26 @@ const STEPS = [
   },
 ];
 
+/** The mandate check on a sample agent-placed order, exactly as a case runs it. */
+function sampleMandateCheck() {
+  const s = scenario("agent-mandate", { buyer: 1 })!;
+  const invoice = "HC-000417";
+  const at = new Date("2026-10-04T17:30:00.000Z");
+  const m = agentMandates(s, invoice, at)!;
+  const c = m.cart.mandate;
+  return verifyAgentOrder(m.intent, m.cart, {
+    id: "5O190127TN364715T",
+    customId: c.id,
+    total: c.total,
+    shipTo: c.shipTo,
+    items: c.items.map((x) => ({ sku: x.sku, quantity: x.quantity })),
+    createdAt: at.toISOString(),
+  });
+}
+
 export default async function Home() {
   const [show, stats] = await Promise.all([showcase().catch(() => null), deskStats().catch(() => null)]);
+  const sample = sampleMandateCheck();
   return (
     <main>
       <section className={`shell ${styles.hero}`}>
@@ -57,8 +80,9 @@ export default async function Home() {
           </h1>
           <div className={styles.heroSide}>
             <p>
-              Exhibit is the dispute desk for small PayPal sellers. It reads each dispute, pulls the order, payment and tracking behind it, and writes
-              the response with every sentence pinned to the record that proves it.
+              Exhibit is the dispute desk for small PayPal sellers. Click once and you get a real PayPal sandbox chargeback against a real card
+              payment. GPT-5.6 argues it with every sentence pinned to the PayPal record that proves it, a checker strikes anything it can&apos;t prove,
+              and it&apos;s filed with a Bates-stamped PDF, or refunded when you&apos;d lose.
             </p>
             <div className={styles.ctas}>
               <Link className="btn btnPrimary" href="/new">
@@ -99,6 +123,10 @@ export default async function Home() {
             <div>
               <dt>Filed with PayPal</dt>
               <dd>{stats.filed}</dd>
+            </div>
+            <div>
+              <dt>Won in the sandbox</dt>
+              <dd>{stats.won}</dd>
             </div>
             <div>
               <dt>On the desk now</dt>
@@ -195,8 +223,8 @@ export default async function Home() {
         <div className={styles.lede}>
           <h2>Built on the PayPal platform</h2>
           <p>
-            Twelve calls, all in the free sandbox with test money. A case is opened, read, argued, filed and ruled on without anyone touching the
-            PayPal website.
+            Every call, all in the free sandbox with test money. A case is opened, read, argued, filed and ruled on without anyone touching the PayPal
+            website, and its state is read back from PayPal&apos;s own record.
           </p>
         </div>
         <Docket />
@@ -227,6 +255,110 @@ export default async function Home() {
             <strong>First order, shipped to a parcel forwarder</strong>
             <span data-rec="accept">Refund it</span>
           </li>
+          <li>
+            <strong>Bought by their own shopping agent, inside the mandate they signed</strong>
+            <span>Fight it</span>
+          </li>
+          <li>
+            <strong>Their agent spent past the limit they signed</strong>
+            <span data-rec="accept">Refund it</span>
+          </li>
+        </ul>
+      </section>
+
+      <section className={`shell ${styles.section} ${styles.split}`}>
+        <div>
+          <h2>When the buyer&apos;s AI agent did the buying</h2>
+          <p>
+            Shopping agents now pay with their owner&apos;s card. When the owner later says &ldquo;I never authorised this&rdquo;, the question is what
+            they signed. Exhibit reads the cardholder&apos;s signed intent (what the agent may buy, up to what total, shipped where, until when), the
+            agent&apos;s signed cart, and the cart mandate id the PayPal order carries, then checks all of it in code before the model writes a word.
+          </p>
+          <p>
+            Inside the mandate, the purchase was authorised: fight. Past the limit the cardholder signed, the shop took an order nobody allowed: refund.
+            Both are stories you can open.
+          </p>
+        </div>
+        <div className={`sheet ${styles.mandate}`}>
+          <p className={styles.mandateHead}>
+            <span className="bates">Mandate check</span>
+            <span>{sample.length} checks, run by code</span>
+          </p>
+          <ol>
+            {sample.map((c) => (
+              <li key={c.label} data-ok={c.ok}>
+                <strong>{c.ok ? "Pass" : "Fail"}</strong>
+                <span>
+                  {c.label}
+                  <small>{c.detail}</small>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className={`shell ${styles.section}`}>
+        <div className={styles.lede}>
+          <h2>Measured, not promised</h2>
+          <p>
+            {proof.summary.variants} labelled variants of the seven stories, each run with two customers. Then a careless drafter told to use facts no
+            record holds, and one figure changed in every true sentence. All of it is on the proof page, with what it doesn&apos;t show.
+          </p>
+        </div>
+        <dl className={styles.measured}>
+          <div>
+            <dt>Right call</dt>
+            <dd>
+              {proof.summary.modelCorrect}/{proof.summary.modelRuns}
+            </dd>
+            <p>GPT-5.6; the rules engine gets {proof.summary.rulesCorrect}/{proof.summary.runs}</p>
+          </div>
+          <div>
+            <dt>Invented facts struck</dt>
+            <dd>
+              {proof.summary.carelessPlantedStruck}/{proof.summary.carelessPlantedSentences}
+            </dd>
+            <p>Exhibit&apos;s own prompt wrote none of them</p>
+          </div>
+          <div>
+            <dt>Changed figures struck</dt>
+            <dd>
+              {proof.summary.mutationsStruck}/{proof.summary.mutations}
+            </dd>
+            <p>dates, amounts, times and ids</p>
+          </div>
+          <div>
+            <dt>Per brief</dt>
+            <dd>{((proof.summary.medianMs ?? 0) / 1000).toFixed(1)} s</dd>
+            <p>median, about {Math.round(((proof.summary.medianInputTokens ?? 0) + (proof.summary.medianOutputTokens ?? 0)) / 100) / 10}k tokens</p>
+          </div>
+        </dl>
+        <p className={styles.readPdf}>
+          <Link className="btn btnQuiet" href="/proof">
+            Read the proof
+          </Link>
+        </p>
+      </section>
+
+      <section className={`shell ${styles.section}`}>
+        <div className={styles.lede}>
+          <h2>What a dispute costs a small seller</h2>
+          <p>
+            The fee, the ten-day clock and the hour of paperwork land on shops with no one to hand them to. Chargeback services take a quarter of every
+            case they win; the Resolution Center is free if you write it yourself. Exhibit is for the seller in between.
+          </p>
+        </div>
+        <ul className={styles.figures}>
+          {FIGURES.map((f) => (
+            <li key={f.value} className="sheet">
+              <strong>{f.value}</strong>
+              <p>{f.what}</p>
+              <a href={f.href} target="_blank" rel="noreferrer">
+                {f.source}
+              </a>
+            </li>
+          ))}
         </ul>
       </section>
 
