@@ -1,0 +1,148 @@
+/* The frame around AG Studio on /desk/analytics: binder tabs on top, the backing sheet below. */
+
+.frame {
+  margin-top: 26px;
+  min-width: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+
+/* Binder tabs: paper tabs standing up from the top edge of the sheet, the selected one joined to it. */
+.tabs {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-top: 4px;
+}
+.tab {
+  position: relative;
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--backing-deep);
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+}
+.tab:hover {
+  color: var(--ink);
+  background: #d5deea;
+}
+.tab[aria-selected="true"] {
+  background: var(--sheet);
+  color: var(--ink);
+  transform: translateY(1px);
+  z-index: 1;
+}
+.tab[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--respondent);
+}
+
+/* Read / edit, as a quiet two-way switch. */
+.modes {
+  display: inline-flex;
+  margin-bottom: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.35);
+}
+.modes button {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.modes button + button {
+  border-left: 1px solid var(--rule);
+}
+.modes button[aria-pressed="true"] {
+  background: var(--sheet);
+  color: var(--respondent-ink);
+}
+
+.studio {
+  position: relative;
+  height: max(900px, calc(100vh - 150px));
+  border: 1px solid var(--rule);
+  border-radius: 0 3px 3px 3px;
+  background: var(--backing);
+  box-shadow: var(--shadow-sheet);
+  overflow: hidden;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  height: 520px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(43, 99, 232, 0.08) 31px, rgba(43, 99, 232, 0.08) 32px),
+    var(--sheet);
+  color: var(--ink-soft);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 17px;
+  text-align: center;
+  padding: 0 24px;
+}
+.placeholder button {
+  font: inherit;
+  color: var(--respondent-ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.foot {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 760px) {
+  .frame {
+    margin-top: 20px;
+  }
+  .bar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .modes {
+    align-self: flex-start;
+  }
+  .tab {
+    height: 38px;
+    padding: 0 13px;
+    font-size: 14px;
+  }
+  .studio {
+    height: max(640px, calc(100svh - 120px));
+  }
+}
