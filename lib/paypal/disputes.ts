@@ -1,5 +1,5 @@
 import "server-only";
-import { inputForm, paypal } from "./client";
+import { PAYPAL_BASE, accessToken, inputForm, paypal } from "./client";
 
 export interface Money {
   currency_code: string;
@@ -62,6 +62,22 @@ export interface Evidence {
   dispute_life_cycle_stage?: string;
   evidence_info?: { tracking_info?: { carrier_name?: string; tracking_number?: string }[]; refund_ids?: string[] };
   documents?: { name?: string; url?: string }[];
+  action_info?: { action?: string };
+}
+
+export interface Adjudication {
+  type: string; // PAYOUT_TO_BUYER, RECOVER_FROM_SELLER, ...
+  adjudication_time: string;
+  reason?: string;
+  dispute_life_cycle_stage?: string;
+}
+
+export interface FundMovement {
+  party: string;
+  type: "DEBIT" | "CREDIT" | string;
+  reason?: string; // HOLD_PLACED, HOLD_RELEASED, DISPUTE_SETTLEMENT, ...
+  initiated_time?: string;
+  amount: Money;
 }
 
 export interface Dispute extends DisputeSummary {
@@ -73,9 +89,9 @@ export interface Dispute extends DisputeSummary {
     gross_amount?: Money;
     invoice_number?: string;
     custom?: string;
-    buyer?: { name?: string; email?: string };
+    buyer?: { name?: string; email?: string; payer_id?: string };
     seller?: { email?: string; merchant_id?: string; name?: string };
-    items?: { item_name?: string; item_description?: string; item_quantity?: string; reason?: string }[];
+    items?: { item_id?: string; item_name?: string; item_description?: string; item_quantity?: string; reason?: string }[];
     seller_protection_eligible?: boolean;
   }[];
   messages?: DisputeMessage[];
@@ -83,7 +99,10 @@ export interface Dispute extends DisputeSummary {
   buyer_response_due_date?: string;
   offer?: { buyer_requested_amount?: Money; seller_offered_amount?: Money; offer_type?: string };
   refund_details?: { allowed_refund_amount?: Money };
-  dispute_outcome?: { outcome_code?: string; amount_refunded?: Money };
+  dispute_outcome?: { outcome_code?: string; outcome_reason?: string; amount_refunded?: Money };
+  adjudications?: Adjudication[];
+  fund_movements?: FundMovement[];
+  external_reason_code?: string;
   allowed_response_options?: {
     accept_claim?: { accept_claim_types?: string[] };
     make_offer?: { offer_types?: string[] };
@@ -114,6 +133,19 @@ export async function listDisputes(opts: { pageSize?: number; state?: string[]; 
 
 export const getDispute = (id: string) =>
   paypal<Dispute>(`/v1/customer/disputes/${encodeURIComponent(id)}`, { what: "Reading the dispute" });
+
+/** A document PayPal holds on a case (the PDF filed with the evidence), exactly as PayPal stores it. */
+export async function downloadDocument(url: string): Promise<Uint8Array> {
+  const u = new URL(url);
+  if (!/(^|\.)paypal\.com$/.test(u.hostname) || !u.pathname.startsWith("/v2/content/documents/")) throw new Error("Not a PayPal document link.");
+  const res = await fetch(`${PAYPAL_BASE}${u.pathname}`, {
+    headers: { authorization: `Bearer ${await accessToken()}` },
+    signal: AbortSignal.timeout(20_000),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`PayPal didn't return the document (HTTP ${res.status}).`);
+  return new Uint8Array(await res.arrayBuffer());
+}
 
 const action = (id: string, verb: string) => `/v1/customer/disputes/${encodeURIComponent(id)}/${verb}`;
 

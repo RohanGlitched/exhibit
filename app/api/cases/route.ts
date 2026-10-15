@@ -18,9 +18,11 @@ export async function POST(req: Request) {
   const s = body.scenario ? scenario(body.scenario) : undefined;
   if (!s) return NextResponse.json({ error: "Pick one of the cases to open." }, { status: 400 });
   const visitor = (await visitorId(true))!;
-  // Opening cases spends sandbox calls; keep it to a few per visitor per hour.
-  if (!allow("open", await clientIp(), 8, HOUR)) {
-    return NextResponse.json({ error: "That's eight cases this hour. Work those first, or come back in a bit." }, { status: 429 });
+  // Opening cases spends sandbox calls; keep it to a few per visitor per hour. Keyed on the browser as well as
+  // the address, so judges behind one office network don't use up each other's allowance.
+  const ip = await clientIp();
+  if (!allow("open", `${ip}:${visitor}`, 8, HOUR) || !allow("open-ip", ip, 20, HOUR)) {
+    return NextResponse.json({ error: "That's a lot of cases this hour from here. Work those first, or come back in a bit." }, { status: 429 });
   }
   try {
     const ready = await claimReady(s.id, visitor);

@@ -4,6 +4,8 @@ import type { Capture, Order, Refund } from "../paypal/orders";
 import type { Scenario } from "../shop/scenarios";
 import { SHOP, product } from "../shop/catalog";
 import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
+
+const STAGES: Record<string, string> = { INQUIRY: "Inquiry", CHARGEBACK: "Chargeback", PRE_ARBITRATION: "Pre-arbitration", ARBITRATION: "Arbitration" };
 import type { Exhibit, Fact } from "./types";
 
 /**
@@ -42,6 +44,15 @@ function storyClock(openedAt: string, s: Scenario) {
   return { orderAt: new Date(orderAt), at };
 }
 
+/** A capture reads "pending" while a chargeback holds its funds; say so, or a delivered order looks unpaid. */
+function paymentStatus(status: string, d: Dispute): string {
+  if (status === "COMPLETED") return "Completed";
+  const moves = d.fund_movements ?? [];
+  const held = moves.some((m) => m.reason === "HOLD_PLACED") && !moves.some((m) => m.reason === "HOLD_RELEASED");
+  if (status === "PENDING" && held) return "Completed, then held by PayPal while this case is open";
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
 export interface Sources {
   dispute: Dispute;
   order?: Order | null;
@@ -63,7 +74,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
     { label: "Case", value: d.dispute_id },
     { label: "Reason", value: reasonLabel(d.reason) },
     { label: "Amount disputed", value: usd(d.dispute_amount.value) },
-    { label: "Stage", value: d.dispute_life_cycle_stage === "INQUIRY" ? "Inquiry" : "Claim" },
+    { label: "Stage", value: STAGES[d.dispute_life_cycle_stage ?? ""] ?? "Claim" },
     { label: "Channel", value: d.dispute_channel === "EXTERNAL" ? "Card issuer chargeback" : "PayPal Resolution Center" },
   ];
   if (d.seller_response_due_date) claimFacts.push({ label: "Respond by", value: day(d.seller_response_due_date) });
@@ -111,7 +122,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
     const pr = capture.processor_response;
     const facts: Fact[] = [
       { label: "Payment", value: capture.id },
-      { label: "Status", value: capture.status === "COMPLETED" ? "Completed" : capture.status },
+      { label: "Status", value: paymentStatus(capture.status, d) },
       { label: "Gross", value: usd(capture.amount.value) },
     ];
     const br = capture.seller_receivable_breakdown;
@@ -154,7 +165,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
       source: `PayPal Orders v2 · trackers on order ${order!.id}`,
       ref: t.id,
       facts: [
-        { label: "Tracking number", value: s?.carrier?.number ?? t.id.split("-").slice(1).join("-") },
+        { label: "Tracking number", value: (capture && t.id.startsWith(`${capture.id}-`) ? t.id.slice(capture.id.length + 1) : undefined) ?? s?.carrier?.number ?? t.id.split("-").slice(1).join("-") },
         { label: "Status", value: t.status === "SHIPPED" ? "Shipped" : (t.status ?? "—") },
         { label: "Carrier", value: s?.carrier?.name ?? "—" },
         ...(s?.carrier ? [{ label: "Service", value: s.carrier.service }] : []),

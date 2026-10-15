@@ -15,7 +15,7 @@ export default function NewCase() {
       blurb: s.blurb,
       reason: reasonLabel(s.reason),
       amount: usd(total),
-      buyer: s.buyer.name,
+      buyer: s.buyer.name.split(" ")[0],
       network: s.cardBrand === "VISA" ? "Visa" : s.cardBrand === "MASTERCARD" ? "Mastercard" : "Amex",
       code: s.reasonCode,
     };

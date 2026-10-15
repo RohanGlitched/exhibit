@@ -69,8 +69,9 @@ export default function Tally({ tally, verdict, amount }: { tally: TallyItem[]; 
           </div>
           <p className={styles.headline}>{verdict.headline}</p>
           <p className={styles.engine}>
-            {verdict.engine === "model" ? `Argued by ${verdict.model ?? "the model"}${verdict.ms ? ` in ${(verdict.ms / 1000).toFixed(1)} s` : ""}` : "Argued by the rules engine"}
-            . Every sentence checked against its exhibits.
+            {verdict.engine === "paypal"
+              ? "The response is the one PayPal holds on file, re-checked against its exhibits; the tally is scored again by the rules engine."
+              : `${verdict.engine === "model" ? `Argued by ${verdict.model ?? "the model"}${verdict.ms ? ` in ${(verdict.ms / 1000).toFixed(1)} s` : ""}` : "Argued by the rules engine"}. Every sentence checked against its exhibits.`}
           </p>
         </div>
       )}

@@ -43,7 +43,7 @@ export interface Brief {
   odds: number; // 0..100, seller's chance from the tally
   buyerMessage?: string;
   evidenceTypes: string[];
-  engine: "model" | "rules";
+  engine: "model" | "rules" | "paypal"; // paypal: read back from the response PayPal holds on file
   model?: string;
   ms: number;
   createdAt: string;
@@ -56,11 +56,14 @@ export interface Filing {
   ok: boolean;
   detail?: string;
   by: "seller" | "autopilot" | "sandbox";
+  source?: "paypal"; // read from PayPal's record of the case, not Exhibit's
 }
 
 export interface CaseRecord {
   disputeId: string;
   scenarioId?: string;
+  buyer?: number; // which of the story's customers placed the order (the name is on the sandbox card too)
+  tracking?: string; // the tracking number it shipped under
   orderId?: string;
   captureId?: string;
   invoiceId?: string;
@@ -71,6 +74,7 @@ export interface CaseRecord {
   refundId?: string; // a refund Exhibit made (accept, offer, or the duplicate-charge story)
   brief?: Brief;
   filings: Filing[];
+  restored?: string; // when Exhibit rebuilt this record from PayPal's own (the store had lost it)
 }
 
 /** One step the server streams while it argues a case. */

@@ -158,6 +158,8 @@ let chosen: Storage | null | undefined;
 /** The configured backend, or null when tours live in files and counters in memory. */
 export function storage(): Storage | null {
   if (chosen !== undefined) return chosen;
+  // A dev server keeps its cases in .data/ unless told otherwise, so a laptop never writes to the shared store.
+  if (process.env.NODE_ENV === "development" && !process.env.EXHIBIT_SHARED_STORE) return (chosen = null);
   if (process.env.GCS_BUCKET && (process.env.GCS_WIF_AUDIENCE || process.env.GCS_SA_KEY)) chosen = gcs(process.env.GCS_BUCKET);
   else if (process.env.BLOB_READ_WRITE_TOKEN) chosen = blob();
   else chosen = null;

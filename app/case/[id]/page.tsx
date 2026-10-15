@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import CaseRoom from "@/components/case/CaseRoom";
 import Registering from "@/components/case/Registering";
 import { caseView } from "@/lib/cases/view";
@@ -16,8 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const view = CASE_ID.test(id) ? await caseView(id, await visitorId()).catch((e: Error) => e) : new Error("That isn't a PayPal case id.");
+  if (!CASE_ID.test(id)) notFound();
+  const view = await caseView(id, await visitorId()).catch((e: Error) => e);
   if (view instanceof Error) {
+    if (view instanceof PayPalError && view.status === 404 && !(await loadCase(id))) notFound();
     // Exhibit holds the record but PayPal doesn't list the case yet: it was opened seconds ago.
     if (view instanceof PayPalError && view.status === 404 && (await loadCase(id))) return <Registering id={id} />;
     return (

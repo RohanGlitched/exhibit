@@ -5,7 +5,8 @@ import { AgGridReact } from "ag-grid-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { DeskRow } from "@/lib/desk";
-import { STATUSES, daysUntil, reasonLabel, shortDay, usd } from "@/lib/format";
+import type { Stage } from "@/lib/cases/derive";
+import { daysUntil, reasonLabel, shortDay, usd } from "@/lib/format";
 import styles from "./desk.module.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -34,8 +35,30 @@ const theme = themeQuartz.withParams({
 
 const REC: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
 
+const WHERE: Record<Stage, string> = {
+  open: "PayPal reviewing",
+  waiting: "Your move",
+  filed: "Filed",
+  refunded: "Refunded",
+  won: "Won",
+  lost: "Lost",
+  reviewing: "PayPal reviewing",
+  other: "Other",
+};
+
+const FILTERS: { id: string; label: string; stages: Stage[] | null }[] = [
+  { id: "all", label: "All", stages: null },
+  { id: "waiting", label: "Your move", stages: ["waiting"] },
+  { id: "reviewing", label: "PayPal reviewing", stages: ["open", "filed", "reviewing"] },
+  { id: "won", label: "Won", stages: ["won"] },
+  { id: "refunded", label: "Refunded", stages: ["refunded"] },
+  { id: "lost", label: "Lost", stages: ["lost"] },
+];
+
+const label = (r: DeskRow) => (r.pooled ? "In the house pool" : WHERE[r.where] ?? r.status);
+
 function Due({ value, data }: ICellRendererParams<DeskRow, string | null>) {
-  if (!value || data?.status === "RESOLVED") return <span className={styles.muted}>—</span>;
+  if (!value || data?.status !== "WAITING_FOR_SELLER_RESPONSE") return <span className={styles.muted}>—</span>;
   const d = daysUntil(value) ?? 0;
   const pct = Math.max(0, Math.min(100, (d / 10) * 100));
   return (
@@ -49,6 +72,7 @@ function Due({ value, data }: ICellRendererParams<DeskRow, string | null>) {
 }
 
 function Odds({ value, data }: ICellRendererParams<DeskRow, number | null>) {
+  if (value == null && data?.recommendation) return <b data-rec={data.recommendation}>{REC[data.recommendation]}</b>;
   if (value == null) return <span className={styles.muted}>Not argued</span>;
   return (
     <span className={styles.odds}>
@@ -61,10 +85,11 @@ function Odds({ value, data }: ICellRendererParams<DeskRow, number | null>) {
   );
 }
 
-function Status({ value, data }: ICellRendererParams<DeskRow, string>) {
+function Status({ data }: ICellRendererParams<DeskRow, string>) {
+  if (!data) return null;
   return (
-    <span className={styles.status} data-status={value}>
-      {data?.pooled ? "In the house pool" : STATUSES[value ?? ""] ?? value}
+    <span className={styles.status} data-where={data.where} title={data.whereLine}>
+      {label(data)}
     </span>
   );
 }
@@ -74,6 +99,8 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   const [rows, setRows] = useState(initial);
   const [mineOnly, setMineOnly] = useState(false);
   const [quick, setQuick] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [probes, setProbes] = useState(false);
 
   useEffect(() => {
     const t = setInterval(async () => {
@@ -89,21 +116,32 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
       { field: "reason", headerName: "Reason", width: 160, valueFormatter: (p) => reasonLabel(p.value ?? "") },
       { field: "amount", headerName: "Amount", width: 110, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
       { field: "buyer", headerName: "Buyer", width: 160, valueFormatter: (p) => p.value ?? "—" },
-      { field: "status", headerName: "Status", width: 170, cellRenderer: Status },
+      { field: "where", headerName: "Where it stands", width: 170, cellRenderer: Status },
       { field: "due", headerName: "Respond in", width: 140, cellRenderer: Due, sort: "asc", comparator: (a, b) => (a ?? "9").localeCompare(b ?? "9") },
       { field: "odds", headerName: "Exhibit's call", width: 190, cellRenderer: Odds },
-      { field: "filed", headerName: "Filed", flex: 1, minWidth: 220, valueFormatter: (p) => p.value ?? "Nothing yet" },
+      {
+        field: "filed",
+        headerName: "Filed",
+        flex: 1,
+        minWidth: 240,
+        valueFormatter: (p) =>
+          p.data?.source === "probe" ? `Build-day API probe. ${p.value ?? ""}` : (p.value ?? (p.data?.where === "lost" ? "Nothing before the deadline" : "Nothing yet")),
+      },
       { field: "opened", headerName: "Opened", width: 110, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
     ],
     [],
   );
 
-  // Pool cases are stock waiting for the next visitor; count them, don't list them.
+  // Pool cases are stock waiting for the next visitor (and retired stock never reached anyone): count them,
+  // don't list them. Build-day API probes are real disputes too, listed on request.
   const pooled = rows.filter((r) => r.pooled).length;
-  const live = rows.filter((r) => !r.pooled);
-  const shown = mineOnly ? live.filter((r) => r.mine) : live;
-  const open = shown.filter((r) => r.status === "WAITING_FOR_SELLER_RESPONSE").length;
-  const atStake = shown.filter((r) => r.status !== "RESOLVED").reduce((s, r) => s + r.amount, 0);
+  const retired = rows.filter((r) => r.retired).length;
+  const probeCount = rows.filter((r) => r.source === "probe").length;
+  const live = rows.filter((r) => !r.pooled && !r.retired && (probes || r.source !== "probe"));
+  const stages = FILTERS.find((f) => f.id === filter)?.stages;
+  const shown = live.filter((r) => (!mineOnly || r.mine) && (!stages || stages.includes(r.where)));
+  const open = live.filter((r) => r.where === "waiting").length;
+  const atStake = live.filter((r) => r.where === "waiting" || r.where === "filed" || r.where === "open").reduce((s, r) => s + r.amount, 0);
 
   return (
     <div className={styles.wrap}>
@@ -111,6 +149,7 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
         <p className={styles.counts}>
           <strong>{open}</strong> waiting on the seller, <strong>{usd(atStake)}</strong> at stake
           {pooled > 0 && <span className={styles.pool}>, plus {pooled} opened ahead for the next visitors</span>}
+          {retired > 0 && <span className={styles.pool}> ({retired} more retired from the pool unused)</span>}
         </p>
         <div className={styles.controls}>
           <label className={styles.search}>
@@ -121,7 +160,23 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
             <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
             Only cases I opened
           </label>
+          {probeCount > 0 && (
+            <label className={styles.toggle}>
+              <input type="checkbox" checked={probes} onChange={(e) => setProbes(e.target.checked)} />
+              Build-day API probes ({probeCount})
+            </label>
+          )}
         </div>
+      </div>
+      <div className={styles.filters} role="group" aria-label="Show cases">
+        {FILTERS.map((f) => {
+          const n = f.stages ? live.filter((r) => f.stages!.includes(r.where)).length : live.length;
+          return (
+            <button key={f.id} type="button" className={styles.chip} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+              {f.label} <span>{n}</span>
+            </button>
+          );
+        })}
       </div>
       <ol className={styles.cards}>
         {shown.map((r) => (
@@ -133,15 +188,15 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
               </span>
               <strong>{reasonLabel(r.reason)}{r.buyer ? `, ${r.buyer}` : ""}</strong>
               <span className={styles.cardMeta}>
-                <span className={styles.status} data-status={r.status}>
-                  {r.pooled ? "In the house pool" : STATUSES[r.status] ?? r.status}
+                <span className={styles.status} data-where={r.where}>
+                  {label(r)}
                 </span>
                 {r.recommendation && (
                   <span>
                     {REC[r.recommendation]}, {r.odds}%
                   </span>
                 )}
-                {r.due && r.status !== "RESOLVED" && <span>{Math.max(0, daysUntil(r.due) ?? 0)} days left</span>}
+                {r.due && r.status === "WAITING_FOR_SELLER_RESPONSE" && <span>{Math.max(0, daysUntil(r.due) ?? 0)} days left</span>}
               </span>
             </a>
           </li>

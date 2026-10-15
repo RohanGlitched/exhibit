@@ -11,7 +11,7 @@ export interface Verdict {
   odds: number;
   offerAmount?: string;
   headline: string;
-  engine: "model" | "rules";
+  engine: "model" | "rules" | "paypal";
   model?: string;
   ms?: number;
 }

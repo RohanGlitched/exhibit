@@ -2,7 +2,7 @@ import "server-only";
 import { addTracking, cardCheckout, refundCapture } from "../paypal/orders";
 import { getDispute, simulateChargeback, type Dispute } from "../paypal/disputes";
 import type { PayPalError } from "../paypal/client";
-import { SCENARIOS, scenario as findScenario, type Scenario } from "../shop/scenarios";
+import { SCENARIOS, newCaseCast, scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { listCases, saveCase, updateCase } from "../store";
 import type { CaseRecord } from "./types";
 
@@ -39,8 +39,11 @@ async function waitForDispute(id: string): Promise<void> {
   }
 }
 
-export async function openCase(s: Scenario): Promise<CaseRecord> {
+export async function openCase(story: Scenario): Promise<CaseRecord> {
   const invoiceId = invoiceNumber();
+  // One of the story's customers, and a tracking number of the carrier's shape, so no two cases look cloned.
+  const cast = newCaseCast(story);
+  const s = findScenario(story.id, cast) ?? story;
   const order = await cardCheckout({
     buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
     items: s.items,
@@ -77,6 +80,8 @@ export async function openCase(s: Scenario): Promise<CaseRecord> {
   const rec: CaseRecord = {
     disputeId,
     scenarioId: s.id,
+    buyer: s.buyerIndex,
+    tracking: s.carrier?.number,
     orderId: order.id,
     captureId: capture.id,
     invoiceId,

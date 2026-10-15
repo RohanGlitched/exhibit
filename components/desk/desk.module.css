@@ -159,10 +159,48 @@
 .status {
   font-weight: 500;
 }
-.status[data-status="WAITING_FOR_SELLER_RESPONSE"] {
+.status[data-where="waiting"] {
   color: var(--respondent-ink);
   font-weight: 650;
 }
-.status[data-status="RESOLVED"] {
+.status[data-where="won"] {
+  color: var(--won);
+  font-weight: 650;
+}
+.status[data-where="lost"] {
+  color: var(--due);
+}
+.status[data-where="refunded"] {
+  color: var(--ink-soft);
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.chip span {
   color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.chip[aria-pressed="true"] span {
+  color: rgba(255, 255, 255, 0.7);
 }

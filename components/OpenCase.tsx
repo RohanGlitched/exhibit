@@ -57,7 +57,7 @@ export default function OpenCase({ cases }: { cases: Option[] }) {
             <h2>{c.title}</h2>
             <p>{c.blurb}</p>
             <div className={styles.row}>
-              <span className={styles.buyer}>Buyer: {c.buyer}</span>
+              <span className={styles.buyer} title="Each case goes to one of five customers who could have placed this order">Buyer: {c.buyer} or one of four others</span>
               <button className="btn btnPrimary" onClick={() => open(c.id)} disabled={busy !== null}>
                 {busy === c.id ? "Opening…" : "Open this case"}
               </button>

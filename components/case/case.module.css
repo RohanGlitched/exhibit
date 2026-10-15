@@ -232,3 +232,11 @@
     flex: 1 1 auto;
   }
 }
+.source {
+  font-style: normal;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}
+.notice[data-tone="record"] {
+  border-left-color: var(--respondent);
+}

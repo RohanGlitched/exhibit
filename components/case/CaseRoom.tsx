@@ -9,13 +9,10 @@ import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, dayTime, daysUntil, reasonLabel, usd } from "@/lib/format";
 import styles from "./case.module.css";
 
-const OUTCOMES: Record<string, string> = {
-  RESOLVED_SELLER_FAVOUR: "Won: resolved in the seller's favour",
-  RESOLVED_BUYER_FAVOUR: "Lost: resolved in the buyer's favour",
-  ACCEPTED: "Closed: the seller accepted the claim",
-  CANCELED_BY_BUYER: "Closed: the buyer cancelled",
-  RESOLVED_WITH_PAYOUT: "Closed with a payout",
-  DENIED: "Denied",
+const STAMP: Partial<Record<CaseView["where"], { word: string; tone: "due" | "won" | "ink" }>> = {
+  won: { word: "WON", tone: "won" },
+  lost: { word: "LOST", tone: "due" },
+  refunded: { word: "REFUNDED", tone: "ink" },
 };
 
 type Phase = "idle" | "arguing" | "argued" | "filing";
@@ -44,12 +41,12 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // Keep PayPal's side current: status, allowed actions, outcome.
+  // Keep PayPal's side current: status, allowed actions, outcome. Faster while PayPal is still handing it over.
   useEffect(() => {
     if (view.status === "RESOLVED") return;
-    const t = setInterval(refresh, 20_000);
+    const t = setInterval(refresh, view.where === "open" ? 20_000 : 60_000);
     return () => clearInterval(t);
-  }, [refresh, view.status]);
+  }, [refresh, view.status, view.where]);
 
   const argue = useCallback(async () => {
     setPhase("arguing");
@@ -133,8 +130,11 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
   const amount = usd(view.amount.value);
   const due = daysUntil(view.due ?? undefined);
   const can = new Set(view.actions);
-  const filed = view.filings.length > 0;
-  const waiting = !filed && view.status !== "WAITING_FOR_SELLER_RESPONSE" && view.status !== "RESOLVED";
+  // PayPal's record decides: a case is filed when PayPal holds the seller's response, whoever filed it.
+  const filed = view.filings.some((f) => f.action === "evidence" || f.action === "accept");
+  const waiting = view.where === "open";
+  const closed = view.status === "RESOLVED";
+  const pdfHref = view.filedPdf ? `/api/cases/${view.id}/filed` : `/api/cases/${view.id}/pdf`;
   const rec = verdict?.recommendation;
 
   const panel =
@@ -147,16 +147,35 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                 {view.filings.map((f, i) => (
                   <li key={i}>
                     <span>{dayTime(f.at)}</span>
-                    {f.summary}.
+                    {f.summary}.{f.source === "paypal" && <em className={styles.source}> From PayPal&apos;s record.</em>}
                   </li>
                 ))}
+                {closed && view.ruledAt && (
+                  <li>
+                    <span>{dayTime(view.ruledAt)}</span>
+                    PayPal ruled. {view.whereLine}.
+                  </li>
+                )}
               </ol>
               <p className={styles.after}>
-                PayPal now shows this case as <strong>{STATUSES[view.status] ?? view.status}</strong>
-                {view.evidences.some((e) => e.source === "SUBMITTED_BY_SELLER") ? ", with the seller's evidence on file" : ""}. On a card chargeback the
-                issuing bank makes the final call; this page updates when PayPal does.
+                {closed ? (
+                  <>
+                    PayPal shows this case as <strong>resolved</strong>. {view.whereLine}.
+                  </>
+                ) : (
+                  <>
+                    PayPal now shows this case as <strong>{STATUSES[view.status] ?? view.status}</strong>
+                    {view.evidences.some((e) => e.source === "SUBMITTED_BY_SELLER") ? ", with the seller's response on file" : ""}. On a card chargeback the
+                    issuing bank makes the final call; this page updates when PayPal does.
+                  </>
+                )}
               </p>
-              {view.status !== "RESOLVED" && !view.filings.some((f) => f.action === "ruling") && (
+              <p className={styles.buttons}>
+                <a className="btn btnQuiet" href={pdfHref} target="_blank" rel="noreferrer">
+                  {view.filedPdf ? "Read the PDF PayPal holds" : "Read the PDF"}
+                </a>
+              </p>
+              {!closed && !view.filings.some((f) => f.action === "ruling") && (
                 <div className={styles.ruling}>
                   <p>
                     In the sandbox nobody at PayPal reads the evidence. When PayPal opens the case for a ruling (about 20 minutes after filing), you can ask
@@ -167,6 +186,13 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                   </button>
                 </div>
               )}
+            </div>
+          ) : closed ? (
+            <div className={styles.filed}>
+              <h2>Closed</h2>
+              <p className={styles.after}>
+                Exhibit argued this case but nothing was filed before PayPal&apos;s deadline. {view.whereLine}.
+              </p>
             </div>
           ) : (
             <div className={styles.choose}>
@@ -210,7 +236,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                     </button>
                   )
                 )}
-                <a className="btn btnQuiet" href={`/api/cases/${view.id}/pdf`} target="_blank" rel="noreferrer">
+                <a className="btn btnQuiet" href={pdfHref} target="_blank" rel="noreferrer">
                   Read the PDF
                 </a>
               </div>
@@ -230,9 +256,9 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           Desk
         </Link>
         <span className={styles.status} data-status={view.status}>
-          {view.outcome ? OUTCOMES[view.outcome] ?? view.outcome : STATUSES[view.status] ?? view.status}
+          {closed ? view.whereLine : view.where === "filed" ? "Filed, PayPal reviewing" : view.where === "refunded" ? "Refund accepted" : (STATUSES[view.status] ?? view.status)}
         </span>
-        {due !== null && view.status !== "RESOLVED" && (
+        {due !== null && view.status === "WAITING_FOR_SELLER_RESPONSE" && (
           <span className={styles.due} data-soon={due <= 2}>
             Respond by {dayTime(view.due!).split(",")[0]}, {due <= 0 ? "today" : `${due} day${due === 1 ? "" : "s"} left`}
           </span>
@@ -246,6 +272,11 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         </div>
       </section>
 
+      {view.restored && (
+        <p className={styles.notice} data-tone="record">
+          Exhibit rebuilt this case from PayPal&apos;s own record: the response, the filing and the outcome below are what PayPal holds.
+        </p>
+      )}
       {waiting && (
         <p className={styles.notice}>
           PayPal is still reviewing this chargeback before it reaches the seller. That usually takes five to eight minutes in the sandbox. You can argue the
@@ -258,9 +289,13 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         stamp={
           filed ? (
             <Stamp
-              word={view.filings.some((f) => f.action === "accept") ? "REFUNDED" : "FILED"}
-              line={`WITH PAYPAL ${dayTime(view.filings[0].at).split(",")[0].toUpperCase()}`}
-              tone={view.outcome === "RESOLVED_SELLER_FAVOUR" ? "won" : "due"}
+              word={STAMP[view.where]?.word ?? "FILED"}
+              line={
+                closed && view.ruledAt
+                  ? `PAYPAL RULED ${dayTime(view.ruledAt).split(",")[0].toUpperCase()}`
+                  : `WITH PAYPAL ${dayTime(view.filings[0].at).split(",")[0].toUpperCase()}`
+              }
+              tone={STAMP[view.where]?.tone ?? "due"}
             />
           ) : null
         }
@@ -271,13 +306,23 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         verdict={verdict}
         status={status}
         placeholder={
-          <div className={styles.empty}>
-            <p>Exhibit reads the case from PayPal, pulls the order, payment and tracking behind it, and writes the response here, one sentence at a time.</p>
-            <p>Every sentence is pinned to the record that proves it. A sentence it can&apos;t prove gets struck before anything is filed.</p>
-            <button className="btn btnPrimary" onClick={argue} disabled={phase === "arguing"}>
-              Argue this case
-            </button>
-          </div>
+          closed ? (
+            <div className={styles.empty}>
+              <p>PayPal closed this case before anyone answered it. {view.whereLine}.</p>
+              <p>A seller has ten days to respond to a chargeback; after that the bank keeps the money with the buyer.</p>
+              <Link className="btn btnPrimary" href="/new">
+                Open a case you can answer
+              </Link>
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <p>Exhibit reads the case from PayPal, pulls the order, payment and tracking behind it, and writes the response here, one sentence at a time.</p>
+              <p>Every sentence is pinned to the record that proves it. A sentence it can&apos;t prove gets struck before anything is filed.</p>
+              <button className="btn btnPrimary" onClick={argue} disabled={phase === "arguing"}>
+                Argue this case
+              </button>
+            </div>
+          )
         }
         below={panel}
       />

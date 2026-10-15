@@ -7,8 +7,12 @@ import { product } from "./catalog";
  * a real PayPal tracker, then a real sandbox chargeback. The store's side of the story (its order book, inbox
  * and the carrier's scans) is defined here, with dates relative to the moment the case is opened.
  *
- * They are deliberately mixed: some should be fought, some refunded, one partly refunded, so the agent's
- * recommendation is visibly a judgement and not a reflex.
+ * They are deliberately mixed: some should be fought, some refunded, so the agent's recommendation is
+ * visibly a judgement and not a reflex.
+ *
+ * Each story has five customers who could have placed it (the shop's buyers aren't all called Maya). A case
+ * keeps its customer: the name is on the sandbox card, so PayPal's own record says which one it was. Story
+ * text can name the customer with {first}, {signature} (as a carrier prints it) and {city} ("Oakland, CA 94612").
  */
 
 export interface Scan {
@@ -34,6 +38,14 @@ export interface PastOrder {
   outcome: string;
 }
 
+export interface Buyer {
+  name: string;
+  email: string;
+  shipTo: Address;
+  billing: Address;
+  card: { number: string; expiry: string; security_code: string };
+}
+
 export interface Scenario {
   id: string;
   title: string; // what the visitor picks
@@ -41,13 +53,9 @@ export interface Scenario {
   reason: DisputeReason;
   reasonCode: string; // card-network reason code for the sandbox chargeback (Visa 13.1/C2, Mastercard 4855/4837/4834 map to these reasons)
   cardBrand: "VISA" | "MASTERCARD" | "AMEX";
-  buyer: {
-    name: string;
-    email: string;
-    shipTo: Address;
-    billing: Address;
-    card: { number: string; expiry: string; security_code: string };
-  };
+  buyer: Buyer; // the customer on this case
+  buyerIndex: number;
+  buyers: Buyer[]; // everyone who could have placed this story's order
   items: LineItem[];
   shipping: string;
   orderDaysAgo: number; // when the order was placed in the store, relative to the dispute
@@ -56,8 +64,10 @@ export interface Scenario {
   history: PastOrder[];
   claim: string; // what the buyer told their bank
   notes: string[]; // store-side facts a seller would know (refund issued, return received, ...)
-  expected: "fight" | "offer" | "accept"; // what a careful seller would do; used by tests, never shown to the model
+  expected: "fight" | "offer" | "accept"; // what a careful seller would do; used by tests and the eval, never shown to the model
 }
+
+type Story = Omit<Scenario, "buyer" | "buyerIndex">;
 
 const item = (sku: string, quantity = 1): LineItem => {
   const p = product(sku);
@@ -75,7 +85,14 @@ const addr = (address_line_1: string, admin_area_2: string, admin_area_1: string
   country_code: "US",
 });
 
-export const SCENARIOS: Scenario[] = [
+const email = (name: string, domain = "example.com") => `${name.toLowerCase().normalize("NFD").replace(/[^a-z ]/g, "").replace(/ /g, ".")}@${domain}`;
+
+/** A customer who ships and bills to the same address. */
+const home = (name: string, a: Address, card = TEST_VISA): Buyer => ({ name, email: email(name), shipTo: a, billing: a, card });
+
+const FORWARDER = (suite: string) => addr(`4410 NW 79th Avenue, Suite 1A-${suite}`, "Doral", "FL", "33166");
+
+const STORIES: Story[] = [
   {
     id: "delivered",
     title: "“It never arrived”, but the carrier says delivered",
@@ -83,13 +100,13 @@ export const SCENARIOS: Scenario[] = [
     reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
     reasonCode: "13.1",
     cardBrand: "VISA",
-    buyer: {
-      name: "Maya Lindqvist",
-      email: "maya.lindqvist@example.com",
-      shipTo: addr("1418 Larkin Street, Apt 5", "San Francisco", "CA", "94109"),
-      billing: addr("1418 Larkin Street, Apt 5", "San Francisco", "CA", "94109"),
-      card: TEST_VISA,
-    },
+    buyers: [
+      home("Maya Lindqvist", addr("1418 Larkin Street, Apt 5", "San Francisco", "CA", "94109")),
+      home("Jonah Whitaker", addr("2311 Telegraph Avenue, Apt 3B", "Oakland", "CA", "94612")),
+      home("Sofia Marchetti", addr("845 Alma Street, Unit 12", "Palo Alto", "CA", "94301")),
+      home("Ravi Deshpande", addr("1720 Capitol Avenue, Apt 210", "Sacramento", "CA", "95811")),
+      home("Elena Vasquez", addr("63 North First Street, Apt 704", "San Jose", "CA", "95113")),
+    ],
     items: [item("HC-SET-POUR")],
     shipping: "8.00",
     orderDaysAgo: 12,
@@ -102,8 +119,8 @@ export const SCENARIOS: Scenario[] = [
         { day: 1, hour: 16, status: "Label created", place: "Portland, OR 97214" },
         { day: 1, hour: 18, status: "Accepted", place: "Portland, OR 97214" },
         { day: 2, hour: 23, status: "In transit", place: "Sacramento, CA network distribution center" },
-        { day: 4, hour: 7, status: "Out for delivery", place: "San Francisco, CA 94109" },
-        { day: 4, hour: 13, status: "Delivered, signed", place: "San Francisco, CA 94109", detail: "Signed for by M LINDQVIST at front desk" },
+        { day: 4, hour: 7, status: "Out for delivery", place: "{city}" },
+        { day: 4, hour: 13, status: "Delivered, signed", place: "{city}", detail: "Signed for by {signature} at front desk" },
       ],
     },
     inbox: [
@@ -112,7 +129,7 @@ export const SCENARIOS: Scenario[] = [
         day: 9,
         hour: 15,
         from: "shop",
-        text: "Hi Maya, USPS shows it delivered last week and signed for at your building's front desk. Could you ask there? Happy to help if it hasn't turned up.",
+        text: "Hi {first}, USPS shows it delivered last week and signed for at your building's front desk. Could you ask there? Happy to help if it hasn't turned up.",
       },
     ],
     history: [{ ref: "#1019", daysAgo: 140, item: "Slate speckle mug, 12 oz", total: "$46.00", outcome: "Delivered, no issues" }],
@@ -127,13 +144,13 @@ export const SCENARIOS: Scenario[] = [
     reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
     reasonCode: "4855",
     cardBrand: "MASTERCARD",
-    buyer: {
-      name: "Theo Okafor",
-      email: "theo.okafor@example.com",
-      shipTo: addr("2207 Elm Street", "Dallas", "TX", "75201"),
-      billing: addr("2207 Elm Street", "Dallas", "TX", "75201"),
-      card: TEST_MC,
-    },
+    buyers: [
+      home("Theo Okafor", addr("2207 Elm Street", "Dallas", "TX", "75201"), TEST_MC),
+      home("Marisol Reyes", addr("1508 West Magnolia Avenue", "Fort Worth", "TX", "76104"), TEST_MC),
+      home("Grant Holloway", addr("4102 Avenue F", "Austin", "TX", "78751"), TEST_MC),
+      home("Aisha Bello", addr("2815 Bagby Street, Apt 9", "Houston", "TX", "77006"), TEST_MC),
+      home("Kenji Mori", addr("6120 Ohio Drive", "Plano", "TX", "75024"), TEST_MC),
+    ],
     items: [item("HC-VASE-TALL")],
     shipping: "5.00",
     orderDaysAgo: 24,
@@ -153,13 +170,13 @@ export const SCENARIOS: Scenario[] = [
     reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED",
     reasonCode: "C2",
     cardBrand: "VISA",
-    buyer: {
-      name: "Priya Raman",
-      email: "priya.raman@example.com",
-      shipTo: addr("77 Prospect Place", "Brooklyn", "NY", "11217"),
-      billing: addr("77 Prospect Place", "Brooklyn", "NY", "11217"),
-      card: TEST_VISA,
-    },
+    buyers: [
+      home("Priya Raman", addr("77 Prospect Place", "Brooklyn", "NY", "11217")),
+      home("Claire Donnelly", addr("214 Marlborough Street, Apt 2", "Boston", "MA", "02116")),
+      home("Marcus Bell", addr("1931 Green Street", "Philadelphia", "PA", "19130")),
+      home("Nadia Haddad", addr("905 Hudson Street, Apt 3", "Hoboken", "NJ", "07030")),
+      home("Tomás Ortega", addr("118 Benefit Street", "Providence", "RI", "02903")),
+    ],
     items: [item("HC-BOWL-NEST")],
     shipping: "12.00",
     orderDaysAgo: 15,
@@ -171,7 +188,7 @@ export const SCENARIOS: Scenario[] = [
       scans: [
         { day: 1, hour: 15, status: "Accepted", place: "Portland, OR 97214" },
         { day: 3, hour: 4, status: "In transit", place: "Chicago, IL network distribution center" },
-        { day: 5, hour: 12, status: "Delivered", place: "Brooklyn, NY 11217", detail: "Left at front door" },
+        { day: 5, hour: 12, status: "Delivered", place: "{city}", detail: "Left at front door" },
       ],
     },
     inbox: [
@@ -185,7 +202,7 @@ export const SCENARIOS: Scenario[] = [
         day: 7,
         hour: 11,
         from: "shop",
-        text: "Sorry they're not the blue you hoped for. Tide-blue does pool green where it's thick, as the listing says. You're welcome to return them within 30 days for a refund.",
+        text: "Sorry they're not the blue you hoped for, {first}. Tide-blue does pool green where it's thick, as the listing says. You're welcome to return them within 30 days for a refund.",
       },
       { day: 8, hour: 8, from: "buyer", text: "Return shipping for three bowls would be about $30. That doesn't seem fair." },
     ],
@@ -201,13 +218,13 @@ export const SCENARIOS: Scenario[] = [
     reason: "UNAUTHORISED",
     reasonCode: "4837",
     cardBrand: "MASTERCARD",
-    buyer: {
-      name: "Daniel Brooks",
-      email: "dbrooks.orders@example.com",
-      shipTo: addr("4410 NW 79th Avenue, Suite 1A-88213", "Doral", "FL", "33166"),
-      billing: addr("39 Maple Ridge Road", "Columbus", "OH", "43215"),
-      card: TEST_MC,
-    },
+    buyers: [
+      { name: "Daniel Brooks", email: "dbrooks.orders@example.com", shipTo: FORWARDER("88213"), billing: addr("39 Maple Ridge Road", "Columbus", "OH", "43215"), card: TEST_MC },
+      { name: "Kevin Marsh", email: "k.marsh.buys@example.com", shipTo: FORWARDER("40617"), billing: addr("5521 North Meridian Street", "Indianapolis", "IN", "46208"), card: TEST_MC },
+      { name: "Laura Pennington", email: "laurap.shop@example.com", shipTo: FORWARDER("17392"), billing: addr("2730 North Oakland Avenue", "Milwaukee", "WI", "53211"), card: TEST_MC },
+      { name: "Brian Castellano", email: "bcastellano.mail@example.com", shipTo: FORWARDER("63058"), billing: addr("412 South Highland Avenue", "Pittsburgh", "PA", "15206"), card: TEST_MC },
+      { name: "Megan Albright", email: "megan.albright.home@example.com", shipTo: FORWARDER("29944"), billing: addr("1817 Bardstown Road", "Louisville", "KY", "40205"), card: TEST_MC },
+    ],
     items: [item("HC-PLATE-DIN")],
     shipping: "12.00",
     orderDaysAgo: 9,
@@ -219,7 +236,7 @@ export const SCENARIOS: Scenario[] = [
       scans: [
         { day: 0, hour: 22, status: "Label created", place: "Portland, OR 97214" },
         { day: 1, hour: 17, status: "Accepted", place: "Portland, OR 97214" },
-        { day: 5, hour: 10, status: "Delivered, signed", place: "Doral, FL 33166", detail: "Signed for by RECEIVING DESK" },
+        { day: 5, hour: 10, status: "Delivered, signed", place: "{city}", detail: "Signed for by RECEIVING DESK" },
       ],
     },
     inbox: [],
@@ -227,7 +244,7 @@ export const SCENARIOS: Scenario[] = [
     claim: "Cardholder says they did not authorise this transaction.",
     notes: [
       "First order from this customer. Placed at 02:14 local time.",
-      "Shipping address is a parcel-forwarding warehouse; billing address is in Ohio.",
+      "Shipping address is a parcel-forwarding warehouse; billing address is in {billingState}.",
     ],
     expected: "accept",
   },
@@ -238,13 +255,13 @@ export const SCENARIOS: Scenario[] = [
     reason: "DUPLICATE_TRANSACTION",
     reasonCode: "4834",
     cardBrand: "MASTERCARD",
-    buyer: {
-      name: "Hannah Weiss",
-      email: "hannah.weiss@example.com",
-      shipTo: addr("512 Chestnut Street", "Philadelphia", "PA", "19106"),
-      billing: addr("512 Chestnut Street", "Philadelphia", "PA", "19106"),
-      card: TEST_MC,
-    },
+    buyers: [
+      home("Hannah Weiss", addr("512 Chestnut Street", "Philadelphia", "PA", "19106"), TEST_MC),
+      home("Oliver Grant", addr("1206 South Charles Street", "Baltimore", "MD", "21230"), TEST_MC),
+      home("Lucy Tran", addr("3100 Wilson Boulevard, Apt 818", "Arlington", "VA", "22201"), TEST_MC),
+      home("Samuel Adeyemi", addr("2409 Monument Avenue", "Richmond", "VA", "23220"), TEST_MC),
+      home("Rachel Kim", addr("1007 North Orange Street, Apt 5C", "Wilmington", "DE", "19801"), TEST_MC),
+    ],
     items: [item("HC-MUG-SLATE")],
     shipping: "8.00",
     orderDaysAgo: 11,
@@ -255,7 +272,7 @@ export const SCENARIOS: Scenario[] = [
       service: "Ground Advantage",
       scans: [
         { day: 1, hour: 14, status: "Accepted", place: "Portland, OR 97214" },
-        { day: 4, hour: 11, status: "Delivered", place: "Philadelphia, PA 19106", detail: "Delivered to mailbox" },
+        { day: 4, hour: 11, status: "Delivered", place: "{city}", detail: "Delivered to mailbox" },
       ],
     },
     inbox: [
@@ -269,4 +286,61 @@ export const SCENARIOS: Scenario[] = [
   },
 ];
 
-export const scenario = (id: string) => SCENARIOS.find((s) => s.id === id);
+const STATE_NAMES: Record<string, string> = { OH: "Ohio", IN: "Indiana", WI: "Wisconsin", PA: "Pennsylvania", KY: "Kentucky" };
+
+function fill(text: string, b: Buyer): string {
+  const [first, ...rest] = b.name.split(" ");
+  const city = `${b.shipTo.admin_area_2}, ${b.shipTo.admin_area_1} ${b.shipTo.postal_code}`;
+  const signature = `${first[0]} ${rest.join(" ")}`.toUpperCase();
+  return text
+    .replace(/\{first\}/g, first)
+    .replace(/\{signature\}/g, signature)
+    .replace(/\{city\}/g, city)
+    .replace(/\{billingState\}/g, STATE_NAMES[b.billing.admin_area_1] ?? b.billing.admin_area_1);
+}
+
+/** The story as it happened to one customer, optionally with the tracking number this case shipped under. */
+function cast(s: Story, buyerIndex: number, tracking?: string): Scenario {
+  const i = buyerIndex >= 0 && buyerIndex < s.buyers.length ? buyerIndex : 0;
+  const b = s.buyers[i];
+  return {
+    ...s,
+    buyer: b,
+    buyerIndex: i,
+    carrier: s.carrier
+      ? {
+          ...s.carrier,
+          number: tracking ?? s.carrier.number,
+          scans: s.carrier.scans.map((sc) => ({ ...sc, place: fill(sc.place, b), detail: sc.detail ? fill(sc.detail, b) : undefined })),
+        }
+      : undefined,
+    inbox: s.inbox.map((m) => ({ ...m, text: fill(m.text, b) })),
+    notes: s.notes.map((n) => fill(n, b)),
+  };
+}
+
+/** Every story with its first customer, for the pickers. */
+export const SCENARIOS: Scenario[] = STORIES.map((s) => cast(s, 0));
+
+/** A story for one case: its customer by index or by the name on the card, and the tracking number it shipped under. */
+export function scenario(id: string, opts: { buyer?: number | string; tracking?: string } = {}): Scenario | undefined {
+  const s = STORIES.find((x) => x.id === id);
+  if (!s) return undefined;
+  const i = typeof opts.buyer === "string" ? s.buyers.findIndex((b) => b.name.toLowerCase() === (opts.buyer as string).trim().toLowerCase()) : (opts.buyer ?? 0);
+  return cast(s, i, opts.tracking);
+}
+
+/** The story whose product (and reason) a PayPal dispute is about, for cases Exhibit holds no record of. */
+export function storyForSku(sku: string | undefined, reason?: string): Scenario | undefined {
+  if (!sku) return undefined;
+  const s = STORIES.find((x) => x.items[0].sku === sku && (!reason || x.reason === reason)) ?? STORIES.find((x) => x.items[0].sku === sku);
+  return s ? cast(s, 0) : undefined;
+}
+
+/** A random customer for a new case, and a tracking number of the carrier's own shape. */
+export function newCaseCast(s: Scenario): { buyer: number; tracking?: string } {
+  const buyer = Math.floor(Math.random() * s.buyers.length);
+  if (!s.carrier) return { buyer };
+  const tail = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b % 10).join("");
+  return { buyer, tracking: `94055112062138${tail}` };
+}
