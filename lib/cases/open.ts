@@ -5,6 +5,8 @@ import type { PayPalError } from "../paypal/client";
 import { cartMandateId } from "../agentic/story";
 import { SCENARIOS, newCaseCast, scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { listCases, saveCase, updateCase } from "../store";
+import { storage } from "../storage";
+import { inPool, refillPlan } from "./pool";
 import type { CaseRecord } from "./types";
 
 /**
@@ -21,7 +23,6 @@ export const POOL_PER_SCENARIO = Number(process.env.POOL_PER_SCENARIO || 2);
 const READY = "WAITING_FOR_SELLER_RESPONSE";
 const MIN_DAYS_LEFT = 1.5; // never hand out a case the visitor can't finish before PayPal's deadline
 
-const inPool = (c: CaseRecord) => !c.claimedBy && !c.brief && !c.retired;
 const daysLeft = (d: Dispute) => (d.seller_response_due_date ? (new Date(d.seller_response_due_date).getTime() - Date.now()) / 86_400_000 : Infinity);
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -113,11 +114,38 @@ async function poolProblem(c: CaseRecord): Promise<string | null> {
   return `PayPal shows it as ${d.status.toLowerCase().replace(/_/g, " ")}`;
 }
 
+/** When the refill last ran and what it did, for /api/health. Kept in the store (in memory without one). */
+export interface RefillRun {
+  startedAt: string;
+  finishedAt?: string;
+  by: string;
+  opened?: number;
+  retired?: number;
+  errors?: number;
+}
+const REFILL_KEY = "pool/last-refill.json";
+let lastRun: RefillRun | null = null;
+
+async function noteRefill(run: RefillRun): Promise<void> {
+  lastRun = run;
+  await storage()?.write(REFILL_KEY, JSON.stringify(run)).catch((e) => console.error("refill note", (e as Error).message));
+}
+
+export async function lastRefill(): Promise<RefillRun | null> {
+  const s = storage();
+  if (!s) return lastRun;
+  const r = await s.read(REFILL_KEY).catch(() => null);
+  return r ? (JSON.parse(r.text) as RefillRun) : lastRun;
+}
+
 /**
  * Retires pooled cases that have gone stale, then opens cases until every scenario has POOL_PER_SCENARIO
- * unclaimed ones (ready, or still with PayPal). Called by the cron and after every case a visitor takes.
+ * unclaimed ones (ready, or still with PayPal), emptiest stories first. Called by the cron (the GitHub
+ * schedule every two hours and Vercel's daily one) and after every case a visitor takes.
  */
-export async function refillPool(limit = 6): Promise<{ opened: string[]; retired: string[]; errors: string[] }> {
+export async function refillPool(limit = 6, by = "cron"): Promise<{ opened: string[]; retired: string[]; errors: string[] }> {
+  const run: RefillRun = { startedAt: new Date().toISOString(), by };
+  await noteRefill(run);
   const cases = await listCases(true);
   const opened: string[] = [];
   const retired: string[] = [];
@@ -132,16 +160,19 @@ export async function refillPool(limit = 6): Promise<{ opened: string[]; retired
     }
     stock.set(c.scenarioId ?? "", (stock.get(c.scenarioId ?? "") ?? 0) + 1);
   }
-  for (const s of SCENARIOS) {
-    for (let i = stock.get(s.id) ?? 0; i < POOL_PER_SCENARIO && opened.length < limit; i++) {
-      try {
-        opened.push((await openCase(s)).disputeId);
-      } catch (e) {
-        errors.push(`${s.id}: ${(e as Error).message}`);
-        break;
-      }
+  // Empty stories first: a visit-time refill opens only three, and a story with no stock makes a visitor wait.
+  const failed = new Set<string>();
+  for (const id of refillPlan(Object.fromEntries(stock), SCENARIOS.map((s) => s.id), POOL_PER_SCENARIO, limit)) {
+    const s = SCENARIOS.find((x) => x.id === id);
+    if (!s || failed.has(id)) continue;
+    try {
+      opened.push((await openCase(s)).disputeId);
+    } catch (e) {
+      errors.push(`${s.id}: ${(e as Error).message}`);
+      failed.add(id);
     }
   }
+  await noteRefill({ ...run, finishedAt: new Date().toISOString(), opened: opened.length, retired: retired.length, errors: errors.length });
   return { opened, retired, errors };
 }
 

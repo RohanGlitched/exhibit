@@ -9,6 +9,7 @@ import { argueWithModel, argueWithRules, modelAvailable } from "./brief";
 import { mergeFilings, paypalFilings, restoredNote, sellerEvidence, splitFiled, storyFromPayPal, trackerNumber } from "./derive";
 import { buildExhibits, exhibitText } from "./exhibits";
 import { checkSentence } from "./verify";
+import { argueBlocked } from "./guard";
 import { briefPdf } from "./pdf";
 import type { ArgueEvent, Brief, CaseRecord, Exhibit, Filing } from "./types";
 
@@ -113,11 +114,21 @@ async function ensureRecord(ctx: CaseContext): Promise<CaseRecord> {
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export interface ArgueOptions {
+  ip: string;
+  paced: boolean;
+  /** Decided by the caller (the webhook autopilot keeps to its own share of the budget); else per visitor. */
+  useModel?: boolean;
+  /** Set by the webhook autopilot: the delivery it argues from. It never replaces a brief someone else wrote. */
+  autopilot?: { eventId: string; receivedAt: string };
+}
+
 /**
  * Argues a case and streams each step: exhibits as they're gathered, then the brief sentence by sentence.
  * The pacing between events is presentation only; every exhibit and sentence is real when it is sent.
+ * A filed or resolved case keeps its brief: argue() refuses it.
  */
-export async function* argue(id: string, opts: { ip: string; paced: boolean }): AsyncGenerator<ArgueEvent> {
+export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<ArgueEvent> {
   yield { type: "status", text: "Reading the case from PayPal" };
   let ctx: CaseContext;
   try {
@@ -126,13 +137,18 @@ export async function* argue(id: string, opts: { ip: string; paced: boolean }): 
     yield { type: "error", text: (e as Error).message };
     return;
   }
+  const blocked = argueBlocked(ctx.dispute.status, ctx.filings);
+  if (blocked) {
+    yield { type: "error", text: blocked };
+    return;
+  }
   for (const exhibit of ctx.exhibits) {
     yield { type: "exhibit", exhibit };
     if (opts.paced) await pause(140);
   }
 
   let brief: Brief;
-  const useModel = modelAvailable() && (await takeModelCall(opts.ip));
+  const useModel = modelAvailable() && (opts.useModel ?? (await takeModelCall(opts.ip)));
   if (useModel) {
     yield { type: "status", text: "Weighing the records" };
     try {
@@ -156,7 +172,13 @@ export async function* argue(id: string, opts: { ip: string; paced: boolean }): 
     if (opts.paced) await pause(120);
   }
   await ensureRecord(ctx).catch((e) => console.error("record", (e as Error).message));
-  await updateCase(id, (r) => ({ ...r, brief })).catch(() => null);
+  const auto = opts.autopilot;
+  await updateCase(id, (r) => {
+    // Checked again on the stored record: a filing that landed while the brief was being written wins.
+    if (argueBlocked(undefined, r.filings)) return null;
+    if (auto && r.brief) return null; // a visitor argued it first: keep theirs
+    return auto ? { ...r, brief, autopilot: { ...auto, arguedAt: new Date().toISOString(), briefAt: brief.createdAt, engine: brief.engine } } : { ...r, brief };
+  }).catch(() => null);
   yield { type: "brief", brief };
 }
 

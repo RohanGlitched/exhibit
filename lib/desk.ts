@@ -4,6 +4,7 @@ import { getDispute, listDisputes, type Dispute, type DisputeSummary } from "./p
 import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
 import { mergeFilings, paypalFilings, stageLine, stageOf, type Stage } from "./cases/derive";
+import { inPool, untouched } from "./cases/pool";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
 
 export interface DeskRow {
@@ -107,8 +108,8 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       filedAt: last ? last.at : null,
       outcome: d.outcome ?? null,
       mine: Boolean(visitor && r?.claimedBy === visitor),
-      pooled: Boolean(r && !r.claimedBy && !r.brief && !r.retired),
-      retired: Boolean(r?.retired && !r.claimedBy && !r.brief),
+      pooled: Boolean(r && inPool(r)),
+      retired: Boolean(r?.retired && untouched(r)),
       source: r && !r.restored ? "exhibit" : exhibitCase ? "paypal" : "probe",
     };
   });

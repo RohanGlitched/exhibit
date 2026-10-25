@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PinnedBrief, { type Verdict } from "@/components/brief/PinnedBrief";
 import Stamp from "@/components/Stamp";
+import WebhookLine from "./WebhookLine";
 import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, dayTime, daysUntil, reasonLabel, usd } from "@/lib/format";
@@ -278,6 +279,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           Exhibit rebuilt this case from PayPal&apos;s own record: the response, the filing and the outcome below are what PayPal holds.
         </p>
       )}
+      <WebhookLine webhook={view.webhook} />
       {waiting && (
         <p className={styles.notice}>
           PayPal is still reviewing this chargeback before it reaches the seller. That usually takes five to eight minutes in the sandbox. You can argue the

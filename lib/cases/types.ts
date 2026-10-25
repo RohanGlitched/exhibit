@@ -76,6 +76,10 @@ export interface CaseRecord {
   brief?: Brief;
   filings: Filing[];
   restored?: string; // when Exhibit rebuilt this record from PayPal's own (the store had lost it)
+  /** Set when the webhook autopilot argued the case from PayPal's CUSTOMER.DISPUTE.CREATED delivery. */
+  autopilot?: { eventId: string; receivedAt: string; arguedAt: string; briefAt: string; engine: Brief["engine"] };
+  /** The latest dispute event PayPal delivered for this case, and the state Exhibit read back after it. */
+  lastEvent?: { id: string; type: string; receivedAt: string; status: string; outcome?: string };
 }
 
 /** One step the server streams while it argues a case. */

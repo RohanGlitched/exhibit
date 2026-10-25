@@ -100,3 +100,49 @@ async function bedrock<T>(req: StructuredRequest): Promise<{ value: T; usage?: U
   if (!use) throw new Error("The model answered without the brief.");
   return { value: use.input as T, usage: body.usage };
 }
+
+export interface Ping {
+  ok: boolean;
+  at: string;
+  ms: number;
+  error?: string;
+}
+
+let lastPing: Ping | null = null;
+
+/**
+ * A tiny request to the configured model, so /api/health can tell a live key from a revoked one. Remembered for
+ * ten minutes per server instance, so a monitor checking every few minutes costs a few dozen tokens an hour.
+ */
+export async function llmPing(maxAgeMs = 10 * 60_000): Promise<Ping | null> {
+  const p = llmProvider();
+  if (!p) return null;
+  if (lastPing && Date.now() - new Date(lastPing.at).getTime() < maxAgeMs) return lastPing;
+  const t0 = Date.now();
+  try {
+    let res: Response;
+    if (p === "azure") {
+      const base = process.env.AZURE_OPENAI_ENDPOINT!.replace(/\/+$/, "").replace(/\/openai(\/v1)?$/, "");
+      res = await fetch(`${base}/openai/v1/responses`, {
+        method: "POST",
+        headers: { "api-key": process.env.AZURE_OPENAI_API_KEY!, "content-type": "application/json" },
+        body: JSON.stringify({ model: process.env.AZURE_OPENAI_DEPLOYMENT, input: "Reply with OK.", max_output_tokens: 16, reasoning: { effort: "low" }, store: false }),
+        signal: AbortSignal.timeout(15_000),
+      });
+    } else {
+      const region = process.env.BEDROCK_REGION || "us-east-1";
+      const model = process.env.BEDROCK_MODEL || "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+      res = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(model)}/converse`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`, "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: [{ text: "Reply with OK." }] }], inferenceConfig: { maxTokens: 4 } }),
+        signal: AbortSignal.timeout(15_000),
+      });
+    }
+    // A reasoning model may stop at the token limit ("incomplete"); any 2xx means the key and deployment answer.
+    lastPing = { ok: res.ok, at: new Date().toISOString(), ms: Date.now() - t0, ...(res.ok ? {} : { error: `HTTP ${res.status}` }) };
+  } catch (e) {
+    lastPing = { ok: false, at: new Date().toISOString(), ms: Date.now() - t0, error: (e as Error).name };
+  }
+  return lastPing;
+}
