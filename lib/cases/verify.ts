@@ -294,6 +294,7 @@ function polarity(text: string, re: RegExp): Polarity[] {
   });
 }
 const REPORTING = /\b(?:reported|reports|says|said|claims|claimed|told|tells|wrote|writes|complained|asked|alleges|alleged|states|stated|disputes|disputed)\b/i;
+const CLAUSE_DENIAL = /\b(?:no|not|never|cannot|can't|without|none|neither|nor|unable|lacks?)\b[^.;]*\bsign(?:ed|ature)\b/i;
 const BACK_TO_SENDER = /\bto (?:the )?sender\b|\breturned to (?:the )?(?:shop|seller|merchant)\b/i;
 const PARCEL_SIGNATURE =/\bsigned for\b|\bsignature\b/gi;
 
@@ -421,8 +422,9 @@ export function checkSentence(
       }
     }
 
-    // A signature claimed for the parcel has to be on a cited record.
-    if (polarity(c.text, PARCEL_SIGNATURE).includes("yes")) {
+    // A signature claimed for the parcel has to be on a cited record. "We have no record showing a signature"
+    // and "we cannot provide a signature" deny one, however far the negation sits from the word.
+    if (polarity(c.text, PARCEL_SIGNATURE).includes("yes") && !CLAUSE_DENIAL.test(c.text)) {
       const shown = h.units.some((u) => polarity(u.text, /\bsign(?:ed|ature)\b/gi).includes("yes"));
       if (!shown) return strike(s.text, known, `Nothing in ${where} shows a signature.`, quote);
     }

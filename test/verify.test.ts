@@ -365,3 +365,9 @@ test("a parcel delivered back to the sender doesn't contradict 'not delivered to
   // Without a return to sender, the same denial is still struck.
   assert.equal(checkSentence({ text: "USPS never delivered the parcel.", cites: ["E"] }, EX, text).kept, false);
 });
+
+test("a sentence that denies a signature isn't read as claiming one", () => {
+  assert.equal(checkSentence({ text: "We have no carrier record showing delivery or a signature.", cites: ["D"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "We cannot provide a delivery scan or recipient signature, so we will refund.", cites: ["D"] }, EX, text).kept, true);
+  assert.equal(checkSentence({ text: "The parcel was signed for by the cardholder.", cites: ["D"] }, EX, text).kept, false);
+});
