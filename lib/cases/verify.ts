@@ -294,6 +294,7 @@ function polarity(text: string, re: RegExp): Polarity[] {
   });
 }
 const REPORTING = /\b(?:reported|reports|says|said|claims|claimed|told|tells|wrote|writes|complained|asked|alleges|alleged|states|stated|disputes|disputed)\b/i;
+const BACK_TO_SENDER = /\bto (?:the )?sender\b|\breturned to (?:the )?(?:shop|seller|merchant)\b/i;
 const PARCEL_SIGNATURE =/\bsigned for\b|\bsignature\b/gi;
 
 /* ───────────── The check ───────────── */
@@ -409,7 +410,11 @@ export function checkSentence(
     for (const stem of reported ? [] : STEMS) {
       const said = polarity(c.text, stem.re);
       if (!said.includes("no") || said.includes("yes")) continue;
-      const found = h.units.map((u) => ({ u, p: polarity(u.text, stem.re) })).filter((x) => x.p.length);
+      // "Delivered to sender" is a parcel coming back: it doesn't contradict "not delivered to the buyer".
+      // Every line of an exhibit that records a return ("Latest: Delivered" included) is about the return.
+      const returned = new Set(h.units.filter((u) => BACK_TO_SENDER.test(u.text)).map((u) => u.exhibit));
+      const units = stem.name === "delivered" ? h.units.filter((u) => !returned.has(u.exhibit)) : h.units;
+      const found = units.map((u) => ({ u, p: polarity(u.text, stem.re) })).filter((x) => x.p.length);
       const yes = found.filter((x) => x.p.includes("yes"));
       if (yes.length && !found.some((x) => x.p.includes("no"))) {
         return strike(s.text, known, `It says the parcel or payment wasn't ${stem.name}, but Exhibit ${yes[0].u.exhibit} says “${clip(yes[0].u.text)}”.`, quote);

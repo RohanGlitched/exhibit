@@ -350,3 +350,18 @@ test("cites given as one string are read as letters", async () => {
   const s = checkSentence({ text: "USPS delivered it on 27 Sep 2026, 13:00, signed for.", cites: "E" }, EX, text);
   assert.equal(s.kept, true);
 });
+
+test("a parcel delivered back to the sender doesn't contradict 'not delivered to the buyer'", () => {
+  const back: Exhibit = {
+    id: "R",
+    kind: "scans",
+    title: "USPS scan history",
+    source: "USPS",
+    facts: [{ label: "Latest", value: "Delivered" }],
+    lines: ["3 Oct 2026, 09:00  Attempted, San Francisco, CA 94109. Unable to deliver", "9 Oct 2026, 14:00  Delivered, Portland, OR 97214. Delivered to sender"],
+  };
+  const s = checkSentence({ text: "The merchandise therefore was not delivered to the buyer.", cites: ["R"] }, [back], text);
+  assert.equal(s.kept, true);
+  // Without a return to sender, the same denial is still struck.
+  assert.equal(checkSentence({ text: "USPS never delivered the parcel.", cites: ["E"] }, EX, text).kept, false);
+});

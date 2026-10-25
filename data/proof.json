@@ -1,6 +1,6 @@
 {
  "at": "2026-10-15T08:44:32.109Z",
- "recheckedAt": "2026-10-25T13:44:19.409Z",
+ "recheckedAt": "2026-10-25T14:46:04.720Z",
  "reasoning": "low",
  "summary": {
   "runs": 56,
@@ -4935,7 +4935,7 @@
    "strong": {
     "call": "accept",
     "correct": true,
-    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-ed83d767113c; the key the mandate carries is a different one."
+    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-07ae79c97d03; the key the mandate carries is a different one."
    },
    "model": null
   },
@@ -4955,7 +4955,7 @@
    "strong": {
     "call": "accept",
     "correct": true,
-    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-ed83d767113c; the key the mandate carries is a different one."
+    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-07ae79c97d03; the key the mandate carries is a different one."
    },
    "model": null
   },
