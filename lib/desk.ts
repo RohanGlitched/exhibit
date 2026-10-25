@@ -5,6 +5,7 @@ import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
 import { mergeFilings, paypalFilings, stageLine, stageOf, type Stage } from "./cases/derive";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
+import { oddsFor } from "./cases/verify";
 
 export interface DeskRow {
   id: string;
@@ -99,7 +100,7 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       story: s?.title ?? null,
       storyId: s?.id ?? null,
       recommendation: r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null),
-      odds: r?.brief?.odds ?? null,
+      odds: r?.brief ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
       engine: r?.brief?.engine ?? null,
       struck: r?.brief ? r.brief.sentences.filter((x) => !x.kept).length : null,
       sentences: r?.brief ? r.brief.sentences.length : null,

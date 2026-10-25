@@ -145,8 +145,8 @@ export function storyFromPayPal(d: Dispute, order?: Order | null): Scenario | un
   const invoice = tx?.invoice_number ?? order?.purchase_units[0]?.invoice_id;
   if (!invoice || !/^HC-\d/.test(invoice)) return undefined;
   const sku = tx?.items?.[0]?.item_id ?? order?.purchase_units[0]?.items?.[0]?.sku;
-  // An order placed by a shopping agent carries its cart mandate id in custom_id.
-  const agent = /^cart_[0-9a-f]{12}$/.test(order?.purchase_units[0]?.custom_id ?? tx?.custom ?? "");
+  // An order placed by a shopping agent carries "ap2:" + the SHA-256 of its signed cart in custom_id (older ones: the cart id).
+  const agent = /^(ap2:[0-9a-f]{64}|cart_[0-9a-f]{12})$/.test(order?.purchase_units[0]?.custom_id ?? tx?.custom ?? "");
   const base = storyForSku(sku, d.reason, agent);
   if (!base) return undefined;
   const name = tx?.buyer?.name ?? order?.purchase_units[0]?.shipping?.name?.full_name;

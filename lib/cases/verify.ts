@@ -104,3 +104,6 @@ export function oddsFrom(items: TallyItem[]): number {
   if (seller + buyer === 0) return 50;
   return Math.max(3, Math.min(97, Math.round((100 * seller) / (seller + buyer))));
 }
+
+/** The seller's odds as shown: a refund call never shows the seller ahead, whatever the tally says. */
+export const oddsFor = (recommendation: string, odds: number) => (recommendation === "accept" ? Math.min(50, odds) : odds);

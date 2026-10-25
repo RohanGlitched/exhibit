@@ -2,13 +2,30 @@ import "server-only";
 import type { Dispute } from "../paypal/disputes";
 import type { Capture, Order, Refund } from "../paypal/orders";
 import type { Scenario } from "../shop/scenarios";
-import { SHOP, product } from "../shop/catalog";
+import { SHOP, listingFor, product } from "../shop/catalog";
 import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
 
 const STAGES: Record<string, string> = { INQUIRY: "Inquiry", CHARGEBACK: "Chargeback", PRE_ARBITRATION: "Pre-arbitration", ARBITRATION: "Arbitration" };
 import type { Exhibit, Fact } from "./types";
-import { agentMandates, shipLine } from "../agentic/story";
-import { fingerprint, signatureValid, verifyAgentOrder } from "../agentic/mandate";
+import { cartDigest } from "../agentic/mandate";
+import { reviewAgentOrder } from "../agentic/review";
+import type { AgentRun, AgentStep } from "../agentic/types";
+import { SITE_URL } from "../site";
+
+const INJECTION_NOTE =
+  "The pour-over set's description carried a line addressed to AI shopping assistants, added by a compromised store app. The shop removed it after this order.";
+
+/** One tool call of the buyer's agent, as a line of its log: the call, the agent's reason, what came back. */
+function stepLine(st: AgentStep): string {
+  const args = Object.entries(st.args)
+    .filter(([k]) => k !== "message")
+    .map(([, v]) => (typeof v === "string" ? `“${v}”` : String(v)))
+    .join(", ");
+  // A search reads as its list of hits; anything else as its first line (the listing itself is its own exhibit).
+  const lines = st.result.split("\n");
+  const result = st.tool === "search_catalog" ? `${lines[0]} ${lines.slice(1).join("; ")}` : lines[0];
+  return `${st.n}. ${st.tool}(${args})${st.why ? `, because: ${st.why.replace(/\.$/, "")}` : ""}. Result: ${result}${st.ok || st.tool === "check_intent" ? "" : " (refused)"}`;
+}
 
 /**
  * Turns the records behind a case into numbered exhibits. PayPal records (the dispute, the order, the payment,
@@ -34,7 +51,7 @@ const address = (a?: { address_line_1?: string; address_line_2?: string; admin_a
   a ? [a.address_line_1, a.address_line_2, a.admin_area_2, `${a.admin_area_1 ?? ""} ${a.postal_code ?? ""}`.trim()].filter(Boolean).join(", ") : "—";
 
 /** Story time: the store order happened `orderDaysAgo` days before the case was opened. */
-function storyClock(openedAt: string, s: Scenario) {
+export function storyClock(openedAt: string, s: Scenario) {
   const opened = new Date(openedAt).getTime();
   const orderAt = opened - s.orderDaysAgo * 86_400_000;
   const at = (dayN: number, hour: number) => {
@@ -63,6 +80,7 @@ export interface Sources {
   openedAt: string;
   invoiceId?: string;
   refund?: Refund | null;
+  agent?: AgentRun; // an agent story's purchase, signed and kept on the case record
 }
 
 export function buildExhibits(src: Sources): Exhibit[] {
@@ -141,10 +159,25 @@ export function buildExhibits(src: Sources): Exhibit[] {
   // An order the buyer's shopping agent placed: the signed mandates, Exhibit's checks, and the agent's log.
   if (s?.agent && clock) {
     const invoice = order?.purchase_units[0]?.invoice_id ?? src.invoiceId ?? "";
-    const m = agentMandates(s, invoice, clock.orderAt);
+    const m = reviewAgentOrder(s, { run: src.agent, invoiceId: invoice, orderAt: clock.orderAt, order });
+    const bound = order?.purchase_units[0]?.custom_id;
+    if (!m && bound?.startsWith("ap2:")) {
+      out.push({
+        kind: "note",
+        title: "Signed cart not on file",
+        source: "Exhibit's case record",
+        facts: [{ label: "Order commits to", value: bound }],
+        lines: ["The PayPal order carries the SHA-256 of the cart the agent signed, but Exhibit no longer holds the mandates, so they can't be checked."],
+      });
+    }
     if (m) {
       const i = m.intent.mandate;
       const c = m.cart.mandate;
+      const sig = (id: "intent-signature" | "cart-signature") => (m.checks.find((x) => x.id === id)?.ok ? "Valid (Ed25519)" : "Does not verify");
+      const keyNote = (who: string, kid: string) =>
+        m.legacy
+          ? `Signed in the sandbox with a stand-in key for ${who}, derived from the order number (cases opened before 26 Oct 2026).`
+          : `Signed once, when the case was opened, by ${who} with demo key ${kid}, published at ${SITE_URL}/.well-known/exhibit-keys.json. Times follow the store's order clock.`;
       out.push({
         kind: "mandate",
         title: "Intent mandate, signed by the cardholder",
@@ -158,11 +191,11 @@ export function buildExhibits(src: Sources): Exhibit[] {
           { label: "Ship to", value: i.shipTo },
           { label: "Issued", value: dayTime(i.issuedAt) },
           { label: "Expires", value: dayTime(i.expiresAt) },
-          { label: "Signed with key", value: fingerprint(m.intent.publicKey) },
-          { label: "Signature", value: signatureValid(m.intent) ? "Valid (Ed25519)" : "Does not verify" },
+          { label: "Signed with key", value: m.intent.kid },
+          { label: "Signature", value: sig("intent-signature") },
         ],
         lines: [`Request: “${i.request}”`],
-        sandbox: "Signed in the sandbox with a stand-in key for the cardholder's wallet, derived from the order number.",
+        sandbox: keyNote("the cardholder's wallet", m.intent.kid),
       });
       out.push({
         kind: "mandate",
@@ -176,42 +209,52 @@ export function buildExhibits(src: Sources): Exhibit[] {
           { label: "Total", value: usd(c.total) },
           { label: "Ship to", value: c.shipTo },
           { label: "Signed", value: dayTime(c.signedAt) },
-          { label: "Signed with key", value: fingerprint(m.cart.publicKey) },
-          { label: "Signature", value: signatureValid(m.cart) ? "Valid (Ed25519)" : "Does not verify" },
+          { label: "Signed with key", value: m.cart.kid },
+          { label: "Signature", value: sig("cart-signature") },
+          ...(m.legacy ? [] : [{ label: "SHA-256", value: cartDigest(m.cart) }]),
         ],
         lines: c.items.map((x) => `${x.quantity} × ${x.name}, ${usd(x.price)}`).concat(`Shipping ${usd(c.shipping)}`),
-        sandbox: "Signed in the sandbox with a stand-in key for the agent, derived from the order number.",
+        sandbox: keyNote("the agent platform", m.cart.kid),
       });
-      const pu = order?.purchase_units[0];
-      const checks = verifyAgentOrder(
-        m.intent,
-        m.cart,
-        order && pu
-          ? {
-              id: order.id,
-              customId: pu.custom_id,
-              total: pu.amount.value,
-              shipTo: pu.shipping?.address ? shipLine(pu.shipping.address) : "",
-              items: (pu.items ?? []).map((x) => ({ sku: x.sku, quantity: x.quantity })),
-              createdAt: order.create_time,
-            }
-          : null,
-      );
+      const checks = m.checks;
       out.push({
         kind: "check",
         title: "Mandate check by Exhibit",
-        source: "Exhibit · signatures verified and the cart compared with the intent and the PayPal order, by code",
-        facts: [{ label: "Passed", value: `${checks.filter((x) => x.ok).length} of ${checks.length}` }],
-        lines: checks.map((x) => `${x.ok ? "Pass" : "Fail"}: ${x.label}. ${x.detail}.`),
+        source: "Exhibit · signatures verified against the published keys, and the cart compared with the intent and the PayPal order, by code",
+        facts: [
+          { label: "Passed", value: `${checks.filter((x) => x.ok).length} of ${checks.length}` },
+          { label: "Responsible", value: m.verdict.label },
+        ],
+        lines: [...checks.map((x) => `${x.ok ? "Pass" : "Fail"}: ${x.label}. ${x.detail}.`), `Responsible: ${m.verdict.label}. ${m.verdict.line}`],
       });
-      out.push({
-        kind: "transcript",
-        title: "The agent's log of the purchase",
-        source: `Buyer's agent platform · ${s.agent.name}`,
-        facts: [{ label: "Steps", value: String(s.agent.transcript.length) }],
-        lines: s.agent.transcript,
-        sandbox: "The agent's log is part of the story; the payment it describes is real in the sandbox.",
-      });
+      const run = m.run;
+      if (run) {
+        const told = run.told ? [`Told the cardholder: “${run.told}”`] : [];
+        out.push({
+          kind: "transcript",
+          title: "What the buyer's agent did",
+          source: `Buyer's agent platform · ${s.agent.name}, ${run.engine === "model" ? (run.model ?? "model") : "scripted agent"}`,
+          facts: [
+            { label: "Tool calls", value: String(run.steps.length) },
+            { label: "Agent", value: run.engine === "model" ? `${run.model ?? "Model"} with tools` : "Scripted agent, same tools" },
+            ...(run.fallback ? [{ label: "Why scripted", value: run.fallback.charAt(0).toUpperCase() + run.fallback.slice(1) }] : []),
+          ],
+          lines: [...run.steps.map(stepLine), ...told],
+          sandbox:
+            run.engine === "model"
+              ? "A live run of the buyer's agent when the case was opened; the payment it made is real in the sandbox."
+              : "The scripted agent replayed the story's purchase through the buyer agent's tools; the payment it made is real in the sandbox.",
+        });
+      } else {
+        out.push({
+          kind: "transcript",
+          title: "The agent's log of the purchase",
+          source: `Buyer's agent platform · ${s.agent.name}`,
+          facts: [{ label: "Steps", value: String(s.agent.transcript.length) }],
+          lines: s.agent.transcript,
+          sandbox: "The agent's log is part of the story (cases opened before 26 Oct 2026); the payment it describes is real in the sandbox.",
+        });
+      }
     }
   }
 
@@ -285,7 +328,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
         { label: "Price", value: usd(p.price) },
         { label: "Photos", value: String(p.photos) },
       ],
-      lines: [s.listing ?? p.listing],
+      lines: [s.listing ?? listingFor(p, Boolean(src.agent?.injection))],
     });
     const policyLines = s.policies
       ? s.policies
@@ -305,8 +348,9 @@ export function buildExhibits(src: Sources): Exhibit[] {
       ],
       lines: s.history.length ? s.history.map((h) => `${h.ref}, ${h.daysAgo} days ago: ${h.item}, ${h.total}. ${h.outcome}.`) : ["First order from this customer."],
     });
-    if (s.notes.length) {
-      out.push({ kind: "note", title: "Seller's notes", source: "Store order notes", facts: [], lines: s.notes });
+    const notes = src.agent?.injection ? [...s.notes, INJECTION_NOTE] : s.notes;
+    if (notes.length) {
+      out.push({ kind: "note", title: "Seller's notes", source: "Store order notes", facts: [], lines: notes });
     }
   }
 

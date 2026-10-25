@@ -1,8 +1,52 @@
 import "server-only";
 import { allowed } from "../paypal/disputes";
 import { filedDocument, ruledAt, stageLine, stageOf, type Stage } from "./derive";
-import { caseContext } from "./service";
+import { caseContext, type CaseContext } from "./service";
+import { storyClock } from "./exhibits";
+import { oddsFor } from "./verify";
+import { reviewAgentOrder } from "../agentic/review";
+import type { AgentView } from "../agentic/view";
 import type { Brief, Exhibit, Filing } from "./types";
+
+/** What the buyer's agent did on an agent story, and who the mandate check holds responsible. */
+function agentView(ctx: CaseContext): AgentView | null {
+  const s = ctx.scenario;
+  if (!s?.agent) return null;
+  const clock = storyClock(ctx.record?.openedAt ?? ctx.dispute.create_time, s);
+  const invoice = ctx.order?.purchase_units[0]?.invoice_id ?? ctx.invoiceId ?? "";
+  const m = reviewAgentOrder(s, { run: ctx.record?.agent, invoiceId: invoice, orderAt: clock.orderAt, order: ctx.order });
+  if (!m) return null;
+  const run = m.run;
+  const i = m.intent.mandate;
+  return {
+    request: i.request,
+    item: i.item,
+    limit: i.maxTotal,
+    cardholder: i.cardholder,
+    agentName: s.agent.name,
+    verdict: m.verdict,
+    checks: m.checks.map((c) => ({ label: c.label, ok: c.ok, detail: c.detail })),
+    legacy: m.legacy,
+    script: run ? undefined : s.agent.transcript,
+    run: run
+      ? {
+          engine: run.engine,
+          model: run.model,
+          fallback: run.fallback,
+          modelSteps: run.modelSteps,
+          modelTold: run.modelTold,
+          steps: run.steps,
+          told: run.told,
+          injection: Boolean(run.injection),
+          digest: run.digest,
+          orderId: run.orderId,
+          ms: run.ms,
+          intentKid: run.intent.kid,
+          cartKid: run.cart.kid,
+        }
+      : undefined,
+  };
+}
 
 /** Everything the case page shows, as plain JSON (also used for the server render). */
 export interface CaseView {
@@ -32,6 +76,8 @@ export interface CaseView {
   mine: boolean;
   openedAt: string;
   restored: boolean;
+  /** Agent stories: what the buyer's agent did, and who the mandate check holds responsible. */
+  agent: AgentView | null;
 }
 
 export async function caseView(id: string, visitor: string | null): Promise<CaseView> {
@@ -57,7 +103,8 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     evidences: (d.evidences ?? []).map((e) => ({ type: e.evidence_type, source: e.source, date: e.date })),
     actions: [...allowed(d)].filter((a) => a !== "self"),
     exhibits: ctx.exhibits,
-    brief: ctx.brief,
+    // Briefs saved before the clamp could show a refund call with the seller ahead; show them as a new one would.
+    brief: ctx.brief ? { ...ctx.brief, odds: oddsFor(ctx.brief.recommendation, ctx.brief.odds) } : null,
     filings: ctx.filings,
     filedPdf: doc ? { at: doc.at } : null,
     story: s ? { title: s.title, blurb: s.blurb, buyer: s.buyer.name } : null,
@@ -66,5 +113,6 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     openedAt: ctx.record?.openedAt ?? d.create_time,
     // The page says the response is PayPal's only when it is: read back from the evidence PayPal holds.
     restored: ctx.brief?.engine === "paypal",
+    agent: agentView(ctx),
   };
 }

@@ -1,4 +1,5 @@
 /** Shared shapes for cases, exhibits and briefs. Safe to import from client components. */
+import type { AgentRun } from "../agentic/types";
 
 export interface Fact {
   label: string;
@@ -76,6 +77,7 @@ export interface CaseRecord {
   brief?: Brief;
   filings: Filing[];
   restored?: string; // when Exhibit rebuilt this record from PayPal's own (the store had lost it)
+  agent?: AgentRun; // an agent story: the signed mandates and the buyer agent's tool calls, kept from the purchase
 }
 
 /** One step the server streams while it argues a case. */

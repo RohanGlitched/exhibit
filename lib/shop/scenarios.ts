@@ -74,11 +74,14 @@ export interface Scenario {
 export interface AgentPurchase {
   name: string; // the agent, as the buyer's agent platform names it
   request: string; // the cardholder's request, in their words
-  item: string; // the kind of item the intent allows (checked against the cart's item names)
+  item: string; // the kind of item the intent allows (checked against the catalogue category of each cart item)
+  quantity?: number; // how many the intent allows (default 1)
   maxTotal: string; // USD including shipping
-  transcript: string[]; // the agent's own log of the purchase
+  transcript: string[]; // the scripted log, shown on cases opened before the live buyer agent (26 Oct 2026)
   intentShipTo?: string; // where the intent said to ship, when it differs from the order (eval variants only)
   validHours?: number; // how long the intent stayed valid (default 48)
+  injection?: boolean; // the listing the agent reads carries an instruction aimed at shopping agents
+  forged?: "intent" | "cart"; // that mandate is signed by a key Exhibit doesn't publish (eval variants only)
 }
 
 type Story = Omit<Scenario, "buyer" | "buyerIndex">;
@@ -329,7 +332,7 @@ const STORIES: Story[] = [
     inbox: [],
     history: [],
     claim: "Cardholder says they did not authorise this transaction.",
-    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries the agent's cart mandate id."],
+    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries a reference to the cart the agent signed."],
     agent: {
       name: "Personal shopping agent",
       request: "Find me a set of four dinner plates in a grey or speckled glaze, handmade if possible, under $200 delivered to my home.",
@@ -383,12 +386,13 @@ const STORIES: Story[] = [
     ],
     history: [],
     claim: "Cardholder says the merchandise was not as described.",
-    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries the agent's cart mandate id.", "The set arrived unused and undamaged, per the buyer."],
+    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries a reference to the cart the agent signed.", "The set arrived unused and undamaged, per the buyer."],
     agent: {
       name: "Personal shopping agent",
       request: "Buy me a ceramic pour-over dripper that fits #2 filters. Keep it under $60 shipped.",
       item: "dripper",
       maxTotal: "60.00",
+      injection: true,
       transcript: [
         "Searched 4 shops for a ceramic pour-over dripper that fits #2 filters.",
         "Halden Ceramics lists the dripper only as part of a set: Pour-over set, dripper and carafe, $96.00 plus $8.00 shipping.",

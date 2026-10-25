@@ -1,8 +1,14 @@
 import "server-only";
-import { addTracking, cardCheckout, refundCapture } from "../paypal/orders";
+import { addTracking, cardCheckout, refundCapture, type Order } from "../paypal/orders";
 import { getDispute, simulateChargeback, type Dispute } from "../paypal/disputes";
 import type { PayPalError } from "../paypal/client";
-import { cartMandateId } from "../agentic/story";
+import { buyForStory } from "../agentic/buyer";
+import { signer } from "../agentic/keys";
+import type { AgentRun } from "../agentic/types";
+import { product } from "../shop/catalog";
+import { hasStorage } from "../storage";
+import { takeDaily } from "../budget";
+import { HOUR, allow } from "../limits";
 import { SCENARIOS, newCaseCast, scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { listCases, saveCase, updateCase } from "../store";
 import type { CaseRecord } from "./types";
@@ -40,19 +46,66 @@ async function waitForDispute(id: string): Promise<void> {
   }
 }
 
-export async function openCase(story: Scenario): Promise<CaseRecord> {
-  const invoiceId = invoiceNumber();
+/**
+ * An agent story's purchase: the buyer's agent shops under the cardholder's signed intent, signs its cart and
+ * pays through Orders v2 with "ap2:" + the cart's SHA-256 in custom_id. The model runs within a per-visitor cap
+ * (3 an hour; the pool refill 12 an hour) and takes each step from the daily model budget; past either, the
+ * scripted agent makes the same purchase through the same tools and the case says so.
+ */
+async function agentPurchase(s: Scenario, invoiceId: string, openedAt: Date, visitor?: string): Promise<{ order: Order; agent: AgentRun; invoiceId: string }> {
+  // Mandates signed with throwaway keys would never verify again: refuse them on the shared store.
+  if (hasStorage() && (["wallet", "agent"] as const).some((r) => signer(r)?.origin !== "env")) {
+    throw new Error("Agent stories need EXHIBIT_WALLET_SIGNING_KEY and EXHIBIT_AGENT_SIGNING_KEY set (see .env.example).");
+  }
+  const orderAt = new Date(openedAt.getTime() - s.orderDaysAgo * 86_400_000);
+  const allowModel = allow("buyer-agent", visitor ? `v:${visitor}` : "pool", visitor ? 3 : 12, HOUR);
+  const placed: { order: Order | null } = { order: null };
+  let invoice = invoiceId;
+  const run = await buyForStory(s, {
+    invoiceId,
+    orderAt,
+    allowModel,
+    noModelReason: visitor ? "this visitor has used the hour's three live buyer-agent runs" : "the pool's live buyer-agent runs for this hour are used up",
+    budget: () => takeDaily(),
+    pay: async (cart, customId) => {
+      // A second payment (the scripted agent after the model bought the wrong cart) needs its own invoice number.
+      if (placed.order) invoice = invoiceNumber();
+      placed.order = await cardCheckout({
+        buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
+        items: cart.mandate.items.map((i) => ({ name: i.name, sku: i.sku, price: i.price, quantity: i.quantity, description: product(i.sku).listing })),
+        shippingCost: cart.mandate.shipping,
+        invoiceId: invoice,
+        description: `Halden Ceramics order ${invoice}, placed by the buyer's shopping agent`,
+        customId,
+      });
+      return { orderId: placed.order.id, status: placed.order.status };
+    },
+  });
+  const { session: _session, ...agent } = run;
+  void _session;
+  return { order: placed.order!, agent, invoiceId: invoice };
+}
+
+export async function openCase(story: Scenario, opts: { visitor?: string } = {}): Promise<CaseRecord> {
+  let invoiceId = invoiceNumber();
+  // The story's clock starts here: the store's order time, and so the mandates' times, count back from it.
+  const openedAt = new Date();
   // One of the story's customers, and a tracking number of the carrier's shape, so no two cases look cloned.
   const cast = newCaseCast(story);
   const s = findScenario(story.id, cast) ?? story;
-  const order = await cardCheckout({
-    buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
-    items: s.items,
-    shippingCost: s.shipping,
-    invoiceId,
-    description: s.agent ? `Halden Ceramics order ${invoiceId}, placed by the buyer's shopping agent` : `Halden Ceramics order ${invoiceId}`,
-    customId: s.agent ? cartMandateId(invoiceId) : undefined,
-  });
+  let order: Order;
+  let agent: AgentRun | undefined;
+  if (s.agent) {
+    ({ order, agent, invoiceId } = await agentPurchase(s, invoiceId, openedAt, opts.visitor));
+  } else {
+    order = await cardCheckout({
+      buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
+      items: s.items,
+      shippingCost: s.shipping,
+      invoiceId,
+      description: `Halden Ceramics order ${invoiceId}`,
+    });
+  }
   const capture = order.purchase_units[0]?.payments?.captures?.[0];
   if (!capture || capture.status !== "COMPLETED") throw new Error("The sandbox payment didn't complete.");
 
@@ -87,7 +140,8 @@ export async function openCase(story: Scenario): Promise<CaseRecord> {
     orderId: order.id,
     captureId: capture.id,
     invoiceId,
-    openedAt: new Date().toISOString(),
+    openedAt: openedAt.toISOString(),
+    ...(agent ? { agent } : {}),
     refundId,
     filings: [],
   };
@@ -164,6 +218,6 @@ export async function claimReady(scenarioId: string, visitor: string): Promise<C
 }
 
 export async function claimFresh(s: Scenario, visitor: string): Promise<CaseRecord> {
-  const rec = await openCase(s);
+  const rec = await openCase(s, { visitor });
   return (await updateCase(rec.disputeId, (r) => ({ ...r, claimedBy: visitor, claimedAt: new Date().toISOString() }))) ?? rec;
 }

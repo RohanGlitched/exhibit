@@ -2,7 +2,7 @@ import Pleading from "./Pleading";
 import styles from "./home-art.module.css";
 
 const CALLS: { when: string; method: string; path: string; does: string }[] = [
-  { when: "Opening", method: "POST", path: "/v2/checkout/orders", does: "The buyer pays the shop by card: one call with intent CAPTURE. An agent's order carries its cart mandate id in custom_id." },
+  { when: "Opening", method: "POST", path: "/v2/checkout/orders", does: "The buyer pays the shop by card: one call with intent CAPTURE. On agent stories the buyer's agent makes this call itself, and custom_id carries ap2: and the SHA-256 of the cart it signed." },
   { when: "Opening", method: "POST", path: "/v2/checkout/orders/{id}/track", does: "The shop adds the carrier and tracking number to the order." },
   { when: "Opening", method: "POST", path: "/v2/payments/captures/{id}/refund", does: "“Charged twice” only: the duplicate charge is refunded in full, a real refund." },
   { when: "Opening", method: "POST", path: "/v2/customer-support/process-chargeback", does: "The card issuer files a chargeback (sandbox simulator, Visa and Mastercard reason codes)." },
