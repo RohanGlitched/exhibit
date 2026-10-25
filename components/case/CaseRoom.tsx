@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import PinnedBrief, { type Verdict } from "@/components/brief/PinnedBrief";
 import Stamp from "@/components/Stamp";
+import WebhookLine from "./WebhookLine";
+import Hearing from "./Hearing";
+import AgentTranscript from "./AgentTranscript";
 import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, dayTime, daysUntil, reasonLabel, usd } from "@/lib/format";
@@ -256,6 +259,9 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         <Link href="/desk" className={styles.back}>
           Desk
         </Link>
+        <Link href="/desk/analytics" className={styles.backAlt}>
+          Analytics
+        </Link>
         <span className={styles.status} data-status={view.status}>
           {closed ? view.whereLine : view.where === "filed" ? "Filed, PayPal reviewing" : view.where === "refunded" ? "Refund accepted" : (STATUSES[view.status] ?? view.status)}
         </span>
@@ -278,6 +284,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           Exhibit rebuilt this case from PayPal&apos;s own record: the response, the filing and the outcome below are what PayPal holds.
         </p>
       )}
+      <WebhookLine webhook={view.webhook} />
       {waiting && (
         <p className={styles.notice}>
           PayPal is still reviewing this chargeback before it reaches the seller. That usually takes five to eight minutes in the sandbox. You can argue the
@@ -331,6 +338,9 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         below={panel}
       />
       </div>
+
+      {phase !== "arguing" && <Hearing view={view} onBrief={(b) => { setSentences(b.sentences); setVerdict(toVerdict(b)); setView((v) => ({ ...v, brief: b })); }} />}
+      {view.agent && <AgentTranscript agent={view.agent} />}
 
       {error && (
         <p className={styles.error} role="alert">

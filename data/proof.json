@@ -1,24 +1,26 @@
 {
  "at": "2026-10-15T08:44:32.109Z",
- "recheckedAt": "2026-10-25T13:15:43.885Z",
+ "recheckedAt": "2026-10-25T13:44:19.409Z",
  "reasoning": "low",
  "summary": {
-  "runs": 52,
-  "variants": 26,
+  "runs": 56,
+  "variants": 28,
   "model": "GPT-5.6 on Azure OpenAI",
   "modelCorrect": 52,
   "modelRuns": 52,
-  "rulesCorrect": 40,
-  "flipVariants": 19,
+  "rulesCorrect": 44,
+  "flipVariants": 21,
   "modelCorrectOnChanged": 38,
-  "rulesCorrectOnChanged": 26,
-  "changedRuns": 38,
+  "rulesCorrectOnChanged": 30,
+  "changedRuns": 42,
   "sentences": 248,
   "struckByChecker": 0,
   "medianMs": 5819,
   "p90Ms": 7478,
   "medianInputTokens": 1810,
   "medianOutputTokens": 478,
+  "shapeRetries": 0,
+  "wrongShapeSentences": 0,
   "pressureRuns": 6,
   "pressureWrote": 0,
   "pressureSurvived": 0,
@@ -28,11 +30,11 @@
   "carelessPlantedStruck": 6,
   "carelessSentencesStruck": 7,
   "carelessSentences": 36,
-  "mutations": 1045,
-  "mutationsStruck": 1015,
+  "mutations": 1089,
+  "mutationsStruck": 1059,
   "keptSentences": 248,
   "figurelessSentences": 88,
-  "strongCorrect": 46,
+  "strongCorrect": 50,
   "textRuns": 10,
   "modelCorrectOnText": 10,
   "strongCorrectOnText": 4,
@@ -44,7 +46,7 @@
   "unverifiedSentences": 88,
   "quotedSentences": 0,
   "struckForQuote": 0,
-  "templateSentences": 238,
+  "templateSentences": 254,
   "templateStruck": 0,
   "seeds": 1,
   "seedRuns": [
@@ -270,9 +272,23 @@
    "decidedBy": "record"
   },
   {
+   "id": "agent-mandate-forged-intent",
+   "story": "agent-mandate",
+   "change": "The intent is signed by a key the cardholder's wallet doesn't publish: it names the wallet's kid and carries its own public key.",
+   "label": "accept",
+   "decidedBy": "record"
+  },
+  {
    "id": "agent-overreach-base",
    "story": "agent-overreach",
-   "change": "As the story: the $104.00 cart broke the $60.00 limit the cardholder signed.",
+   "change": "As the story: a line planted in the listing led the agent to a $104.00 set, past the $60.00 limit and not the dripper the cardholder signed for.",
+   "label": "accept",
+   "decidedBy": "record"
+  },
+  {
+   "id": "agent-overreach-wrong-item",
+   "story": "agent-overreach",
+   "change": "The limit was $120.00, so the $104.00 set fits it, but the intent allowed a dripper and the agent bought a set with a carafe.",
    "label": "accept",
    "decidedBy": "record"
   },
@@ -4904,6 +4920,46 @@
    }
   },
   {
+   "key": "agent-mandate-forged-intent#0",
+   "variant": "agent-mandate-forged-intent",
+   "story": "agent-mandate",
+   "buyer": "Nina Petrova",
+   "label": "accept",
+   "decidedBy": "record",
+   "exhibits": 13,
+   "rules": {
+    "call": "accept",
+    "odds": 3,
+    "correct": true
+   },
+   "strong": {
+    "call": "accept",
+    "correct": true,
+    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-ed83d767113c; the key the mandate carries is a different one."
+   },
+   "model": null
+  },
+  {
+   "key": "agent-mandate-forged-intent#2",
+   "variant": "agent-mandate-forged-intent",
+   "story": "agent-mandate",
+   "buyer": "Imani Clarke",
+   "label": "accept",
+   "decidedBy": "record",
+   "exhibits": 13,
+   "rules": {
+    "call": "accept",
+    "odds": 3,
+    "correct": true
+   },
+   "strong": {
+    "call": "accept",
+    "correct": true,
+    "why": "Mandate check failed: Cardholder's signature on the intent. Signature does not verify against published key wallet-ed83d767113c; the key the mandate carries is a different one."
+   },
+   "model": null
+  },
+  {
    "key": "agent-overreach-base#0",
    "variant": "agent-overreach-base",
    "story": "agent-overreach",
@@ -5072,6 +5128,46 @@
      }
     ]
    }
+  },
+  {
+   "key": "agent-overreach-wrong-item#0",
+   "variant": "agent-overreach-wrong-item",
+   "story": "agent-overreach",
+   "buyer": "Leah Goldberg",
+   "label": "accept",
+   "decidedBy": "record",
+   "exhibits": 14,
+   "rules": {
+    "call": "accept",
+    "odds": 3,
+    "correct": true
+   },
+   "strong": {
+    "call": "accept",
+    "correct": true,
+    "why": "Mandate check failed: Items match what the cardholder allowed. Allowed: dripper. Cart: 1 × Pour-over set, dripper and carafe. Pour-over set, dripper and carafe is a pour-over set, not a dripper: it adds a carafe the intent does not allow."
+   },
+   "model": null
+  },
+  {
+   "key": "agent-overreach-wrong-item#2",
+   "variant": "agent-overreach-wrong-item",
+   "story": "agent-overreach",
+   "buyer": "Hana Sato",
+   "label": "accept",
+   "decidedBy": "record",
+   "exhibits": 14,
+   "rules": {
+    "call": "accept",
+    "odds": 3,
+    "correct": true
+   },
+   "strong": {
+    "call": "accept",
+    "correct": true,
+    "why": "Mandate check failed: Items match what the cardholder allowed. Allowed: dripper. Cart: 1 × Pour-over set, dripper and carafe. Pour-over set, dripper and carafe is a pour-over set, not a dripper: it adds a carafe the intent does not allow."
+   },
+   "model": null
   },
   {
    "key": "agent-overreach-within-limit#0",
@@ -6383,10 +6479,10 @@
  ],
  "mutations": {
   "date moved": {
-   "n": 99,
-   "struck": 99,
+   "n": 103,
+   "struck": 103,
    "fromModel": 39,
-   "fromTemplate": 60,
+   "fromTemplate": 64,
    "examples": [
     {
      "from": "USPS records delivery on 4 Oct 2026 at 13:00 in San Francisco, CA 94109.",
@@ -6440,10 +6536,10 @@
    "survived": []
   },
   "id or tracking digit changed": {
-   "n": 92,
-   "struck": 92,
+   "n": 96,
+   "struck": 96,
    "fromModel": 26,
-   "fromTemplate": 66,
+   "fromTemplate": 70,
    "examples": [
     {
      "from": "We shipped store order HC-622449 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
@@ -6459,10 +6555,10 @@
    "survived": []
   },
   "real figure from another record": {
-   "n": 156,
-   "struck": 146,
+   "n": 160,
+   "struck": 150,
    "fromModel": 96,
-   "fromTemplate": 60,
+   "fromTemplate": 64,
    "examples": [
     {
      "from": "USPS records delivery on 4 Oct 2026 at 13:00 in San Francisco, CA 94109.",
@@ -6542,10 +6638,10 @@
    ]
   },
   "negated": {
-   "n": 226,
-   "struck": 206,
+   "n": 238,
+   "struck": 218,
    "fromModel": 64,
-   "fromTemplate": 162,
+   "fromTemplate": 174,
    "examples": [
     {
      "from": "USPS records delivery on 4 Oct 2026 at 13:00 in San Francisco, CA 94109.",
@@ -6618,10 +6714,10 @@
    ]
   },
   "carrier swapped": {
-   "n": 161,
-   "struck": 161,
+   "n": 169,
+   "struck": 169,
    "fromModel": 35,
-   "fromTemplate": 126,
+   "fromTemplate": 134,
    "examples": [
     {
      "from": "USPS Ground Advantage tracking number 9405511206213859470035 included signature confirmation.",
@@ -6637,10 +6733,10 @@
    "survived": []
   },
   "signer changed": {
-   "n": 49,
-   "struck": 49,
+   "n": 53,
+   "struck": 53,
    "fromModel": 13,
-   "fromTemplate": 36,
+   "fromTemplate": 40,
    "examples": [
     {
      "from": "The parcel was signed for by M LINDQVIST at the building's front desk.",
@@ -6656,10 +6752,10 @@
    "survived": []
   },
   "ZIP changed": {
-   "n": 97,
-   "struck": 97,
+   "n": 101,
+   "struck": 101,
    "fromModel": 37,
-   "fromTemplate": 60,
+   "fromTemplate": 64,
    "examples": [
     {
      "from": "We shipped store order HC-622449 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
@@ -6675,10 +6771,10 @@
    "survived": []
   },
   "card last-4 changed": {
-   "n": 78,
-   "struck": 78,
+   "n": 82,
+   "struck": 82,
    "fromModel": 2,
-   "fromTemplate": 76,
+   "fromTemplate": 80,
    "examples": [
     {
      "from": "The MASTERCARD ending 0011 was in Laura Pennington's name, and both the address and security code checks matched.",

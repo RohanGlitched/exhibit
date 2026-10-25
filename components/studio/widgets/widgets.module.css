@@ -49,6 +49,90 @@
 .faint {
   color: var(--ink-faint);
 }
+.bates[data-opens="true"] {
+  cursor: pointer;
+}
+.missedCell {
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Missed deadlines, set apart under the ladder: grey, one line each, no window to fill. */
+.missedHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px 14px;
+  flex-wrap: wrap;
+  margin: 14px 0 4px 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rule);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+.missedHead strong {
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11.5px;
+}
+.missedList {
+  list-style: none;
+  margin: 0 0 0 14px;
+  padding: 0;
+}
+.missedRow {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 5px 4px !important;
+  border-bottom: 1px solid var(--rule-soft) !important;
+  color: var(--ink-soft) !important;
+}
+.missedRow:hover {
+  background: var(--respondent-wash) !important;
+}
+.missedRow[aria-pressed="true"] {
+  background: var(--respondent-wash) !important;
+  color: var(--ink) !important;
+}
+.missedRow .bates {
+  color: var(--ink-soft);
+}
+.missedRow .rungLabel {
+  font-size: 12.5px;
+}
+.missedWhen {
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+.missedAmount {
+  min-width: 52px;
+  text-align: right;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-color: rgba(87, 98, 122, 0.5);
+}
+@container (max-width: 420px) {
+  .missedRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "id amount" "when when";
+  }
+  .missedRow .bates {
+    grid-area: id;
+  }
+  .missedRow .rungLabel {
+    display: none;
+  }
+  .missedWhen {
+    grid-area: when;
+  }
+  .missedAmount {
+    grid-area: amount;
+  }
+}
 
 /* Deadline ladder: two rails, one rung per case, the ten-day window as ten boxes. */
 .ladderHead {
@@ -422,6 +506,10 @@
 .chip[data-tone="due"] {
   background: rgba(211, 36, 44, 0.1);
   color: var(--due);
+}
+.chip[data-tone="missed"] {
+  background: rgba(87, 98, 122, 0.12);
+  color: var(--ink-soft);
 }
 .chip[data-tone="ink"] {
   background: rgba(19, 32, 58, 0.08);

@@ -77,7 +77,7 @@ flowchart LR
 
 1. **Read the case.** `GET /v1/customer/disputes/{id}`: reason, amount, stage, deadline, and the HATEOAS links that say which responses PayPal will take right now. Exhibit only offers an action when PayPal's links allow it.
 2. **Gather the records.** `GET /v2/checkout/orders/{id}` (items, ship-to, trackers), `GET /v2/payments/captures/{id}` (amount, fees, the issuer's address and security-code checks), `GET /v2/payments/refunds/{id}`, plus the store's own records: carrier scans, the inbox, the listing, the policy shown at checkout and the customer's history. Each becomes a lettered exhibit with its source.
-3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced function call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is strict (closed objects, every field required), so the brief can't arrive in another shape.
+3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced function call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is closed (every field required, optional ones nullable); Bedrock doesn't enforce a schema, so the server checks the brief's shape, asks once more if it's wrong, and strikes any sentence that arrives in the wrong shape.
 4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) reads every figure and name in a sentence, however it is written: amounts ("$104.00", "104.00 USD"), dates with or without a year ("3 Oct 2026", "October 3, 2026", "2026-10-03", "Oct 3"), times ("1:02 pm"), ids and tracking numbers, ZIPs, city and state, the carrier, who signed, counts and percentages. Each has to appear in the records the sentence cites, and the words it quotes have to be in a cited exhibit verbatim. One clause has to rest on one record (a date and a place, or a date and a time, from two different scans are struck); a date or amount said to be a refund, a delivery or the disputed amount has to be that in the record; and a sentence can't deny what its record says ("never delivered" against a delivery scan) or claim a signature no record shows. Struck sentences are never filed, and the brief shows why. A sentence with nothing to match is kept but marked unverified. The odds come from the tally's weights, not from the model.
 5. **File it.** `POST /v1/customer/disputes/{id}/provide-evidence` (multipart: the response as notes, tracking or refund details, and a PDF with every exhibit Bates-stamped HC-000001…), or `POST /accept-claim` for a full refund. In the sandbox, `POST /adjudicate` then asks PayPal's simulator for a ruling.
 
@@ -106,7 +106,15 @@ Every case on the desk was opened with three sandbox calls and no human:
 | "Charged twice" only: the double click and its refund | a second order, then `POST /v2/payments/captures/{id}/refund` |
 | The issuer files a chargeback | `POST /v2/customer-support/process-chargeback` (sandbox only), with Visa or Mastercard reason codes that PayPal maps to *not received* (13.1, 4855), *not as described* (C2), *unauthorised* (4837) and *duplicate* (4834) |
 
-PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`POST /api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place. `GET /api/health` reports the stock per story and anything near a deadline.
+PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`/api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place, emptiest stories first. `GET /api/health` reports the stock per story (a case counts as ready only with 36 hours or more to answer), when the refill last ran, a model ping, the webhook log, and every case near or past a deadline.
+
+### PayPal webhooks and the autopilot
+
+Exhibit subscribes to `CUSTOMER.DISPUTE.CREATED`, `.UPDATED` and `.RESOLVED` at `/api/webhooks/paypal`. Every delivery is checked with `POST /v1/notifications/verify-webhook-signature` before anything happens, with the event passed back byte for byte. On *created*, Exhibit argues the case before anyone opens it: with the model while the autopilot's half of the day's model budget lasts, with the rules engine after. On *updated* or *resolved*, it reads the case back from PayPal, stamps the state and outcome, and retires resolved pool stock. The case page shows "Received from PayPal at 09:12 UTC, argued 6 s later". Nothing replaces the brief on a filed or resolved case, from the page, MCP or the webhook. `scripts/register-webhook.mjs` registers the webhook through `POST /v1/notifications/webhooks` (no dashboard login), reusing one that already exists, and prints its id for `PAYPAL_WEBHOOK_ID`.
+
+### Keeping it alive
+
+The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/refill.yml) every two hours and from Vercel Cron once a day ([`vercel.json`](vercel.json)), both with `Authorization: Bearer CRON_SECRET`. **The repository owner must add `CRON_SECRET` as a repository secret** (Settings → Secrets and variables → Actions) with the same value as the Vercel env var, or the workflow fails on its first run. GitHub turns off scheduled workflows in a repository with no commits for 60 days, so push something after Nov 1 to keep it running through Dec 15.
 
 ## Measured
 
@@ -118,7 +126,7 @@ PayPal reviews a new chargeback for five to eight minutes before the seller can 
 | Deciding fact in the records: model vs stronger rules | 42 vs 42 of 42 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,015 of 1,045 struck |
+| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,059 of 1,089 struck |
 | The model's own true sentences struck | 0 of 248 |
 | Kept sentences with nothing to check, marked unverified | 88 of 248 |
 | Per brief | median 5.8 s, about 1,800 tokens in and 480 out |
@@ -143,8 +151,8 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 49 tests: the checker, PayPal read-back, mandates
-npx tsx --conditions=react-server scripts/eval.ts --price-in 1 --price-out 5 --max-usd 2.5   # the eval behind /proof (prices per 1M tokens)
+npm test                                                   # 95 tests: the checker, PayPal read-back, mandates, webhooks, health, hearing, studio
+npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
 ```
@@ -160,6 +168,7 @@ node scripts/e2e.cjs http://localhost:3600                  # open, argue and fi
 | [`lib/cases/verify.ts`](lib/cases/verify.ts) | No claim without a record: the sentence checker and the odds |
 | [`lib/cases/pdf.ts`](lib/cases/pdf.ts) | The Bates-stamped PDF filed with the evidence |
 | [`lib/cases/open.ts`](lib/cases/open.ts) | Opening sandbox cases and the ready pool |
+| [`lib/webhooks/`](lib/webhooks), [`app/api/webhooks/paypal/`](app/api/webhooks/paypal/route.ts) | PayPal dispute webhooks: signature check, the autopilot, the delivery log |
 | [`lib/agentic/`](lib/agentic) | Intent and cart mandates, Ed25519 signatures, and the checks on an agent-placed order |
 | [`lib/eval/variants.ts`](lib/eval/variants.ts), [`lib/eval/heldout.ts`](lib/eval/heldout.ts), [`lib/eval/baseline.ts`](lib/eval/baseline.ts), [`scripts/eval.ts`](scripts/eval.ts) | The labelled variants, injection and pressure sets, the held-out set, the stronger rules baseline and the eval runner |
 | [`lib/mcp.ts`](lib/mcp.ts) | The MCP server's tools |

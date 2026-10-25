@@ -65,8 +65,7 @@ async function flush(): Promise<void> {
   }
 }
 
-/** Takes one model call from today's budget; false when the day's cap is spent. */
-export async function takeDaily(): Promise<boolean> {
+async function syncDay(): Promise<void> {
   const d = today();
   if (d !== day) {
     const count = (await readCount(d).catch(() => ({ count: 0 }))).count;
@@ -76,6 +75,11 @@ export async function takeDaily(): Promise<boolean> {
       persisted = count;
     }
   }
+}
+
+/** Takes one model call from today's budget; false when the day's cap is spent. */
+export async function takeDaily(): Promise<boolean> {
+  await syncDay();
   if (persisted + local >= DAILY_CAP) return false;
   local++;
   // Sync every 10 calls, and on every call once the day is 80% spent, so instances can't overshoot by much.
@@ -87,4 +91,15 @@ export async function takeDaily(): Promise<boolean> {
 /** One model call for this visitor, if both their window and today's budget allow it. */
 export async function takeModelCall(ip: string): Promise<boolean> {
   return ipAllowed(ip) && (await takeDaily());
+}
+
+/**
+ * One model call for the webhook autopilot, which argues cases before anyone visits. It may only spend the first
+ * half of today's budget, so visitors always keep the other half; past that it argues with the rules engine.
+ */
+const AUTOPILOT_SHARE = 0.5;
+export async function takeAutopilotCall(): Promise<boolean> {
+  await syncDay();
+  if (persisted + local >= DAILY_CAP * AUTOPILOT_SHARE) return false;
+  return takeDaily();
 }

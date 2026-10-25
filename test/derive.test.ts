@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { filedDocument, mergeFilings, paypalFilings, resolvedFor, splitFiled, stageLine, stageOf, storyFromPayPal, trackerNumber } from "../lib/cases/derive.ts";
+import { daysPastDue, filedDocument, mergeFilings, paypalFilings, resolvedFor, splitFiled, stageLine, stageOf, storyFromPayPal, trackerNumber } from "../lib/cases/derive.ts";
 import { SCENARIOS, newCaseCast, scenario, storyForSku } from "../lib/shop/scenarios.ts";
 import type { Dispute } from "../lib/paypal/disputes.ts";
 import type { Order } from "../lib/paypal/orders.ts";
@@ -84,6 +84,16 @@ test("the list endpoint's WON/LOST summary is read directly", () => {
 test("statuses before a filing map to open and waiting", () => {
   assert.equal(stageOf(base({ status: "OPEN" }), []), "open");
   assert.equal(stageOf(base({ status: "WAITING_FOR_SELLER_RESPONSE" }), []), "waiting");
+});
+
+test("a case still waiting after PayPal's deadline is lapsed, not the seller's move", () => {
+  const now = Date.parse("2026-10-25T12:00:00.000Z");
+  const waiting = (due: string) => base({ status: "WAITING_FOR_SELLER_RESPONSE", seller_response_due_date: due } as never);
+  assert.equal(stageOf(waiting("2026-10-27T03:59:59.000Z"), [], now), "waiting");
+  assert.equal(stageOf(waiting("2026-10-15T03:59:59.000Z"), [], now), "lapsed");
+  assert.equal(daysPastDue("2026-10-15T03:59:59.000Z", now), 10);
+  assert.equal(daysPastDue("2026-10-27T03:59:59.000Z", now), null);
+  assert.equal(daysPastDue(null, now), null);
 });
 
 test("Exhibit's own filing and PayPal's copy of it are merged, not doubled", () => {

@@ -82,6 +82,12 @@
   text-decoration-thickness: 1.5px;
   color: var(--ink-faint);
 }
+.repairNote {
+  margin: -8px 0 14px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  color: var(--won);
+}
 .strikeNote {
   margin: -8px 0 14px;
   font-family: var(--font-sans), sans-serif;

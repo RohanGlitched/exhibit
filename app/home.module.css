@@ -332,6 +332,12 @@
   padding-bottom: 12px;
   border-bottom: 1px solid var(--rule);
 }
+.mandateNote {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
 .mandate ol {
   list-style: none;
   margin: 0;

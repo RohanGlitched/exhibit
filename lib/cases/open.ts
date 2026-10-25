@@ -1,10 +1,18 @@
 import "server-only";
-import { addTracking, cardCheckout, refundCapture } from "../paypal/orders";
+import { addTracking, cardCheckout, refundCapture, type Order } from "../paypal/orders";
 import { getDispute, simulateChargeback, type Dispute } from "../paypal/disputes";
 import type { PayPalError } from "../paypal/client";
-import { cartMandateId } from "../agentic/story";
+import { buyForStory } from "../agentic/buyer";
+import { signer } from "../agentic/keys";
+import type { AgentRun } from "../agentic/types";
+import { product } from "../shop/catalog";
+import { hasStorage } from "../storage";
+import { takeDaily } from "../budget";
+import { HOUR, allow } from "../limits";
 import { SCENARIOS, newCaseCast, scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { listCases, saveCase, updateCase } from "../store";
+import { storage } from "../storage";
+import { inPool, refillPlan } from "./pool";
 import type { CaseRecord } from "./types";
 
 /**
@@ -21,7 +29,6 @@ export const POOL_PER_SCENARIO = Number(process.env.POOL_PER_SCENARIO || 2);
 const READY = "WAITING_FOR_SELLER_RESPONSE";
 const MIN_DAYS_LEFT = 1.5; // never hand out a case the visitor can't finish before PayPal's deadline
 
-const inPool = (c: CaseRecord) => !c.claimedBy && !c.brief && !c.retired;
 const daysLeft = (d: Dispute) => (d.seller_response_due_date ? (new Date(d.seller_response_due_date).getTime() - Date.now()) / 86_400_000 : Infinity);
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -40,19 +47,66 @@ async function waitForDispute(id: string): Promise<void> {
   }
 }
 
-export async function openCase(story: Scenario): Promise<CaseRecord> {
-  const invoiceId = invoiceNumber();
+/**
+ * An agent story's purchase: the buyer's agent shops under the cardholder's signed intent, signs its cart and
+ * pays through Orders v2 with "ap2:" + the cart's SHA-256 in custom_id. The model runs within a per-visitor cap
+ * (3 an hour; the pool refill 12 an hour) and takes each step from the daily model budget; past either, the
+ * scripted agent makes the same purchase through the same tools and the case says so.
+ */
+async function agentPurchase(s: Scenario, invoiceId: string, openedAt: Date, visitor?: string): Promise<{ order: Order; agent: AgentRun; invoiceId: string }> {
+  // Mandates signed with throwaway keys would never verify again: refuse them on the shared store.
+  if (hasStorage() && (["wallet", "agent"] as const).some((r) => signer(r)?.origin !== "env")) {
+    throw new Error("Agent stories need EXHIBIT_WALLET_SIGNING_KEY and EXHIBIT_AGENT_SIGNING_KEY set (see .env.example).");
+  }
+  const orderAt = new Date(openedAt.getTime() - s.orderDaysAgo * 86_400_000);
+  const allowModel = allow("buyer-agent", visitor ? `v:${visitor}` : "pool", visitor ? 3 : 12, HOUR);
+  const placed: { order: Order | null } = { order: null };
+  let invoice = invoiceId;
+  const run = await buyForStory(s, {
+    invoiceId,
+    orderAt,
+    allowModel,
+    noModelReason: visitor ? "this visitor has used the hour's three live buyer-agent runs" : "the pool's live buyer-agent runs for this hour are used up",
+    budget: () => takeDaily(),
+    pay: async (cart, customId) => {
+      // A second payment (the scripted agent after the model bought the wrong cart) needs its own invoice number.
+      if (placed.order) invoice = invoiceNumber();
+      placed.order = await cardCheckout({
+        buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
+        items: cart.mandate.items.map((i) => ({ name: i.name, sku: i.sku, price: i.price, quantity: i.quantity, description: product(i.sku).listing })),
+        shippingCost: cart.mandate.shipping,
+        invoiceId: invoice,
+        description: `Halden Ceramics order ${invoice}, placed by the buyer's shopping agent`,
+        customId,
+      });
+      return { orderId: placed.order.id, status: placed.order.status };
+    },
+  });
+  const { session: _session, ...agent } = run;
+  void _session;
+  return { order: placed.order!, agent, invoiceId: invoice };
+}
+
+export async function openCase(story: Scenario, opts: { visitor?: string } = {}): Promise<CaseRecord> {
+  let invoiceId = invoiceNumber();
+  // The story's clock starts here: the store's order time, and so the mandates' times, count back from it.
+  const openedAt = new Date();
   // One of the story's customers, and a tracking number of the carrier's shape, so no two cases look cloned.
   const cast = newCaseCast(story);
   const s = findScenario(story.id, cast) ?? story;
-  const order = await cardCheckout({
-    buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
-    items: s.items,
-    shippingCost: s.shipping,
-    invoiceId,
-    description: s.agent ? `Halden Ceramics order ${invoiceId}, placed by the buyer's shopping agent` : `Halden Ceramics order ${invoiceId}`,
-    customId: s.agent ? cartMandateId(invoiceId) : undefined,
-  });
+  let order: Order;
+  let agent: AgentRun | undefined;
+  if (s.agent) {
+    ({ order, agent, invoiceId } = await agentPurchase(s, invoiceId, openedAt, opts.visitor));
+  } else {
+    order = await cardCheckout({
+      buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
+      items: s.items,
+      shippingCost: s.shipping,
+      invoiceId,
+      description: `Halden Ceramics order ${invoiceId}`,
+    });
+  }
   const capture = order.purchase_units[0]?.payments?.captures?.[0];
   if (!capture || capture.status !== "COMPLETED") throw new Error("The sandbox payment didn't complete.");
 
@@ -87,7 +141,8 @@ export async function openCase(story: Scenario): Promise<CaseRecord> {
     orderId: order.id,
     captureId: capture.id,
     invoiceId,
-    openedAt: new Date().toISOString(),
+    openedAt: openedAt.toISOString(),
+    ...(agent ? { agent } : {}),
     refundId,
     filings: [],
   };
@@ -113,11 +168,38 @@ async function poolProblem(c: CaseRecord): Promise<string | null> {
   return `PayPal shows it as ${d.status.toLowerCase().replace(/_/g, " ")}`;
 }
 
+/** When the refill last ran and what it did, for /api/health. Kept in the store (in memory without one). */
+export interface RefillRun {
+  startedAt: string;
+  finishedAt?: string;
+  by: string;
+  opened?: number;
+  retired?: number;
+  errors?: number;
+}
+const REFILL_KEY = "pool/last-refill.json";
+let lastRun: RefillRun | null = null;
+
+async function noteRefill(run: RefillRun): Promise<void> {
+  lastRun = run;
+  await storage()?.write(REFILL_KEY, JSON.stringify(run)).catch((e) => console.error("refill note", (e as Error).message));
+}
+
+export async function lastRefill(): Promise<RefillRun | null> {
+  const s = storage();
+  if (!s) return lastRun;
+  const r = await s.read(REFILL_KEY).catch(() => null);
+  return r ? (JSON.parse(r.text) as RefillRun) : lastRun;
+}
+
 /**
  * Retires pooled cases that have gone stale, then opens cases until every scenario has POOL_PER_SCENARIO
- * unclaimed ones (ready, or still with PayPal). Called by the cron and after every case a visitor takes.
+ * unclaimed ones (ready, or still with PayPal), emptiest stories first. Called by the cron (the GitHub
+ * schedule every two hours and Vercel's daily one) and after every case a visitor takes.
  */
-export async function refillPool(limit = 6): Promise<{ opened: string[]; retired: string[]; errors: string[] }> {
+export async function refillPool(limit = 6, by = "cron"): Promise<{ opened: string[]; retired: string[]; errors: string[] }> {
+  const run: RefillRun = { startedAt: new Date().toISOString(), by };
+  await noteRefill(run);
   const cases = await listCases(true);
   const opened: string[] = [];
   const retired: string[] = [];
@@ -132,16 +214,19 @@ export async function refillPool(limit = 6): Promise<{ opened: string[]; retired
     }
     stock.set(c.scenarioId ?? "", (stock.get(c.scenarioId ?? "") ?? 0) + 1);
   }
-  for (const s of SCENARIOS) {
-    for (let i = stock.get(s.id) ?? 0; i < POOL_PER_SCENARIO && opened.length < limit; i++) {
-      try {
-        opened.push((await openCase(s)).disputeId);
-      } catch (e) {
-        errors.push(`${s.id}: ${(e as Error).message}`);
-        break;
-      }
+  // Empty stories first: a visit-time refill opens only three, and a story with no stock makes a visitor wait.
+  const failed = new Set<string>();
+  for (const id of refillPlan(Object.fromEntries(stock), SCENARIOS.map((s) => s.id), POOL_PER_SCENARIO, limit)) {
+    const s = SCENARIOS.find((x) => x.id === id);
+    if (!s || failed.has(id)) continue;
+    try {
+      opened.push((await openCase(s)).disputeId);
+    } catch (e) {
+      errors.push(`${s.id}: ${(e as Error).message}`);
+      failed.add(id);
     }
   }
+  await noteRefill({ ...run, finishedAt: new Date().toISOString(), opened: opened.length, retired: retired.length, errors: errors.length });
   return { opened, retired, errors };
 }
 
@@ -164,6 +249,6 @@ export async function claimReady(scenarioId: string, visitor: string): Promise<C
 }
 
 export async function claimFresh(s: Scenario, visitor: string): Promise<CaseRecord> {
-  const rec = await openCase(s);
+  const rec = await openCase(s, { visitor });
   return (await updateCase(rec.disputeId, (r) => ({ ...r, claimedBy: visitor, claimedAt: new Date().toISOString() }))) ?? rec;
 }

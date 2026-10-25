@@ -5,6 +5,7 @@ import { FIGURES, OPTIONS, CHARGEFLOW_PRICING } from "@/lib/impact";
 import { day } from "@/lib/format";
 import proof from "@/data/proof.json";
 import styles from "./proof.module.css";
+import ReviewProof from "./ReviewProof";
 
 export const metadata: Metadata = {
   title: "Proof",
@@ -147,7 +148,7 @@ function Call({ run, side }: { run: Row; side: "rules" | "strong" | "model" }) {
   return (
     <span className={styles.call} data-ok={r.correct} data-call={r.call} title={side === "strong" && run.strong ? run.strong.why : undefined}>
       {CALL[r.call]}
-      {side === "model" && r.odds !== undefined ? <small> {r.odds}%</small> : null}
+      {side === "model" && r.odds !== undefined ? <small> {r.call === "accept" ? Math.min(50, r.odds) : r.odds}%</small> : null}
     </span>
   );
 }
@@ -360,7 +361,7 @@ export default function ProofPage() {
           <div>
             <h2>Where the model earns its place</h2>
             <p>
-              On {s.recordRuns} of the {s.runs} runs the deciding fact is in a structured record, and a rule that reads the records gets{" "}
+              On {s.recordRuns} of the {s.modelRuns || s.runs} runs the model answered, the deciding fact is in a structured record, and a rule that reads the records gets{" "}
               {s.strongCorrectOnRecord} of them right; the model gets {s.modelCorrectOnRecord}. The difference is on the {textRuns} runs where it sits only
               in free text, such as a buyer&apos;s email saying the vase arrived or a listing that does or doesn&apos;t warn about the glaze: the model{" "}
               {s.modelCorrectOnText}, the stronger rules {s.strongCorrectOnText}, the fallback {s.rulesCorrectOnText}. That free-text margin is the number to
@@ -644,6 +645,8 @@ export default function ProofPage() {
         </section>
       )}
 
+      <ReviewProof />
+
       <section className={`${styles.section} ${styles.split}`}>
         <div>
           <h2>What this doesn&apos;t show</h2>
@@ -675,7 +678,7 @@ export default function ProofPage() {
           {P.recheckedAt && (
             <li>
               The model&apos;s answers are from the run on {day(P.at)}; the checker, the stronger rules and the mutations were re-run over those saved
-              answers on {day(P.recheckedAt)} with no new model calls.
+              answers on {day(P.recheckedAt)} with no new model calls. Variants added since that run show &ldquo;not run&rdquo;.
             </li>
           )}
           {notRun.length > 0 && <li>Not measured in this run: {notRun.join(", ")}.</li>}

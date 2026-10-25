@@ -1,6 +1,8 @@
 "use client";
 
 import type { AgWidgetDataFormat, AgWidgetParams } from "ag-studio";
+import { daysWords, openCase } from "./cells";
+import { MISSED_SHOWN, splitLadder } from "./ladder";
 import { num, plural, selectedValues, text, usd, useWidgetRows, type Refs } from "./shared";
 import styles from "./widgets.module.css";
 
@@ -22,7 +24,8 @@ export interface DeadlineLadderWidget {
 /**
  * Cases on the seller's move as the rungs of a ladder, soonest PayPal deadline at the top. Each rung is
  * the ten-day window as ten boxes, the days still left filled in; two days or fewer and the rung is inked
- * in due red. Clicking a rung cross-filters the page to that case.
+ * in due red. Deadlines that already passed with no answer are not rungs: they sit under the ladder in grey,
+ * as missed. Clicking a case cross-filters the page to it; double-clicking opens the case.
  */
 export default function DeadlineLadder(params: AgWidgetParams<DeadlineLadderWidget>) {
   const { dataMapping, format, widgetApi } = params;
@@ -39,18 +42,23 @@ export default function DeadlineLadder(params: AgWidgetParams<DeadlineLadderWidg
 
   if (!data || !caseField || !daysField) return null;
 
-  // Only cases still on the clock have days left; the rest are filed, decided or with PayPal.
-  const rungs = data.rows
-    .filter((r) => r[daysField.key] != null)
-    .map((r) => ({
-      id: text(r[caseField.key]),
-      days: num(r[daysField.key]),
-      amount: amountField ? num(r[amountField.key]) : null,
-      label: labelField ? text(r[labelField.key]) : "",
-    }))
-    .sort((a, b) => a.days - b.days || (b.amount ?? 0) - (a.amount ?? 0));
+  // Only cases on PayPal's clock have a day count; the rest are filed, decided or with PayPal.
+  const { live, missed, urgent: soon } = splitLadder(
+    data.rows
+      .filter((r) => r[daysField.key] != null)
+      .map((r) => ({
+        id: text(r[caseField.key]),
+        days: num(r[daysField.key]),
+        amount: amountField ? num(r[amountField.key]) : null,
+        label: labelField ? text(r[labelField.key]) : "",
+      })),
+    urgent,
+  );
 
-  if (rungs.length === 0) {
+  const toggle = (id: string) => widgetApi.toggleCrossFilter({ type: "value", field: caseField, value: id, group: 0 });
+  const money = (rows: { amount: number | null }[]) => (amountField ? `, ${usd(rows.reduce((s, r) => s + (r.amount ?? 0), 0))}` : "");
+
+  if (live.length === 0 && missed.length === 0) {
     return (
       <div className={styles.paper}>
         <p className={styles.empty}>Nothing on your move. Every case has an answer filed or a ruling from PayPal.</p>
@@ -58,64 +66,117 @@ export default function DeadlineLadder(params: AgWidgetParams<DeadlineLadderWidg
     );
   }
 
-  const shown = rungs.slice(0, maxRungs);
-  const rest = rungs.slice(maxRungs);
-  const urgentCount = rungs.filter((r) => r.days <= urgent).length;
-  const urgentMoney = rungs.filter((r) => r.days <= urgent).reduce((s, r) => s + (r.amount ?? 0), 0);
+  const shown = live.slice(0, maxRungs);
+  const rest = live.slice(maxRungs);
+  const missedShown = missed.slice(0, MISSED_SHOWN);
+  const missedRest = missed.slice(MISSED_SHOWN);
 
   return (
     <div className={styles.paper}>
       <p className={styles.ladderHead}>
-        <span>
-          <strong>{plural(rungs.length, "case")}</strong> on your move
-        </span>
-        {urgentCount > 0 && (
-          <span className={styles.due}>
-            {urgentCount} due within {plural(urgent, "day")}
-            {amountField ? `, ${usd(urgentMoney)}` : ""}
+        {live.length > 0 ? (
+          <span>
+            <strong>{plural(live.length, "case")}</strong> on your move
           </span>
+        ) : (
+          <span>Nothing live on your move</span>
         )}
+        <span>
+          {missed.length > 0 && <span className={styles.faint}>{missed.length} overdue</span>}
+          {missed.length > 0 && soon.count > 0 && " · "}
+          {soon.count > 0 && (
+            <span className={styles.due}>
+              {soon.count} due within {plural(urgent, "day")}
+              {amountField ? `, ${usd(soon.amount)}` : ""}
+            </span>
+          )}
+        </span>
       </p>
-      <ol className={styles.ladder} aria-label="Cases on your move, soonest deadline first">
-        {shown.map((r) => {
-          const soon = r.days <= urgent;
-          const on = picked.has(r.id);
-          return (
-            <li key={r.id}>
-              <button
-                type="button"
-                className={styles.rung}
-                data-soon={soon}
-                aria-pressed={on}
-                data-dim={picked.size > 0 && !on}
-                onClick={() => widgetApi.toggleCrossFilter({ type: "value", field: caseField, value: r.id, group: 0 })}
-                title={`Show only ${r.id}`}
-              >
-                <span className={styles.rungId}>
-                  <span className={styles.bates}>{r.id}</span>
-                  {r.label && <span className={styles.rungLabel}>{r.label}</span>}
-                </span>
-                <span className={styles.window} aria-hidden="true">
-                  {Array.from({ length: windowDays }, (_, i) => (
-                    <i key={i} data-left={i < r.days} />
-                  ))}
-                </span>
-                <span className={styles.rungDays}>{r.days <= 0 ? "Due today" : r.days === 1 ? "1 day" : `${r.days} days`}</span>
-                {r.amount != null && <span className={styles.rungAmount}>{usd(r.amount)}</span>}
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+      {live.length === 0 ? (
+        <p className={styles.empty}>No deadline is open inside PayPal&apos;s window: every case has an answer filed, a ruling, or a missed deadline below.</p>
+      ) : (
+        <ol className={styles.ladder} aria-label="Cases on your move, soonest deadline first">
+          {shown.map((r) => {
+            const red = r.days <= urgent;
+            const on = picked.has(r.id);
+            return (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  className={styles.rung}
+                  data-soon={red}
+                  aria-pressed={on}
+                  data-dim={picked.size > 0 && !on}
+                  onClick={() => toggle(r.id)}
+                  onDoubleClick={() => openCase(r.id)}
+                  title={`Click to show only ${r.id}; double-click to open it`}
+                >
+                  <span className={styles.rungId}>
+                    <span className={styles.bates}>{r.id}</span>
+                    {r.label && <span className={styles.rungLabel}>{r.label}</span>}
+                  </span>
+                  <span className={styles.window} aria-hidden="true">
+                    {Array.from({ length: windowDays }, (_, i) => (
+                      <i key={i} data-left={i < r.days} />
+                    ))}
+                  </span>
+                  <span className={styles.rungDays}>{daysWords(r.days)}</span>
+                  {r.amount != null && <span className={styles.rungAmount}>{usd(r.amount)}</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
       {rest.length > 0 && (
         <p className={styles.more}>
-          and {plural(rest.length, "more case")} with {rest[0].days} or more days left
-          {amountField ? `, ${usd(rest.reduce((s, r) => s + (r.amount ?? 0), 0))}` : ""}
+          and {plural(rest.length, "more case")} with {rest[0].days} or more days left{money(rest)}
         </p>
       )}
-      <p className={styles.scale} aria-hidden="true">
-        Each box is a day of PayPal&apos;s {windowDays}-day window to answer
-      </p>
+      {live.length > 0 && (
+        <p className={styles.scale} aria-hidden="true">
+          Each box is a day of PayPal&apos;s {windowDays}-day window to answer
+        </p>
+      )}
+      {missed.length > 0 && (
+        <>
+          <p className={styles.missedHead}>
+            <strong>Missed</strong>
+            <span>
+              PayPal&apos;s deadline passed with no answer{money(missed)}
+            </span>
+          </p>
+          <ul className={styles.missedList} aria-label="Deadlines missed with no answer">
+            {missedShown.map((r) => {
+              const on = picked.has(r.id);
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    className={styles.missedRow}
+                    aria-pressed={on}
+                    data-dim={picked.size > 0 && !on}
+                    onClick={() => toggle(r.id)}
+                    onDoubleClick={() => openCase(r.id)}
+                    title={`Click to show only ${r.id}; double-click to open it`}
+                  >
+                    <span className={styles.bates}>{r.id}</span>
+                    <span className={styles.rungLabel}>{r.label}</span>
+                    <span className={styles.missedWhen}>{daysWords(r.days)}</span>
+                    {r.amount != null && <span className={styles.missedAmount}>{usd(r.amount)}</span>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {missedRest.length > 0 && (
+            <p className={styles.more}>
+              and {plural(missedRest.length, "more missed case")}
+              {money(missedRest)}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }

@@ -8,8 +8,11 @@ import { usd } from "../format";
 import { argueWithModel, argueWithRules, modelAvailable } from "./brief";
 import { mergeFilings, paypalFilings, restoredNote, sellerEvidence, splitFiled, storyFromPayPal, trackerNumber } from "./derive";
 import { buildExhibits, exhibitText } from "./exhibits";
-import { checkSentence } from "./verify";
+import { checkSentence, oddsFor } from "./verify";
+import { argueBlocked } from "./guard";
 import { briefPdf } from "./pdf";
+import { repairBrief } from "./repair";
+import { rulingRequest } from "./hearing";
 import type { ArgueEvent, Brief, CaseRecord, Exhibit, Filing } from "./types";
 
 export interface CaseContext {
@@ -54,6 +57,7 @@ export async function caseContext(id: string): Promise<CaseContext> {
     openedAt: record?.openedAt ?? dispute.create_time,
     invoiceId,
     refund,
+    agent: record?.agent,
   });
   const filings = mergeFilings(record?.filings ?? [], paypalFilings(dispute));
   const brief = record?.brief ?? restoredBrief(dispute, exhibits);
@@ -79,7 +83,7 @@ function restoredBrief(d: Dispute, exhibits: Exhibit[]): Brief | null {
     headline: `${restoredNote(e.date)}. ${accepted ? "The seller accepted the claim." : "The seller fought it with the records cited in each sentence."}`,
     sentences,
     tally: rules.tally,
-    odds: rules.odds,
+    odds: oddsFor(accepted ? "accept" : "fight", rules.odds),
     evidenceTypes: [e.evidence_type],
     engine: "paypal",
     ms: 0,
@@ -88,7 +92,7 @@ function restoredBrief(d: Dispute, exhibits: Exhibit[]): Brief | null {
 }
 
 /** A record for a case Exhibit holds no note of, rebuilt from PayPal, so what happens next is saved. */
-async function ensureRecord(ctx: CaseContext): Promise<CaseRecord> {
+export async function ensureRecord(ctx: CaseContext): Promise<CaseRecord> {
   if (ctx.record) return ctx.record;
   const rec: CaseRecord = {
     disputeId: ctx.dispute.dispute_id,
@@ -113,11 +117,21 @@ async function ensureRecord(ctx: CaseContext): Promise<CaseRecord> {
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export interface ArgueOptions {
+  ip: string;
+  paced: boolean;
+  /** Decided by the caller (the webhook autopilot keeps to its own share of the budget); else per visitor. */
+  useModel?: boolean;
+  /** Set by the webhook autopilot: the delivery it argues from. It never replaces a brief someone else wrote. */
+  autopilot?: { eventId: string; receivedAt: string };
+}
+
 /**
  * Argues a case and streams each step: exhibits as they're gathered, then the brief sentence by sentence.
  * The pacing between events is presentation only; every exhibit and sentence is real when it is sent.
+ * A filed or resolved case keeps its brief: argue() refuses it.
  */
-export async function* argue(id: string, opts: { ip: string; paced: boolean }): AsyncGenerator<ArgueEvent> {
+export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<ArgueEvent> {
   yield { type: "status", text: "Reading the case from PayPal" };
   let ctx: CaseContext;
   try {
@@ -126,13 +140,18 @@ export async function* argue(id: string, opts: { ip: string; paced: boolean }): 
     yield { type: "error", text: (e as Error).message };
     return;
   }
+  const blocked = argueBlocked(ctx.dispute.status, ctx.filings);
+  if (blocked) {
+    yield { type: "error", text: blocked };
+    return;
+  }
   for (const exhibit of ctx.exhibits) {
     yield { type: "exhibit", exhibit };
     if (opts.paced) await pause(140);
   }
 
   let brief: Brief;
-  const useModel = modelAvailable() && (await takeModelCall(opts.ip));
+  const useModel = modelAvailable() && (opts.useModel ?? (await takeModelCall(opts.ip)));
   if (useModel) {
     yield { type: "status", text: "Weighing the records" };
     try {
@@ -147,6 +166,17 @@ export async function* argue(id: string, opts: { ip: string; paced: boolean }): 
     brief = argueWithRules(ctx.dispute, ctx.exhibits);
   }
 
+  // The bounded repair step: struck sentences get one re-cite, kept only if the checker keeps it.
+  if (brief.engine === "model" && brief.sentences.some((s) => !s.kept) && (await takeModelCall(opts.ip))) {
+    yield { type: "status", text: "Re-citing the struck sentences once" };
+    brief = await repairBrief(ctx.dispute, brief, ctx.exhibits)
+      .then((r) => r.brief)
+      .catch((e) => {
+        console.error("repair failed", (e as Error).message);
+        return brief;
+      });
+  }
+
   for (const [index, sentence] of brief.sentences.entries()) {
     yield { type: "sentence", sentence, index };
     if (opts.paced) await pause(sentence.kept ? 420 : 650);
@@ -156,14 +186,20 @@ export async function* argue(id: string, opts: { ip: string; paced: boolean }): 
     if (opts.paced) await pause(120);
   }
   await ensureRecord(ctx).catch((e) => console.error("record", (e as Error).message));
-  await updateCase(id, (r) => ({ ...r, brief })).catch(() => null);
+  const auto = opts.autopilot;
+  await updateCase(id, (r) => {
+    // Checked again on the stored record: a filing that landed while the brief was being written wins.
+    if (argueBlocked(undefined, r.filings)) return null;
+    if (auto && r.brief) return null; // a visitor argued it first: keep theirs
+    return auto ? { ...r, brief, autopilot: { ...auto, arguedAt: new Date().toISOString(), briefAt: brief.createdAt, engine: brief.engine } } : { ...r, brief };
+  }).catch(() => null);
   yield { type: "brief", brief };
 }
 
 export type FileAction = "evidence" | "accept" | "offer" | "message" | "ruling";
 
 /** Does what the seller approved, through the Disputes API, and records it on the case. */
-export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller"): Promise<Filing> {
+export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller", opts: { ip?: string } = {}): Promise<Filing> {
   const ctx = await caseContext(id);
   const brief = ctx.brief;
   if (!brief) throw new Error("Argue the case before filing anything.");
@@ -174,20 +210,23 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
   let filing: Filing;
 
   if (action === "ruling") {
-    // Sandbox only: nobody at PayPal reads sandbox evidence, so the simulator rules the way the filing points:
-    // for the seller when Exhibit fought with the records on its side, for the buyer when it accepted.
+    // Sandbox only: nobody at PayPal reads sandbox evidence, so the simulated reviewer does. It cross-examines the
+    // PDF PayPal holds (or a hearing already held on it after the filing is reused), and its verdict is the
+    // outcome Exhibit asks for. Without a model the rules engine decides from the filing, and the case says so.
     if (!can.has("adjudicate")) throw new Error("PayPal hasn't opened this case for a ruling yet. It usually takes about 20 minutes after filing.");
-    const fought = ctx.filings.some((f) => f.action === "evidence");
-    const outcome = fought && brief.odds >= 50 ? "SELLER_FAVOR" : "BUYER_FAVOR";
+    const { hearingForRuling } = await import("./cross");
+    const { hearing, fresh } = await hearingForRuling(ctx, opts.ip ?? "ruling");
+    const { outcome, summary } = rulingRequest(hearing);
     await adjudicate(id, outcome);
     const f: Filing = {
       at: new Date().toISOString(),
       action: "ruling",
       ok: true,
       by: "sandbox",
-      summary: outcome === "SELLER_FAVOR" ? "Asked the sandbox to rule for the seller, as the filed records support" : "Asked the sandbox to rule for the buyer, as accepted",
+      summary,
+      detail: `Asked the sandbox to rule ${outcome === "SELLER_FAVOR" ? "for the seller" : "for the buyer"}`,
     };
-    await updateCase(id, (r) => ({ ...r, filings: [...r.filings, f] }));
+    await updateCase(id, (r) => ({ ...r, filings: [...r.filings, f], ...(fresh && hearing.engine === "model" ? { hearing } : {}) }));
     return f;
   }
 

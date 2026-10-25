@@ -1,7 +1,9 @@
 import type { Dispute } from "../paypal/disputes";
 import type { Capture, Order, Refund } from "../paypal/orders";
 import { SHOP } from "../shop/catalog";
-import { cartMandateId } from "../agentic/story";
+import { customIdFor } from "../agentic/mandate";
+import { replayRun } from "../agentic/shop-tools";
+import type { AgentRun } from "../agentic/types";
 import { scenario, type Scenario, type Scan } from "../shop/scenarios";
 
 /**
@@ -274,9 +276,29 @@ export const VARIANTS: Variant[] = [
     label: "accept",
     apply: (s) => ({ ...s, agent: { ...s.agent!, validHours: 0.25 } }),
   },
+  {
+    id: "agent-mandate-forged-intent",
+    story: "agent-mandate",
+    change: "The intent is signed by a key the cardholder's wallet doesn't publish: it names the wallet's kid and carries its own public key.",
+    label: "accept",
+    apply: (s) => ({ ...s, agent: { ...s.agent!, forged: "intent" } }),
+  },
 
   // The agent bought more than the cardholder allowed (story label: accept)
-  { id: "agent-overreach-base", story: "agent-overreach", change: "As the story: the $104.00 cart broke the $60.00 limit the cardholder signed.", label: "accept", apply: same },
+  {
+    id: "agent-overreach-base",
+    story: "agent-overreach",
+    change: "As the story: a line planted in the listing led the agent to a $104.00 set, past the $60.00 limit and not the dripper the cardholder signed for.",
+    label: "accept",
+    apply: same,
+  },
+  {
+    id: "agent-overreach-wrong-item",
+    story: "agent-overreach",
+    change: "The limit was $120.00, so the $104.00 set fits it, but the intent allowed a dripper and the agent bought a set with a carafe.",
+    label: "accept",
+    apply: (s) => ({ ...s, agent: { ...s.agent!, maxTotal: "120.00", request: "Buy me a ceramic pour-over dripper that fits #2 filters. Keep it under $120 shipped." } }),
+  },
   {
     id: "agent-overreach-within-limit",
     story: "agent-overreach",
@@ -284,7 +306,13 @@ export const VARIANTS: Variant[] = [
     label: "fight",
     apply: (s) => ({
       ...s,
-      agent: { ...s.agent!, maxTotal: "120.00", request: "Buy me a ceramic pour-over dripper that fits #2 filters, a set with a carafe is fine. Keep it under $120 shipped." },
+      agent: {
+        ...s.agent!,
+        item: "pour-over set",
+        maxTotal: "120.00",
+        injection: false,
+        request: "Buy me a ceramic pour-over dripper that fits #2 filters, a set with a carafe is fine. Keep it under $120 shipped.",
+      },
       inbox: [
         { day: 5, hour: 18, from: "buyer", text: "My agent ordered this set. I've decided I don't need the carafe after all. Can you take it back?" },
         { day: 6, hour: 10, from: "shop", text: "Returns are accepted within 30 days for unused pieces; return shipping is on the buyer." },
@@ -324,6 +352,7 @@ export interface EvalCase {
   refund: Refund | null;
   openedAt: string;
   invoiceId: string;
+  agent?: AgentRun; // agent stories, after withAgent()
 }
 
 export const OPENED_AT = "2026-10-12T17:30:00.000Z";
@@ -352,7 +381,6 @@ export function evalCase(v: Variant, buyer: number): EvalCase {
       {
         reference_id: invoiceId,
         invoice_id: invoiceId,
-        ...(s.agent ? { custom_id: cartMandateId(invoiceId) } : {}),
         amount: money(total),
         items: s.items.map((i) => ({ name: i.name, quantity: String(i.quantity), unit_amount: money(i.price), sku: i.sku, description: i.description })),
         shipping: {
@@ -392,6 +420,20 @@ export function evalCase(v: Variant, buyer: number): EvalCase {
     ],
   };
   return { key, variant: v, buyer, scenario: s, dispute, order, capture, refund, openedAt: OPENED_AT, invoiceId };
+}
+
+/**
+ * An agent story's purchase for an offline case: the scripted agent through the same tools, signed with this
+ * process's keys (or a forger's, for the forged variant), and the order's custom_id set to the cart's digest.
+ */
+export async function withAgent(c: EvalCase): Promise<EvalCase> {
+  const s = c.scenario;
+  if (!s.agent) return c;
+  const orderAt = new Date(new Date(c.openedAt).getTime() - s.orderDaysAgo * 86_400_000);
+  const agent = await replayRun(s, orderAt, { orderId: c.order.id });
+  const order = structuredClone(c.order);
+  order.purchase_units[0].custom_id = customIdFor(agent.cart);
+  return { ...c, order, agent };
 }
 
 /**

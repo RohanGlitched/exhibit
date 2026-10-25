@@ -1,5 +1,11 @@
 import type { AgPageState, AgReportState, AgWidgetLayoutState } from "ag-studio";
+import type { AnalyticsPayload } from "./data";
+import { PAGES } from "./pages";
+import { SAVED_WIDGET } from "./saved";
+import { ladderRows } from "./widgets/ladder";
 import type { ExhibitRegistry } from "./widgets/definitions";
+
+export { PAGES };
 
 /**
  * The report the analytics page opens on: three pages, each laid out on Studio's 24-column canvas.
@@ -27,120 +33,148 @@ const kpi = (text: string, value: { id: string; aggregation?: "sum" }, caption: 
   },
 });
 
-export const PAGES = [
-  { id: "deadlines", title: "Deadlines", note: "What PayPal is waiting on, soonest first" },
-  { id: "money", title: "Money", note: "Kept, refunded, lost and still at stake" },
-  { id: "checker", title: "The checker", note: "What stood on a record, and what was struck" },
-] as const;
+// Room for the category labels on a horizontal bar chart's y axis, so case ids print in full.
+const roomForLabels = { theme: { common: { legend: { enabled: true }, padding: { left: 18, right: 18 } } } };
 
-const deadlines: Page = {
-  id: "deadlines",
-  widgets: {
-    ladder: {
-      type: "exhibit-deadline-ladder",
-      dataMapping: {
-        case: [field("cases.caseId")],
-        daysLeft: [min("cases.daysLeft")],
-        amount: [sum("cases.amount")],
-        label: [field("cases.story")],
+/**
+ * Deadlines. The ladder is as tall as the rungs it draws (live cases and missed ones, from the desk as it
+ * loads), and the stamps stand beside it at the same height; the case list sorts live work first.
+ */
+function deadlines(payload: AnalyticsPayload | null): Page {
+  const clocked = (payload?.cases ?? []).filter((c) => c.daysLeft != null);
+  const live = clocked.filter((c) => (c.daysLeft ?? 0) >= 0).length;
+  const missedCount = clocked.length - live;
+  // The stamps beside the ladder need about 19 rows for six stamps.
+  const h = payload ? Math.max(19, ladderRows(live, missedCount)) : 31;
+  const tall = h >= 31;
+  return {
+    id: "deadlines",
+    widgets: {
+      ladder: {
+        type: "exhibit-deadline-ladder",
+        dataMapping: {
+          case: [field("cases.caseId")],
+          daysLeft: [min("cases.daysLeft")],
+          amount: [sum("cases.amount")],
+          label: [field("cases.story")],
+        },
+        format: { ...titled("Deadline ladder", "Every case on your move, soonest PayPal deadline at the top"), style: { urgentDays: 2, windowDays: 10 } },
       },
-      format: { ...titled("Deadline ladder", "Every case on your move, soonest PayPal deadline at the top"), style: { urgentDays: 2, windowDays: 10 } },
-    },
-    stages: {
-      type: "exhibit-stamps",
-      dataMapping: { category: [field("cases.stage")], value: [sum("cases.n")] },
-      format: { ...titled("Where every case stands"), style: { unit: "cases", tilt: true } },
-    },
-    "stake-by-reason": {
-      type: "column-chart-grouped",
-      dataMapping: { categoryKey: [field("cases.reason")], valueKey: [sum("cases.atStake")] },
-      format: { ...titled("Still at stake, by reason"), crossFilter: "highlight" },
-    },
-    "cases-grid": {
-      type: "grid",
-      dataMapping: {
-        cols: [
-          field("cases.caseId"),
-          field("cases.story"),
-          field("cases.buyer"),
-          field("cases.stage"),
-          field("cases.daysLeft"),
-          field("cases.call"),
-          field("cases.odds"),
-          sum("cases.amount"),
-        ],
+      stages: {
+        type: "exhibit-stamps",
+        dataMapping: { category: [field("cases.stage")], value: [sum("cases.n")] },
+        format: { ...titled("Where every case stands"), style: { unit: "cases", tilt: true } },
       },
-      sort: [{ field: { id: "cases.daysLeft" }, direction: "asc" }],
-      format: titled("Every case on the desk", "Click a rung, a stamp or a bar to narrow this list"),
+      "stake-by-reason": {
+        type: "column-chart-grouped",
+        dataMapping: { categoryKey: [field("cases.reason")], valueKey: [sum("cases.atStake")] },
+        format: { ...titled("Still at stake, by reason", "Reasons with nothing at stake are left off"), crossFilter: "highlight" },
+      },
+      "cases-grid": {
+        type: "grid",
+        dataMapping: {
+          cols: [
+            field("cases.caseId"),
+            field("cases.queue"),
+            field("cases.daysLeft"),
+            sum("cases.amount"),
+            field("cases.call"),
+            field("cases.buyer"),
+            field("cases.story"),
+          ],
+        },
+        // Live moves first, then missed deadlines, then PayPal's queue, then decided cases.
+        sort: [{ field: field("cases.queue"), direction: "asc" }],
+        format: titled("Every case on the desk", "Live work first. Click a rung, a stamp or a bar to narrow it; double-click a case to open it"),
+      },
     },
-  },
-  widgetLayout: {
-    ladder: at(0, 0, 14, 31),
-    stages: at(14, 0, 10, 15),
-    "stake-by-reason": at(14, 15, 10, 16),
-    "cases-grid": at(0, 31, 24, 21),
-  },
-};
+    widgetLayout: tall
+      ? {
+          ladder: at(0, 0, 14, h),
+          stages: at(14, 0, 10, 15),
+          "stake-by-reason": at(14, 15, 10, h - 15),
+          "cases-grid": at(0, h, 24, 22),
+        }
+      : {
+          ladder: at(0, 0, 14, h),
+          stages: at(14, 0, 10, h),
+          "cases-grid": at(0, h, 24, 22),
+          "stake-by-reason": at(0, h + 22, 24, 15),
+        },
+    filter: {
+      widget: { "stake-by-reason": [{ field: field("cases.atStake"), model: { operator: "greaterThan", value: 0 } }] },
+    },
+  };
+}
 
-const money: Page = {
-  id: "money",
-  widgets: {
-    "kpi-kept": kpi("Kept by fighting", sum("cases.kept"), "Won with evidence"),
-    "kpi-refunded": kpi("Refunded", sum("cases.refunded"), "Claims accepted"),
-    "kpi-lost": kpi("Lost", sum("cases.lostAmount"), "Fought and lost, or late"),
-    "kpi-stake": kpi("Still at stake", sum("cases.atStake"), "Not decided yet"),
-    "call-filter": {
-      type: "button-filter",
-      dataMapping: { value: [field("cases.call")] },
-      format: { ...titled("Exhibit's call"), style: { selection: { type: "multiple" }, dimensions: { height: 30 } } },
-    },
-    ledger: {
-      type: "exhibit-ledger",
-      dataMapping: {
-        kept: [sum("cases.kept")],
-        refunded: [sum("cases.refunded")],
-        lost: [sum("cases.lostAmount")],
-        atStake: [sum("cases.atStake")],
+function money(): Page {
+  const page: Page = {
+    id: "money",
+    widgets: {
+      "kpi-kept": kpi("Kept by fighting", sum("cases.kept"), "Won with evidence"),
+      "kpi-refunded": kpi("Refunded", sum("cases.refunded"), "Claims accepted"),
+      "kpi-lost": kpi("Lost", sum("cases.lostAmount"), "Fought and lost, or late"),
+      "kpi-stake": kpi("Still at stake", sum("cases.atStake"), "Not decided yet"),
+      "call-filter": {
+        type: "button-filter",
+        dataMapping: { value: [field("cases.call")] },
+        format: { ...titled("Exhibit's call"), style: { selection: { type: "multiple" }, dimensions: { height: 30 } } },
       },
-      format: { ...titled("Kept, refunded, lost", "Every disputed dollar, ruled off like a ledger"), style: { showAtStake: true, showStrip: true } },
-    },
-    "outcome-by-reason": {
-      type: "column-chart-stacked",
-      dataMapping: {
-        categoryKey: [field("cases.reason")],
-        valueKey: [sum("cases.atStake"), sum("cases.lostAmount"), sum("cases.kept"), sum("cases.refunded")],
+      ledger: {
+        type: "exhibit-ledger",
+        dataMapping: {
+          kept: [sum("cases.kept")],
+          refunded: [sum("cases.refunded")],
+          lost: [sum("cases.lostAmount")],
+          atStake: [sum("cases.atStake")],
+        },
+        format: { ...titled("Kept, refunded, lost", "Every disputed dollar, ruled off like a ledger"), style: { showAtStake: true, showStrip: true } },
       },
-      format: {
-        ...titled("Disputed money by reason", "Still at stake, lost, kept by fighting, refunded"),
-        crossFilter: "highlight",
-        style: { theme: { common: { legend: { enabled: true } } } },
+      "outcome-by-reason": {
+        type: "column-chart-stacked",
+        dataMapping: {
+          categoryKey: [field("cases.reason")],
+          valueKey: [sum("cases.atStake"), sum("cases.lostAmount"), sum("cases.kept"), sum("cases.refunded")],
+        },
+        format: {
+          ...titled("Disputed money by reason", "Still at stake, lost, kept by fighting, refunded"),
+          crossFilter: "highlight",
+          style: { theme: { common: { legend: { enabled: true } } } },
+        },
+      },
+      "money-by-call": {
+        type: "bar-chart-grouped",
+        dataMapping: { categoryKey: [field("cases.call")], valueKey: [sum("cases.amount")] },
+        format: { ...titled("Money by Exhibit's call"), crossFilter: "highlight", style: roomForLabels },
+      },
+      "filed-evidence": {
+        type: "bar-chart-grouped",
+        dataMapping: { categoryKey: [field("cases.evidenceType")], valueKey: [sum("cases.n")] },
+        format: { ...titled("What the seller filed with PayPal", "Cases by the evidence on file"), crossFilter: "highlight", style: roomForLabels },
       },
     },
-    "money-by-call": {
-      type: "bar-chart-grouped",
-      dataMapping: { categoryKey: [field("cases.call")], valueKey: [sum("cases.amount")] },
-      format: { ...titled("Money by Exhibit's call"), crossFilter: "highlight" },
+    // Four money figures at six tracks each, so no figure is cut to "…"; the call filter heads the ledger column.
+    widgetLayout: {
+      "kpi-kept": at(0, 0, 6, 7),
+      "kpi-refunded": at(6, 0, 6, 7),
+      "kpi-lost": at(12, 0, 6, 7),
+      "kpi-stake": at(18, 0, 6, 7),
+      "call-filter": at(0, 7, 9, 8),
+      ledger: at(0, 15, 9, 21),
+      "outcome-by-reason": at(9, 7, 15, 29),
+      "money-by-call": at(0, 36, 12, 16),
+      "filed-evidence": at(12, 36, 12, 16),
     },
-    "filed-evidence": {
-      type: "bar-chart-grouped",
-      dataMapping: { categoryKey: [field("cases.evidenceType")], valueKey: [sum("cases.n")] },
-      format: { ...titled("What the seller filed with PayPal", "Cases by the evidence on file"), crossFilter: "highlight" },
-    },
-  },
-  widgetLayout: {
-    "kpi-kept": at(0, 0, 4, 7),
-    "kpi-refunded": at(4, 0, 4, 7),
-    "kpi-lost": at(8, 0, 4, 7),
-    "kpi-stake": at(12, 0, 4, 7),
-    "call-filter": at(16, 0, 8, 7),
-    ledger: at(0, 7, 8, 26),
-    "outcome-by-reason": at(8, 7, 16, 26),
-    "money-by-call": at(0, 33, 12, 16),
-    "filed-evidence": at(12, 33, 12, 16),
-  },
-};
+  };
+  // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it.
+  if (SAVED_WIDGET) {
+    page.widgets![SAVED_WIDGET.id] = SAVED_WIDGET.widget as never;
+    page.widgetLayout![SAVED_WIDGET.id] = SAVED_WIDGET.layout;
+  }
+  return page;
+}
 
-const checker: Page = {
+const checker = (): Page => ({
   id: "checker",
   widgets: {
     "kpi-written": kpi("Sentences written", sum("sentences.n"), "Across every brief Exhibit argued"),
@@ -158,15 +192,15 @@ const checker: Page = {
       format: {
         ...titled("Sentences per brief", "Kept and struck, case by case"),
         crossFilter: "highlight",
-        style: { theme: { common: { legend: { enabled: true } } } },
+        style: roomForLabels,
       },
     },
     "sentence-grid": {
       type: "grid",
       dataMapping: {
-        cols: [field("sentences.caseId"), field("cases.story"), field("sentences.engine"), field("sentences.kept"), field("sentences.why"), sum("sentences.n"), sum("sentences.cites")],
+        cols: [field("sentences.caseId"), field("sentences.kept"), field("sentences.why"), sum("sentences.cites"), field("sentences.engine"), field("cases.story")],
       },
-      format: titled("Briefs, sentence by sentence"),
+      format: titled("Briefs, sentence by sentence", "Double-click a case to open it"),
     },
   },
   widgetLayout: {
@@ -178,9 +212,7 @@ const checker: Page = {
     "sentences-by-case": at(13, 7, 11, 25),
     "sentence-grid": at(0, 32, 24, 18),
   },
-};
-
-const PAGE_STATES = [deadlines, money, checker];
+});
 
 /**
  * A phone gets the same widgets stacked in reading order: small tiles two to a row, everything else full
@@ -207,19 +239,31 @@ function stacked(page: Page): Page {
       y += 8;
       half = 0;
     }
-    const h = Math.max(16, Math.min(l.ySpan, 26));
+    // The ladder keeps the height it was sized to; anything else is capped so one widget isn't a whole screen.
+    // On a phone the ladder's lines wrap, so it gets a few rows more than on a desktop.
+    // A short strip (the call filter) stays short, with a row for its buttons to wrap.
+    const h = id === "ladder" ? Math.max(16, l.ySpan + 5) : l.ySpan <= 9 ? l.ySpan + 1 : Math.max(16, Math.min(l.ySpan, 26));
     next[id] = at(0, y, 24, h);
     y += h;
   }
+  if (half) y += 8;
   return { ...page, widgetLayout: next };
 }
 
-export function initialReport(narrow: boolean, withAi: boolean): AgReportState<ExhibitRegistry> {
+/** Canvas rows a page fills: the bottom edge of its lowest widget. */
+export function pageRows(page: Pick<Page, "widgetLayout"> | undefined): number {
+  return Object.values(page?.widgetLayout ?? {}).reduce((m, l) => (l ? Math.max(m, l.yTrack + l.ySpan) : m), 0);
+}
+
+export function initialReport(narrow: boolean, payload: AnalyticsPayload | null): AgReportState<ExhibitRegistry> {
+  const pages = [deadlines(payload), money(), checker()];
   return {
-    pages: narrow ? PAGE_STATES.map(stacked) : PAGE_STATES,
+    pages: narrow ? pages.map(stacked) : pages,
     selectedPageId: "deadlines",
+    // Opens to read: the analyst's panel stays closed until the reader asks for it, so the canvas has the
+    // whole width and no figure is cut short.
     panels: {
-      ai: { collapsed: narrow || !withAi },
+      ai: { collapsed: true },
       filters: { collapsed: true },
       data: { collapsed: true },
       edit: { collapsed: true },

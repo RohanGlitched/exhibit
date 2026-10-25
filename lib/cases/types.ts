@@ -1,4 +1,6 @@
 /** Shared shapes for cases, exhibits and briefs. Safe to import from client components. */
+import type { Hearing } from "./hearing";
+import type { AgentRun } from "../agentic/types";
 
 export interface Fact {
   label: string;
@@ -28,6 +30,8 @@ export interface BriefSentence {
   quote?: string; // the words from a cited exhibit the sentence rests on, as the model quoted them (checked verbatim)
   checked?: string[]; // the figures and names the checker matched to the record (kept sentences)
   unverified?: true; // kept, but nothing in it the checker can match: held only to its citation
+  /** Set when the checker struck the sentence as first written and one re-cite attempt fixed it. */
+  repaired?: { from: string; fromCites: string[]; why: string };
 }
 
 export interface TallyItem {
@@ -51,6 +55,7 @@ export interface Brief {
   ms: number;
   createdAt: string;
   tokens?: { input: number; output: number };
+  retried?: boolean; // the model's first brief came back in the wrong shape and was asked for again
 }
 
 export interface Filing {
@@ -79,6 +84,12 @@ export interface CaseRecord {
   brief?: Brief;
   filings: Filing[];
   restored?: string; // when Exhibit rebuilt this record from PayPal's own (the store had lost it)
+  /** Set when the webhook autopilot argued the case from PayPal's CUSTOMER.DISPUTE.CREATED delivery. */
+  autopilot?: { eventId: string; receivedAt: string; arguedAt: string; briefAt: string; engine: Brief["engine"] };
+  /** The latest dispute event PayPal delivered for this case, and the state Exhibit read back after it. */
+  lastEvent?: { id: string; type: string; receivedAt: string; status: string; outcome?: string };
+  hearing?: Hearing; // the latest cross-examination by the simulated reviewer
+  agent?: AgentRun; // an agent story: the signed mandates and the buyer agent's tool calls, kept from the purchase
 }
 
 /** One step the server streams while it argues a case. */

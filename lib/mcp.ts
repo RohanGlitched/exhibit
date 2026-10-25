@@ -13,6 +13,12 @@ import { HOUR, MINUTE, allow } from "./limits";
 import { SITE_URL } from "./site";
 import { reasonLabel, usd } from "./format";
 import type { Brief } from "./cases/types";
+import { objectCase, reviewCase } from "./cases/cross";
+import { transcriptText } from "./cases/hearing";
+import { customIdFor, preflightCart, responsibility, verifyAgentOrder, type Check } from "./agentic/mandate";
+import { orderFacts } from "./agentic/review";
+import { getOrder } from "./paypal/orders";
+import type { CartMandate, IntentMandate, Signed } from "./agentic/types";
 
 /**
  * Exhibit as an MCP server (Streamable HTTP at /api/mcp), so a seller's own agent can run the dispute desk:
@@ -23,8 +29,41 @@ import type { Brief } from "./cases/types";
  */
 
 export const SERVER_INSTRUCTIONS = `Exhibit is a dispute desk for PayPal sellers, running on the PayPal sandbox for a demo shop, Halden Ceramics.
-Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the odds from a weighted tally, and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. open_case opens a fresh sandbox dispute from one of the stories.
-PayPal gives a seller ten days to answer a chargeback. Recommend refunding when the records say the seller would lose.`;
+Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the odds from a weighted tally, and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. cross_examine puts the case before a simulated PayPal reviewer that reads only the PDF and objects sentence by sentence; Exhibit answers from the exhibits, the checker strikes answers it can't back, and the reviewer's verdict is what a later sandbox ruling request follows. Pass an objection of your own to take the reviewer's chair. open_case opens a fresh sandbox dispute from one of the stories.
+PayPal gives a seller ten days to answer a chargeback. Recommend refunding when the records say the seller would lose.
+For buyer agents and agent platforms: preflight_cart checks a cart against a signed intent mandate before anything is signed or paid, and verify_mandate runs Exhibit's full mandate check on a signed intent and cart (and, given a PayPal order id, the order), with who is responsible. Keys are at ${SITE_URL}/.well-known/exhibit-keys.json.`;
+
+/* AP2-style mandates, as Exhibit signs them (lib/agentic/types.ts). */
+const intentMandate = z.object({
+  type: z.literal("intent"),
+  id: z.string(),
+  cardholder: z.string(),
+  agent: z.string(),
+  request: z.string(),
+  item: z.string(),
+  quantity: z.number().int().min(1).optional(),
+  maxTotal: z.string(),
+  shipTo: z.string(),
+  merchant: z.string(),
+  issuedAt: z.string(),
+  expiresAt: z.string(),
+});
+const cartMandate = z.object({
+  type: z.literal("cart"),
+  id: z.string(),
+  intentId: z.string(),
+  agent: z.string(),
+  merchant: z.string(),
+  items: z.array(z.object({ sku: z.string(), name: z.string(), quantity: z.number().int().min(1), price: z.string() })).min(1).max(20),
+  shipping: z.string(),
+  total: z.string(),
+  shipTo: z.string(),
+  signedAt: z.string(),
+});
+const signed = <T extends z.ZodTypeAny>(m: T) =>
+  z.object({ mandate: m, alg: z.literal("EdDSA").default("EdDSA"), kid: z.string().max(80), signature: z.string().max(200), publicKey: z.string().max(200).optional() });
+
+const checkLines = (checks: Check[]) => checks.map((c) => `- ${c.ok ? "Pass" : "Fail"}: ${c.label}. ${c.detail}.`);
 
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 const caseLink = (id: string) => `${SITE_URL}/case/${id}`;
@@ -49,6 +88,71 @@ async function ipKey(): Promise<string> {
 }
 
 function register(server: McpServer) {
+  server.registerTool(
+    "preflight_cart",
+    {
+      title: "Check a cart against a signed intent",
+      description:
+        "Before signing or paying: would this cart fit the cardholder's signed intent mandate? Prices the cart from the Halden Ceramics catalogue (one parcel, so shipping is the dearest item's), checks the intent's signature against Exhibit's published keys, then the limit, the item category (a pour-over set is not a dripper), the quantity, the ship-to and the intent's validity now. Read-only.",
+      inputSchema: z.object({
+        intent: signed(intentMandate).describe("The signed intent mandate: { mandate, alg, kid, signature }"),
+        items: z.array(z.object({ sku: z.string().max(40), quantity: z.number().int().min(1).max(10) })).min(1).max(10),
+        ship_to: z.string().max(200).describe('Where the cart ships, written as the intent writes it, e.g. "2817 Lafayette Street, Denver, CO 80205"'),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ intent, items, ship_to }) => {
+      if (!allow("mcp-mandate", await ipKey(), 60, 10 * MINUTE)) return text("That's a lot of checks in ten minutes from one place. Try again in a few minutes.");
+      const r = preflightCart(intent as Signed<IntentMandate>, items, ship_to);
+      return text(
+        [
+          `${r.ok ? "Fits the signed intent." : "Does not fit the signed intent."} Cart: ${r.items.map((i) => `${i.quantity} × ${i.name} (${i.sku}), ${usd(i.price)}`).join("; ") || "nothing priced"}. Shipping ${usd(r.shipping)}, total ${usd(r.total)}.`,
+          ...checkLines(r.checks),
+        ].join("\n"),
+      );
+    },
+  );
+
+  server.registerTool(
+    "verify_mandate",
+    {
+      title: "Verify an agent purchase's mandates",
+      description:
+        "Exhibit's full mandate check on an agent-placed purchase: the cardholder's signature on the intent and the agent platform's on the cart (each verified against the key Exhibit publishes for that kid, never a key the mandate carries), the cart against the intent, and, given the PayPal order id, the order against the cart (custom_id must be \"ap2:\" + the SHA-256 of the signed cart). Says who is responsible: the cardholder, the agent platform or the merchant. Read-only.",
+      inputSchema: z.object({
+        intent: signed(intentMandate).describe("The signed intent mandate: { mandate, alg, kid, signature }"),
+        cart: signed(cartMandate).describe("The signed cart mandate: { mandate, alg, kid, signature }"),
+        order_id: z
+          .string()
+          .regex(/^[A-Z0-9]{10,24}$/)
+          .optional()
+          .describe("The PayPal order id on the demo shop's sandbox account, to check the order against the cart"),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ intent, cart, order_id }) => {
+      if (!allow("mcp-mandate", await ipKey(), 60, 10 * MINUTE)) return text("That's a lot of checks in ten minutes from one place. Try again in a few minutes.");
+      const c = cart as Signed<CartMandate>;
+      let order = null;
+      if (order_id) {
+        try {
+          order = orderFacts(await getOrder(order_id));
+        } catch (e) {
+          return text(`Couldn't read PayPal order ${order_id}: ${(e as Error).message}`);
+        }
+      }
+      const checks = verifyAgentOrder(intent as Signed<IntentMandate>, c, order);
+      const v = responsibility(checks);
+      return text(
+        [
+          `${checks.filter((x) => x.ok).length} of ${checks.length} checks pass. Responsible: ${v.label}. ${v.line}`,
+          ...checkLines(checks),
+          `The PayPal order for this cart should carry custom_id ${customIdFor(c)}.`,
+        ].join("\n"),
+      );
+    },
+  );
+
   server.registerTool(
     "list_cases",
     {
@@ -139,10 +243,46 @@ function register(server: McpServer) {
     async ({ id, action }) => {
       if (!allow("mcp-file", await ipKey(), 30, 10 * MINUTE)) return text("That's a lot of filings in ten minutes from one place. Try again in a few minutes.");
       try {
-        const f = await fileAction(id, action, "autopilot");
+        const f = await fileAction(id, action, "autopilot", { ip: await ipKey() });
         return text(`${f.summary}. PayPal now holds it on ${id}. Case page: ${caseLink(id)}`);
       } catch (e) {
         return text(`PayPal didn't take it: ${(e as Error).message}`);
+      }
+    },
+  );
+
+  server.registerTool(
+    "cross_examine",
+    {
+      title: "Cross-examine a case",
+      description:
+        "Puts an argued case before a simulated PayPal dispute reviewer (a second model role) that reads only the PDF PayPal holds, or the PDF Exhibit would file, and raises up to four objections sentence by sentence. Exhibit answers each from the exhibits or concedes; the same checker strikes any answer whose figures aren't in the exhibits it cites; the reviewer rules and gives a verdict, which a later 'ruling' filing follows. On an unfiled draft, concessions withdraw sentences or change the call to refund. With `objection`, you take the reviewer's chair instead: Exhibit answers your objection, checked, and nothing is saved. Takes up to a minute.",
+      inputSchema: z.object({
+        id: idArg,
+        objection: z.string().min(8).max(300).optional().describe("Your own objection to the response. Leave out to run the full hearing."),
+        sentence: z.number().int().min(1).max(20).optional().describe("The response sentence your objection is about (1-based). Leave out for the response as a whole."),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async ({ id, objection, sentence }) => {
+      const key = await ipKey();
+      if (!allow("mcp-review", key, 6, 10 * MINUTE)) return text("That's a lot of hearings in ten minutes from one place. Try again in a few minutes.");
+      try {
+        if (objection) {
+          const x = await objectCase(id, objection, sentence ? sentence - 1 : null, key);
+          return text(
+            [
+              `OBJECTION: ${x.objection.text}`,
+              x.answer.stance === "concede" ? `A. (concedes) ${x.answer.text}` : `A. ${x.answer.text} [${x.answer.cites.join(", ")}]${x.answer.kept ? " (checked: every figure is in the exhibits cited)" : ` (struck by the checker: ${x.answer.why})`}`,
+              `${x.ruling.toUpperCase()}. ${x.reason}.`,
+              "Nothing was saved or filed.",
+            ].join("\n"),
+          );
+        }
+        const { hearing } = await reviewCase(id, key);
+        return text(`${transcriptText(hearing)}\nCase page: ${caseLink(id)}`);
+      } catch (e) {
+        return text(`Couldn't cross-examine ${id}: ${(e as Error).message}`);
       }
     },
   );

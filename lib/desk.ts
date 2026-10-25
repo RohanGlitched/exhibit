@@ -4,7 +4,9 @@ import { getDispute, listDisputes, type Dispute, type DisputeSummary } from "./p
 import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
 import { mergeFilings, paypalFilings, stageLine, stageOf, type Stage } from "./cases/derive";
+import { inPool, untouched } from "./cases/pool";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
+import { oddsFor } from "./cases/verify";
 
 export interface DeskRow {
   id: string;
@@ -99,7 +101,7 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       story: s?.title ?? null,
       storyId: s?.id ?? null,
       recommendation: r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null),
-      odds: r?.brief?.odds ?? null,
+      odds: r?.brief ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
       engine: r?.brief?.engine ?? null,
       struck: r?.brief ? r.brief.sentences.filter((x) => !x.kept).length : null,
       sentences: r?.brief ? r.brief.sentences.length : null,
@@ -107,8 +109,8 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       filedAt: last ? last.at : null,
       outcome: d.outcome ?? null,
       mine: Boolean(visitor && r?.claimedBy === visitor),
-      pooled: Boolean(r && !r.claimedBy && !r.brief && !r.retired),
-      retired: Boolean(r?.retired && !r.claimedBy && !r.brief),
+      pooled: Boolean(r && inPool(r)),
+      retired: Boolean(r?.retired && untouched(r)),
       source: r && !r.restored ? "exhibit" : exhibitCase ? "paypal" : "probe",
     };
   });
@@ -121,6 +123,7 @@ export interface DeskCounts {
   lost: number;
   refunded: number;
   open: number;
+  lapsed: number;
   soonest: string | null;
 }
 
@@ -135,6 +138,8 @@ export function deskCounts(rows: DeskRow[]): DeskCounts {
     lost: n(["lost"]),
     refunded: n(["refunded"]),
     open: n(["open"]),
-    soonest: live.filter((r) => r.due && r.status === "WAITING_FOR_SELLER_RESPONSE").map((r) => r.due!).sort()[0] ?? null,
+    lapsed: n(["lapsed"]),
+    // Only deadlines still ahead: a lapsed case has no deadline left to meet.
+    soonest: live.filter((r) => r.due && r.where === "waiting").map((r) => r.due!).sort()[0] ?? null,
   };
 }

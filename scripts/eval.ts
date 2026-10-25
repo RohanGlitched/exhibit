@@ -1,7 +1,7 @@
 // The measured eval behind /proof. Writes data/proof.json. Nothing is filed anywhere.
 //
-//   npx tsx --conditions=react-server scripts/eval.ts --price-in <USD per 1M input tokens> --price-out <USD per 1M output>
-//       [--max-usd 2.5] [--seeds 3] [--smoke] [--only main,pressure,heldout,injection,ablation]
+//   npx tsx --conditions=react-server scripts/eval.ts [--max-usd 2.5] [--seeds 3] [--smoke] [--only main,pressure,heldout,injection,ablation]
+//       [--price-in <USD per 1M input tokens> --price-out <USD per 1M output>]   (default: lib/llm.ts PRICE)
 //   npx tsx --conditions=react-server scripts/eval.ts --recheck     no model calls: re-run the checker, the baselines
 //       and the mutations over the answers already saved in data/proof.json
 //   npx tsx --conditions=react-server scripts/eval.ts --rules-only  no model calls: the two rules baselines only
@@ -26,13 +26,13 @@ if (existsSync(".env.local")) {
 }
 delete process.env.BLOB_READ_WRITE_TOKEN;
 
-const { VARIANTS, PRESSURE, INJECTIONS, evalCase, decidedBy } = await import("../lib/eval/variants.ts");
+const { VARIANTS, PRESSURE, INJECTIONS, evalCase, withAgent, decidedBy } = await import("../lib/eval/variants.ts");
 const { HELDOUT } = await import("../lib/eval/heldout.ts");
 const { strongRules } = await import("../lib/eval/baseline.ts");
 const { buildExhibits, exhibitText } = await import("../lib/cases/exhibits.ts");
 const { argueWithModel, argueWithRules, system } = await import("../lib/cases/brief.ts");
 const { checkSentence, tokens } = await import("../lib/cases/verify.ts");
-const { llmModel } = await import("../lib/llm.ts");
+const { llmModel, PRICE } = await import("../lib/llm.ts");
 type Exhibit = import("../lib/cases/types.ts").Exhibit;
 type Brief = import("../lib/cases/types.ts").Brief;
 type Variant = import("../lib/eval/variants.ts").Variant;
@@ -48,8 +48,8 @@ const smoke = flag("smoke");
 const useModel = !recheck && !rulesOnly;
 const SEEDS = Math.max(1, Number(arg("seeds") ?? 3));
 const ONLY = new Set((arg("only") ?? "main,pressure,heldout,injection,ablation").split(","));
-const PRICE_IN = Number(arg("price-in") ?? process.env.EVAL_PRICE_IN);
-const PRICE_OUT = Number(arg("price-out") ?? process.env.EVAL_PRICE_OUT);
+const PRICE_IN = Number(arg("price-in") ?? process.env.EVAL_PRICE_IN ?? PRICE.input);
+const PRICE_OUT = Number(arg("price-out") ?? process.env.EVAL_PRICE_OUT ?? PRICE.output);
 const CAP = Number(arg("max-usd") ?? 2.5);
 if (useModel && !(Number.isFinite(PRICE_IN) && Number.isFinite(PRICE_OUT))) {
   console.error("Model runs need prices to keep the spend cap: --price-in and --price-out, USD per million tokens.");
@@ -64,12 +64,14 @@ type Ev = ReturnType<typeof evalCase>;
 const exCache = new Map<string, Exhibit[]>();
 const exhibitsOf = (c: Ev) => {
   const k = c.key;
-  if (!exCache.has(k)) exCache.set(k, buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund }));
+  if (!exCache.has(k)) exCache.set(k, buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund, agent: c.agent }));
   return exCache.get(k)!;
 };
-const mainCases = VARIANTS.flatMap((v) => BUYERS.map((b) => evalCase(v, b)));
-const heldCases = HELDOUT.flatMap((v) => BUYERS.map((b) => evalCase(v, b)));
-const injCases = INJECTIONS.flatMap((v) => BUYERS.map((b) => evalCase(v, b)));
+// Agent stories get their purchase replayed through the shop tools and signed (lib/eval/variants.ts withAgent).
+const build = (vs: Variant[]) => Promise.all(vs.flatMap((v) => BUYERS.map((b) => withAgent(evalCase(v, b)))));
+const mainCases = await build(VARIANTS);
+const heldCases = await build(HELDOUT);
+const injCases = await build(INJECTIONS);
 const caseByKey = new Map([...mainCases, ...heldCases, ...injCases].map((c) => [c.key, c]));
 
 async function pool<T, R>(items: T[], n: number, fn: (t: T, i: number) => Promise<R>): Promise<R[]> {
@@ -139,6 +141,7 @@ interface ModelAnswer {
   correct: boolean;
   ms: number;
   tokens: { input: number; output: number } | null;
+  retried?: boolean; // the first brief came back in the wrong shape (no strict mode on Bedrock)
   headline?: string;
   sentences?: Sentence[];
 }
@@ -172,6 +175,7 @@ const answer = (b: Brief | null, label: string, full: boolean): ModelAnswer | nu
         correct: b.recommendation === label,
         ms: b.ms,
         tokens: b.tokens ?? null,
+        retried: b.retried ?? false,
         ...(full ? { headline: b.headline, sentences: sentenceRows(b) } : {}),
       }
     : null;
@@ -272,7 +276,7 @@ if (recheck) {
   pressure = ONLY.has("pressure") && useModel
     ? await pool(pressureRuns, PARALLEL, async (p) => {
         const base = VARIANTS.find((v: Variant) => v.id === `${p.story}-base`)!;
-        const c = evalCase(base, 1);
+        const c = await withAgent(evalCase(base, 1));
         const model = await modelBrief(c, { note: p.note, system: p.mode === "Careless drafter" ? CARELESS : undefined });
         const all = model ? sentenceRows(model) : [];
         const planted = all.filter((s) => p.planted.test(s.text));
@@ -331,7 +335,7 @@ const recheckSentences = (key: string, list: Sentence[] | undefined) => {
 };
 for (const r of [...runs, ...heldRuns, ...injRuns]) if (r.model?.sentences) r.model.sentences = recheckSentences(r.key, r.model.sentences)!;
 for (const p of pressure) {
-  const c = evalCase(VARIANTS.find((v: Variant) => v.id === `${p.story}-base`)!, 1);
+  const c = await withAgent(evalCase(VARIANTS.find((v: Variant) => v.id === `${p.story}-base`)!, 1));
   caseByKey.set(c.key, c);
   p.sentences = recheckSentences(c.key, p.sentences)!;
   const planted = p.sentences.filter((s) => PRESSURE.find((x) => x.id === p.id)!.planted.test(s.text));
@@ -509,8 +513,10 @@ const pct = (xs: number[], p: number) => {
 const count = <T>(xs: T[], f: (x: T) => boolean) => xs.filter(f).length;
 
 const modelRuns = runs.filter((r) => r.model);
-const textRuns = runs.filter((r) => r.decidedBy === "text");
-const recordRuns = runs.filter((r) => r.decidedBy === "record");
+// Model vs rules is compared on the same runs: those the model answered (all runs when none were).
+const compared = modelRuns.length ? modelRuns : runs;
+const textRuns = compared.filter((r) => r.decidedBy === "text");
+const recordRuns = compared.filter((r) => r.decidedBy === "record");
 const sentencesAll = [...modelRuns, ...heldRuns.filter((r) => r.model)].flatMap((r) => r.model!.sentences ?? []);
 const kept = sentencesAll.filter((s) => s.kept);
 
@@ -554,6 +560,8 @@ const summary = {
   p90Ms: pct(modelRuns.map((r) => r.model!.ms), 90),
   medianInputTokens: median(modelRuns.map((r) => r.model!.tokens?.input ?? 0).filter(Boolean)),
   medianOutputTokens: median(modelRuns.map((r) => r.model!.tokens?.output ?? 0).filter(Boolean)),
+  shapeRetries: count([...modelRuns, ...heldRuns, ...injRuns], (r) => !!r.model?.retried),
+  wrongShapeSentences: count(sentencesAll, (s) => /wrong shape/.test(s.why ?? "")),
   pressureRuns: count(pressure, (p) => p.mode === "Exhibit's prompt"),
   pressureWrote: count(pressure, (p) => p.mode === "Exhibit's prompt" && p.wrote),
   pressureSurvived: count(pressure, (p) => p.mode === "Exhibit's prompt" && p.keptPlanted > 0),
@@ -623,7 +631,7 @@ writeFileSync(
     {
       at,
       ...(recheck ? { recheckedAt: new Date().toISOString() } : {}),
-      reasoning: recheck ? saved.reasoning : process.env.AZURE_OPENAI_REASONING || "low",
+      reasoning: recheck ? saved.reasoning : null,
       summary,
       spend: useModel ? { ...spend, usd: Number(spend.usd.toFixed(4)), priceIn: PRICE_IN, priceOut: PRICE_OUT, cap: CAP } : previousSpend,
       variants: VARIANTS.map((v: Variant) => ({ id: v.id, story: v.story, change: v.change, label: v.label, decidedBy: decidedBy(v) })),

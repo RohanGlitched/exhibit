@@ -8,8 +8,9 @@ import Pleading from "@/components/home/Pleading";
 import { deskStats, showcase } from "@/lib/showcase";
 import { usd } from "@/lib/format";
 import { FIGURES } from "@/lib/impact";
-import { agentMandates } from "@/lib/agentic/story";
-import { verifyAgentOrder } from "@/lib/agentic/mandate";
+import { cartFor, intentFor, shipLine } from "@/lib/agentic/story";
+import { customIdFor, priceCart, signMandate, verifyAgentOrder } from "@/lib/agentic/mandate";
+import { sampleKeys } from "@/lib/agentic/keys";
 import { scenario } from "@/lib/shop/scenarios";
 import proof from "@/data/proof.json";
 import styles from "./home.module.css";
@@ -44,21 +45,24 @@ const STEPS = [
   },
 ];
 
-/** The mandate check on a sample agent-placed order, exactly as a case runs it. */
+/**
+ * A labelled sample: the mandate check on a sample agent order, run by the same code as a case, with throwaway
+ * keys and a sample order (no PayPal record). Real agent cases show theirs on the case page.
+ */
 function sampleMandateCheck() {
   const s = scenario("agent-mandate", { buyer: 1 })!;
-  const invoice = "HC-000417";
   const at = new Date("2026-10-04T17:30:00.000Z");
-  const m = agentMandates(s, invoice, at)!;
-  const c = m.cart.mandate;
-  return verifyAgentOrder(m.intent, m.cart, {
-    id: "5O190127TN364715T",
-    customId: c.id,
-    total: c.total,
-    shipTo: c.shipTo,
-    items: c.items.map((x) => ({ sku: x.sku, quantity: x.quantity })),
-    createdAt: at.toISOString(),
-  });
+  const keys = sampleKeys();
+  const intent = signMandate(intentFor(s, at, "intent_sample"), keys.wallet);
+  const shipTo = shipLine(s.buyer.shipTo);
+  const cart = signMandate(cartFor(s, intent.mandate, priceCart(s.items), shipTo, at, "cart_sample"), keys.agent);
+  const c = cart.mandate;
+  return verifyAgentOrder(
+    intent,
+    cart,
+    { id: "SAMPLE", customId: customIdFor(cart), total: c.total, shipTo: c.shipTo, items: c.items.map((x) => ({ sku: x.sku, quantity: x.quantity })), createdAt: at.toISOString() },
+    keys.resolve,
+  );
 }
 
 export default async function Home() {
@@ -273,11 +277,13 @@ export default async function Home() {
           <p>
             Shopping agents now pay with their owner&apos;s card. When the owner later says &ldquo;I never authorised this&rdquo;, the question is what
             they signed. Exhibit reads the cardholder&apos;s signed intent (what the agent may buy, up to what total, shipped where, until when), the
-            agent&apos;s signed cart, and the cart mandate id the PayPal order carries, then checks all of it in code before the model writes a word.
+            agent&apos;s signed cart, and the SHA-256 of that cart the PayPal order carries, then checks all of it in code before the model writes a word.
+            Signatures are checked against the keys Exhibit publishes, never a key the mandate brings along.
           </p>
           <p>
-            Inside the mandate, the purchase was authorised: fight. Past the limit the cardholder signed, the shop took an order nobody allowed: refund.
-            Both are stories you can open.
+            Inside the mandate, the purchase was authorised: fight. Past the limit the cardholder signed, or with a signature that doesn&apos;t verify,
+            nobody allowed that order: refund, and the check says who answers for it, the cardholder, the agent or the merchant. In both stories a buyer
+            agent with shopping tools makes the purchase, and in one a line planted in the listing pushes it toward the wrong cart.
           </p>
           <p>
             The seller can have an agent too. Exhibit is an MCP server at <span className={styles.code}>/api/mcp</span>: any assistant that speaks
@@ -287,8 +293,12 @@ export default async function Home() {
         </div>
         <div className={`sheet ${styles.mandate}`}>
           <p className={styles.mandateHead}>
-            <span className="bates">Mandate check</span>
+            <span className="bates">Sample mandate check</span>
             <span>{sample.length} checks, run by code</span>
+          </p>
+          <p className={styles.mandateNote}>
+            A sample cart signed with throwaway keys and checked against a sample order, by the same code a case runs. Open the shopping-agent story
+            to see a real purchase, its PayPal order and the agent&apos;s tool calls.
           </p>
           <ol>
             {sample.map((c) => (
