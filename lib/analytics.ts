@@ -36,10 +36,12 @@ export interface CaseFact {
   atStake: number; // still undecided
 }
 
-const OUTCOME: Partial<Record<Stage, CaseFact["outcome"]>> = { won: "Won", lost: "Lost", refunded: "Refunded" };
+// A missed deadline loses the money as surely as a ruling does; the stage says which it was.
+const OUTCOME: Partial<Record<Stage, CaseFact["outcome"]>> = { won: "Won", lost: "Lost", lapsed: "Lost", refunded: "Refunded" };
 const STAGE: Record<Stage, string> = {
   open: "PayPal reviewing",
   waiting: "Your move",
+  lapsed: "Missed deadline",
   filed: "Filed",
   refunded: "Refunded",
   won: "Won",

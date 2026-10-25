@@ -121,6 +121,7 @@ export interface DeskCounts {
   lost: number;
   refunded: number;
   open: number;
+  lapsed: number;
   soonest: string | null;
 }
 
@@ -135,6 +136,8 @@ export function deskCounts(rows: DeskRow[]): DeskCounts {
     lost: n(["lost"]),
     refunded: n(["refunded"]),
     open: n(["open"]),
-    soonest: live.filter((r) => r.due && r.status === "WAITING_FOR_SELLER_RESPONSE").map((r) => r.due!).sort()[0] ?? null,
+    lapsed: n(["lapsed"]),
+    // Only deadlines still ahead: a lapsed case has no deadline left to meet.
+    soonest: live.filter((r) => r.due && r.where === "waiting").map((r) => r.due!).sort()[0] ?? null,
   };
 }

@@ -38,6 +38,7 @@ const REC: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "
 const WHERE: Record<Stage, string> = {
   open: "PayPal reviewing",
   waiting: "Your move",
+  lapsed: "Missed deadline",
   filed: "Filed",
   refunded: "Refunded",
   won: "Won",
@@ -53,12 +54,14 @@ const FILTERS: { id: string; label: string; stages: Stage[] | null }[] = [
   { id: "won", label: "Won", stages: ["won"] },
   { id: "refunded", label: "Refunded", stages: ["refunded"] },
   { id: "lost", label: "Lost", stages: ["lost"] },
+  { id: "lapsed", label: "Missed deadline", stages: ["lapsed"] },
 ];
 
 const label = (r: DeskRow) => (r.pooled ? "In the house pool" : WHERE[r.where] ?? r.status);
 
 function Due({ value, data }: ICellRendererParams<DeskRow, string | null>) {
   if (!value || data?.status !== "WAITING_FOR_SELLER_RESPONSE") return <span className={styles.muted}>—</span>;
+  if (data.where === "lapsed") return <span className={styles.muted}>Missed</span>;
   const d = daysUntil(value) ?? 0;
   const pct = Math.max(0, Math.min(100, (d / 10) * 100));
   return (
@@ -194,10 +197,11 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
                 </span>
                 {r.recommendation && (
                   <span>
-                    {REC[r.recommendation]}, {r.odds}%
+                    {REC[r.recommendation]}
+                    {r.odds != null ? `, ${r.odds}%` : ""}
                   </span>
                 )}
-                {r.due && r.status === "WAITING_FOR_SELLER_RESPONSE" && <span>{Math.max(0, daysUntil(r.due) ?? 0)} days left</span>}
+                {r.due && r.where === "waiting" && <span>{Math.max(0, daysUntil(r.due) ?? 0)} days left</span>}
               </span>
             </a>
           </li>

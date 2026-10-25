@@ -11,11 +11,12 @@ import type { Filing } from "./types";
  * or one opened by an earlier probe. Pure functions, no I/O, so they're unit-tested.
  */
 
-export type Stage = "open" | "waiting" | "filed" | "refunded" | "won" | "lost" | "reviewing" | "other";
+export type Stage = "open" | "waiting" | "lapsed" | "filed" | "refunded" | "won" | "lost" | "reviewing" | "other";
 
 export const STAGE_LABEL: Record<Stage, string> = {
   open: "PayPal reviewing the chargeback",
   waiting: "Your move",
+  lapsed: "Missed",
   filed: "Filed, PayPal reviewing",
   refunded: "Refunded",
   won: "Won",
@@ -60,7 +61,8 @@ export function mergeFilings(own: Filing[], fromPayPal: Filing[]): Filing[] {
   return [...own, ...extra].sort((a, b) => a.at.localeCompare(b.at));
 }
 
-type Resolvable = Partial<Pick<Dispute, "dispute_outcome" | "fund_movements">> & Pick<DisputeSummary, "status"> & { outcome?: string };
+type Resolvable = Partial<Pick<Dispute, "dispute_outcome" | "fund_movements">> &
+  Pick<DisputeSummary, "status"> & { outcome?: string; seller_response_due_date?: string };
 
 /** Won or lost, once PayPal has resolved the case. */
 export function resolvedFor(d: Resolvable): "won" | "lost" | null {
@@ -75,15 +77,25 @@ export function resolvedFor(d: Resolvable): "won" | "lost" | null {
   return null;
 }
 
-/** Where a case stands, from PayPal's status and what was filed on it. */
-export function stageOf(d: Resolvable, filings: Pick<Filing, "action">[]): Stage {
+/** Whole days since PayPal's deadline for the seller passed; null while it hasn't. */
+export function daysPastDue(due: string | null | undefined, now = Date.now()): number | null {
+  if (!due) return null;
+  const late = now - new Date(due).getTime();
+  return late > 0 ? Math.floor(late / 86_400_000) : null;
+}
+
+/**
+ * Where a case stands, from PayPal's status and what was filed on it. A case still waiting on the seller after
+ * its deadline is "lapsed": the sandbox never closes it, but no response can win it any more.
+ */
+export function stageOf(d: Resolvable, filings: Pick<Filing, "action">[], now = Date.now()): Stage {
   const accepted = filings.some((f) => f.action === "accept");
   const filed = filings.some((f) => f.action === "evidence");
   switch (d.status) {
     case "OPEN":
       return "open";
     case "WAITING_FOR_SELLER_RESPONSE":
-      return "waiting";
+      return daysPastDue(d.seller_response_due_date, now) !== null ? "lapsed" : "waiting";
     case "UNDER_REVIEW":
       return accepted ? "refunded" : filed ? "filed" : "reviewing";
     case "RESOLVED": {
@@ -111,6 +123,10 @@ export function stageLine(stage: Stage, d: Resolvable & Pick<DisputeSummary, "di
       return "PayPal is reviewing the chargeback before it reaches the seller";
     case "waiting":
       return "Waiting on the seller";
+    case "lapsed": {
+      const n = daysPastDue(d.seller_response_due_date) ?? 0;
+      return `Missed: PayPal's deadline passed ${n === 0 ? "today" : n === 1 ? "a day ago" : `${n} days ago`}; the sandbox keeps the case open, but no response can win it now`;
+    }
     case "reviewing":
       return "PayPal reviewing";
     default:
