@@ -162,7 +162,7 @@ export function settle(i: SettleInput): Pick<Hearing, "exchanges" | "after" | "w
     if (answer.stance === "concede") {
       if (answer.effect === "refund") {
         flipped = true;
-        flipReason ||= o.text;
+        flipReason ||= answer.text;
       }
       if (answer.effect === "withdraw" && o.sentence !== null) withdrawn.add(o.sentence);
       const what = answer.effect === "refund" ? "Exhibit conceded the case and changed its call to refund" : answer.effect === "withdraw" ? "Exhibit conceded and withdrew the sentence" : "Exhibit conceded the point";
@@ -196,7 +196,7 @@ export function settle(i: SettleInput): Pick<Hearing, "exchanges" | "after" | "w
 export function ruleChair(answer: Answer): { ruling: RulingWord; reason: string } {
   if (answer.stance === "concede") return { ruling: "sustained", reason: answer.effect === "refund" ? "Exhibit conceded the case" : answer.effect === "withdraw" ? "Exhibit conceded and would withdraw the sentence" : "Exhibit conceded the point" };
   if (!answer.kept) return { ruling: "sustained", reason: `The checker struck the answer: ${(answer.why ?? "no record").replace(/\.$/, "")}` };
-  return { ruling: "overruled", reason: `Answered from Exhibit ${answer.cites.join(", ")}, and the checker found every figure there` };
+  return { ruling: "overruled", reason: `Answered from Exhibit ${answer.cites.join(", ")}, and the checker kept the answer` };
 }
 
 /**

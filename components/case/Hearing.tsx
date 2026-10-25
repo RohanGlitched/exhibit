@@ -53,7 +53,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
   const stale = hearing && filed && hearing.source === "draft";
   const response = hearing && !stale ? hearing.response : view.brief.sentences.filter((s) => s.kept).map((s) => ({ text: s.text, cites: s.cites }));
   const advisedRefund = !filed && view.brief.recommendation !== "fight";
-  const lines = hearing ? Math.max(8, hearing.exchanges.length * 9 + 3) : 6;
+  const lines = hearing ? Math.max(8, hearing.exchanges.length * 7 + 3) : 6;
 
   return (
     <section className={styles.hearing} aria-label="Cross-examination">
@@ -142,7 +142,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
                   {hearing.withdrawn.length ? ` Withdrawn: sentence ${hearing.withdrawn.map((w) => w + 1).join(", ")}.` : ""}
                   {hearing.source === "draft" && (hearing.flipped || hearing.withdrawn.length) ? " The brief above now reflects it." : ""}
                 </p>
-                {filed && !ruled && hearing.source === "paypal" && (
+                {filed && !ruled && view.status !== "RESOLVED" && hearing.source === "paypal" && (
                   <p>When you ask the sandbox to rule, Exhibit asks for a ruling for the {hearing.verdict.side}.</p>
                 )}
               </div>

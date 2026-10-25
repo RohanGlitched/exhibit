@@ -1,4 +1,5 @@
 import { GROUND_LABEL, type Answer, type Objection, type RulingWord } from "@/lib/cases/hearing";
+import { figures } from "@/lib/cases/verify";
 import styles from "./hearing.module.css";
 
 /**
@@ -27,14 +28,15 @@ export default function Exchange({
   index?: number;
   who?: string;
 }) {
+  const f = figures(answer.text);
+  const hasFigures = f.money.length + f.dates.length + f.times.length + f.ids.length > 0;
   const target = objection.sentence === null ? "to the response as a whole" : `to sentence ${objection.sentence + 1}`;
   return (
     <div className={styles.exchange} style={{ "--i": index } as React.CSSProperties}>
       <p className={styles.objLine}>
         <span className={styles.chip}>OBJECTION</span>
         <span className={styles.target}>
-          {who}
-          {objection.n > 0 ? ` ${objection.n}` : ""}, {target}
+          {who === "You" ? "Yours" : `No. ${objection.n}`}, {target}
           {who === "You" ? "" : `: ${GROUND_LABEL[objection.ground]}`}
           {objection.pages.length ? ` (${objection.pages.join(", ")})` : ""}
         </span>
@@ -67,7 +69,11 @@ export default function Exchange({
       </p>
       {answer.stance === "answer" && (
         <p className={styles.checker} data-kept={answer.kept ? "true" : "false"}>
-          {answer.kept ? `Checked: every figure in the answer is in Exhibit ${answer.cites.join(", ")}.` : `Struck by the checker: ${answer.why}`}
+          {answer.kept
+            ? hasFigures
+              ? `Checked: every figure in the answer is in Exhibit ${answer.cites.join(", ")}.`
+              : `Checked: cites Exhibit ${answer.cites.join(", ")}; the answer has no figures to match.`
+            : `Struck by the checker: ${answer.why}`}
         </p>
       )}
       <p className={styles.rulingLine}>
@@ -75,8 +81,9 @@ export default function Exchange({
           {ruling.toUpperCase()}
         </span>
         <span>{reason.replace(/\.$/, "")}.</span>
-        {withdrawn && <span className={styles.effect}>Sentence {(objection.sentence ?? 0) + 1} withdrawn.</span>}
-        {flipped && <span className={styles.effect}>Exhibit changes its call to refund.</span>}
+        {/* A concession's reason already says what it did; a struck answer's withdrawal needs saying. */}
+        {withdrawn && answer.stance === "answer" && <span className={styles.effect}>Sentence {(objection.sentence ?? 0) + 1} withdrawn.</span>}
+        {flipped && answer.stance === "answer" && <span className={styles.effect}>Exhibit changes its call to refund.</span>}
       </p>
     </div>
   );

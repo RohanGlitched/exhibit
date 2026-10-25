@@ -157,7 +157,7 @@ export default function ReviewProof() {
           </p>
         </div>
         {pick && (
-          <Pleading lines={Math.max(10, shown.length * 9 + 2)}>
+          <Pleading lines={Math.max(10, shown.length * 7 + 2)}>
             <p className={own.caption}>
               {pick.key.split("#")[0]} · hearing transcript · verdict for the {pick.hearing.verdict.side}
             </p>
