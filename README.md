@@ -106,7 +106,15 @@ Every case on the desk was opened with three sandbox calls and no human:
 | "Charged twice" only: the double click and its refund | a second order, then `POST /v2/payments/captures/{id}/refund` |
 | The issuer files a chargeback | `POST /v2/customer-support/process-chargeback` (sandbox only), with Visa or Mastercard reason codes that PayPal maps to *not received* (13.1, 4855), *not as described* (C2), *unauthorised* (4837) and *duplicate* (4834) |
 
-PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`POST /api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place. `GET /api/health` reports the stock per story and anything near a deadline.
+PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`/api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place, emptiest stories first. `GET /api/health` reports the stock per story (a case counts as ready only with 36 hours or more to answer), when the refill last ran, a model ping, the webhook log, and every case near or past a deadline.
+
+### PayPal webhooks and the autopilot
+
+Exhibit subscribes to `CUSTOMER.DISPUTE.CREATED`, `.UPDATED` and `.RESOLVED` at `/api/webhooks/paypal`. Every delivery is checked with `POST /v1/notifications/verify-webhook-signature` before anything happens, with the event passed back byte for byte. On *created*, Exhibit argues the case before anyone opens it: with the model while the autopilot's half of the day's model budget lasts, with the rules engine after. On *updated* or *resolved*, it reads the case back from PayPal, stamps the state and outcome, and retires resolved pool stock. The case page shows "Received from PayPal at 09:12 UTC, argued 6 s later". Nothing replaces the brief on a filed or resolved case, from the page, MCP or the webhook. `scripts/register-webhook.mjs` registers the webhook through `POST /v1/notifications/webhooks` (no dashboard login), reusing one that already exists, and prints its id for `PAYPAL_WEBHOOK_ID`.
+
+### Keeping it alive
+
+The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/refill.yml) every two hours and from Vercel Cron once a day ([`vercel.json`](vercel.json)), both with `Authorization: Bearer CRON_SECRET`. **The repository owner must add `CRON_SECRET` as a repository secret** (Settings → Secrets and variables → Actions) with the same value as the Vercel env var, or the workflow fails on its first run. GitHub turns off scheduled workflows in a repository with no commits for 60 days, so push something after Nov 1 to keep it running through Dec 15.
 
 ## Measured
 
@@ -139,7 +147,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 32 tests: the checker, PayPal read-back, mandates
+npm test                                                   # 43 tests: the checker, PayPal read-back, mandates, webhooks, health
 npx tsx --conditions=react-server scripts/eval.ts           # the eval behind /proof
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
 ```
@@ -155,6 +163,7 @@ node scripts/e2e.cjs http://localhost:3600                  # open, argue and fi
 | [`lib/cases/verify.ts`](lib/cases/verify.ts) | No claim without a record: the sentence checker and the odds |
 | [`lib/cases/pdf.ts`](lib/cases/pdf.ts) | The Bates-stamped PDF filed with the evidence |
 | [`lib/cases/open.ts`](lib/cases/open.ts) | Opening sandbox cases and the ready pool |
+| [`lib/webhooks/`](lib/webhooks), [`app/api/webhooks/paypal/`](app/api/webhooks/paypal/route.ts) | PayPal dispute webhooks: signature check, the autopilot, the delivery log |
 | [`lib/agentic/`](lib/agentic) | Intent and cart mandates, Ed25519 signatures, and the checks on an agent-placed order |
 | [`lib/eval/variants.ts`](lib/eval/variants.ts), [`scripts/eval.ts`](scripts/eval.ts) | The labelled variants and the eval runner |
 | [`lib/mcp.ts`](lib/mcp.ts) | The MCP server's tools |

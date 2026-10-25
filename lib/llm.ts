@@ -130,3 +130,26 @@ export async function structured<T>(req: StructuredRequest): Promise<{ value: T;
   if (!use) throw new Error("The model answered without the brief.");
   return { value: use.input as T, usage: out.usage };
 }
+
+export interface Ping {
+  ok: boolean;
+  at: string;
+  ms: number;
+  error?: string;
+}
+
+let lastPing: Ping | null = null;
+
+/** A four-token call, cached for ten minutes, so /api/health can say whether the model answers right now. */
+export async function llmPing(maxAgeMs = 10 * 60_000): Promise<Ping | null> {
+  if (!llmReady()) return null;
+  if (lastPing && Date.now() - new Date(lastPing.at).getTime() < maxAgeMs) return lastPing;
+  const t0 = Date.now();
+  try {
+    await converse({ system: "Reply with OK.", messages: [{ role: "user", content: [{ text: "OK?" }] }], maxTokens: 4, timeoutMs: 15_000 });
+    lastPing = { ok: true, at: new Date().toISOString(), ms: Date.now() - t0 };
+  } catch (e) {
+    lastPing = { ok: false, at: new Date().toISOString(), ms: Date.now() - t0, error: (e as Error).message.slice(0, 120) };
+  }
+  return lastPing;
+}

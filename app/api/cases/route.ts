@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   try {
     const ready = await claimReady(s.id, visitor);
     const rec = ready ?? (await claimFresh(s, visitor));
-    after(() => refillPool(3).catch((e) => console.error("refill", e)));
+    after(() => refillPool(3, "visit").catch((e) => console.error("refill", e)));
     return NextResponse.json({ id: rec.disputeId, ready: Boolean(ready), openedAt: rec.openedAt });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message || "Couldn't open a case." }, { status: 502 });
