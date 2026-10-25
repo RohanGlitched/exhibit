@@ -28,6 +28,18 @@
 .back:hover {
   color: var(--ink);
 }
+/* The analytics link beside "Desk": same quiet ink, a rule instead of a second chevron. */
+.backAlt {
+  margin-left: -6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--rule);
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-weight: 500;
+}
+.backAlt:hover {
+  color: var(--ink);
+}
 .status {
   padding: 3px 10px;
   border-radius: 999px;

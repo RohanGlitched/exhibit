@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SAVED_THREAD } from "@/components/studio/saved";
 import StudioLoader from "@/components/studio/StudioLoader";
 import { day } from "@/lib/format";
 import styles from "../desk.module.css";
@@ -16,9 +17,10 @@ const NOTES = [
     title: "Exhibit's own widgets",
     body: (
       <>
-        The deadline ladder, the kept, refunded and lost ledger, the checker&apos;s pleading paper and the rubber stamps are custom AG Studio widgets drawn in
-        React and SVG. They read their rows through Studio, so page filters and cross-filters apply to them, and each has its own form in Studio&apos;s edit
-        panel and a description Studio&apos;s agents read.
+        Four custom AG Studio widgets drawn in React and SVG: the <b>deadline ladder</b>, the <b>kept, refunded and lost ledger</b>, the checker&apos;s{" "}
+        <b>pleading paper</b> and the <b>rubber stamps</b>. They read their rows through Studio, so page filters and cross-filters apply to them; each has its
+        own form in Studio&apos;s edit panel and a description Studio&apos;s agents read. Grid cells print case ids as Bates numbers that open the case on a
+        double-click.
       </>
     ),
   },
@@ -27,9 +29,11 @@ const NOTES = [
     title: "An analyst on Studio's agent framework",
     body: (
       <>
-        Exhibit analyst is a custom agent. It knows PayPal&apos;s ten-day window, fight or refund, and the checker; reads the desk with tools of its own; and
-        hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents. Every turn runs on GPT-5.6 through this server, so no
-        key reaches the browser.
+        Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s ten-day window, fight or refund, and the checker, and has five
+        tools of its own: <code>deadline_ladder</code>, <code>desk_ledger</code>, <code>turn_to_page</code>, <code>new_widget_slot</code> and{" "}
+        <code>check_widget</code>. It hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents, then reads the report back
+        so it only reports what changed. Every turn runs on Claude Haiku 4.5 on Amazon Bedrock through this server, which writes the analyst&apos;s
+        instructions itself; no key reaches the browser.
       </>
     ),
   },
@@ -87,6 +91,7 @@ export default function Analytics() {
         <p className={made.madeLede}>
           The report runs on AG Studio, embedded in Exhibit. Switch to <b>Edit with the analyst</b> to move widgets, change what they show, add Exhibit&apos;s
           own from the widget menu, or ask for one in words.
+          {SAVED_THREAD ? " The analyst opens on a saved conversation in which it built a widget on the Money page." : ""}
         </p>
         <ol className={made.notes}>
           {NOTES.map((n) => (

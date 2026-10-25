@@ -39,7 +39,7 @@ const ladder: AgWidgetDefinition<"exhibit-deadline-ladder", DeadlineLadderWidget
       supportedRoles: ["numeric"],
       requires: { per: "dataMapping.case", cardinality: "one" },
       required: true,
-      aiDescription: "Days to PayPal's deadline for each case (cases.daysLeft, aggregation min). Cases with no days left are not on the seller's move and are left off.",
+      aiDescription: "Days to PayPal's deadline for each case (cases.daysLeft, aggregation min). Cases with no days left are not on the seller's move and are left off; below zero, the deadline passed and the case is listed as missed under the ladder.",
     },
     amount: { type: "field", supportedRoles: ["numeric"], requires: { per: "dataMapping.case", cardinality: "one" }, aiDescription: "Money at stake on each case (cases.amount, sum)." },
     label: { type: "field", supportedRoles: ["category"], requires: { per: "dataMapping.case", cardinality: "one" }, aiDescription: "A short label under each case id, e.g. cases.story or cases.buyer." },
@@ -77,7 +77,7 @@ const ladder: AgWidgetDefinition<"exhibit-deadline-ladder", DeadlineLadderWidget
   ai: {
     label: "Deadline ladder",
     description:
-      "Exhibit's deadline ladder: every case on the seller's move as a rung, soonest PayPal deadline first, each drawn as the ten-day response window with the days left filled in; two days or fewer is red. Clicking a rung cross-filters to that case.",
+      "Exhibit's deadline ladder: every case on the seller's move as a rung, soonest PayPal deadline first, each drawn as the ten-day response window with the days left filled in; two days or fewer is red. Deadlines that passed with no answer are listed apart, in grey, as missed. Clicking a rung cross-filters to that case; double-clicking opens the case.",
     usage: "Use for what is due, what will cost money soon, or which disputes need an answer first. Not for decided cases.",
     configuration: "Map case to cases.caseId, daysLeft to cases.daysLeft with aggregation min, amount to cases.amount with sum, and label to cases.story.",
   },

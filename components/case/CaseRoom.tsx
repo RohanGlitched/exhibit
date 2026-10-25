@@ -259,6 +259,9 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         <Link href="/desk" className={styles.back}>
           Desk
         </Link>
+        <Link href="/desk/analytics" className={styles.backAlt}>
+          Analytics
+        </Link>
         <span className={styles.status} data-status={view.status}>
           {closed ? view.whereLine : view.where === "filed" ? "Filed, PayPal reviewing" : view.where === "refunded" ? "Refund accepted" : (STATUSES[view.status] ?? view.status)}
         </span>
