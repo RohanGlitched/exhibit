@@ -204,3 +204,21 @@
 .chip[aria-pressed="true"] span {
   color: rgba(255, 255, 255, 0.7);
 }
+.caseLink {
+  text-decoration: none;
+}
+.caseLink:hover,
+.caseLink:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* A deadline that passed with no answer: grey, not urgent red, since nothing can be filed any more. */
+.missed {
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status[data-where="lapsed"] {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
