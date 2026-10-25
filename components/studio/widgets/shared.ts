@@ -19,11 +19,20 @@ export type Row = Record<string, unknown>;
  * Fetches a custom widget's rows through Studio, so page filters, filter widgets and cross filters from
  * other widgets all apply, and sets the widget's display state as it goes. Studio hands a React widget new
  * props on every refresh (a filter, a new mapping, new data), so the query reruns whenever the props change.
+ *
+ * Until the rows arrive the hook returns null, and the widget must still render an element then (a blank
+ * sheet of paper), never null: AG Studio's React wrapper attaches a function component to the page only once
+ * its portal holds a DOM node, polls for that for one second, and then gives up without ever attaching it or
+ * passing it another refresh. A widget that returned null while a slow first query ran stayed blank for good.
+ *
+ * `ownEmptyState` is for a widget that draws its own line when there are no rows: Studio is told the widget
+ * is displayed, so its generic no-data overlay doesn't cover that line. A failed query gives no rows.
  */
 export function useWidgetRows(
   params: AgWidgetParams,
   pick: () => { fields: (AgWidgetField | undefined)[]; ready: boolean },
   options?: AgWidgetDataRequestOptions,
+  ownEmptyState = false,
 ): { rows: Row[]; cross?: Row[] } | null {
   const [result, setResult] = useState<{ rows: Row[]; cross?: Row[] } | null>(null);
   const loaded = useRef(false);
@@ -45,12 +54,14 @@ export function useWidgetRows(
         loaded.current = true;
         const rows = res.results.rows;
         setResult({ rows, cross: res.crossFilter?.rows });
-        widgetApi.setDisplayState(rows.length > 0 ? "displayed" : "noData");
+        widgetApi.setDisplayState(rows.length > 0 || ownEmptyState ? "displayed" : "noData");
       })
       .catch((err: unknown) => {
         // A newer refresh cancels the request in flight; that one is not an error.
         if (!live || (err instanceof Error && err.name === "AbortError")) return;
-        widgetApi.setDisplayState("noData");
+        loaded.current = true;
+        setResult({ rows: [] });
+        widgetApi.setDisplayState(ownEmptyState ? "displayed" : "noData");
       });
     return () => {
       live = false;

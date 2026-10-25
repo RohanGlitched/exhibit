@@ -29,7 +29,7 @@ export interface CaseFact {
   openedDay: string; // "5 Oct 2026"
   filed: string | null;
   due: string | null;
-  daysLeft: number | null; // days to PayPal's deadline while it's the seller's move
+  daysLeft: number | null; // days to PayPal's deadline while it's the seller's move; below zero once missed
   kept: number; // money the seller kept (won)
   refunded: number; // money returned by accepting
   lostAmount: number; // money lost after fighting or not answering
@@ -59,7 +59,10 @@ const evidenceWords = (summary: string | null) => {
 
 function fact(r: DeskRow, sentences: number, struck: number, evidence: string | null): CaseFact {
   const outcome = OUTCOME[r.where] ?? "Pending";
-  const daysLeft = r.due && r.where === "waiting" ? Math.ceil((new Date(r.due).getTime() - Date.now()) / 86_400_000) : null;
+  // Days to PayPal's deadline while it's the seller's move. Once it passed with no answer (lapsed) the count
+  // goes below zero, at least one day, so the deadline ladder lists the case as missed and the grid says when.
+  const toDue = r.due ? Math.ceil((new Date(r.due).getTime() - Date.now()) / 86_400_000) : null;
+  const daysLeft = toDue == null ? null : r.where === "waiting" ? toDue : r.where === "lapsed" ? Math.min(-1, toDue) : null;
   return {
     caseId: r.id,
     story: r.story?.replace(/[“”]/g, "") ?? "Other",

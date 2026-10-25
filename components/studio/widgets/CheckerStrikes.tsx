@@ -36,7 +36,8 @@ export default function CheckerStrikes(params: AgWidgetParams<CheckerStrikesWidg
   const struckWord = (format?.style?.struckWord ?? "Struck").toLowerCase();
 
   const data = useWidgetRows(params as AgWidgetParams, () => ({ fields: [verdictField, reasonField, countField], ready: !!verdictField && !!countField }));
-  if (!data || !verdictField || !countField) return null;
+  // Always an element, never null: Studio attaches a React widget only once it has drawn something.
+  if (!data || !verdictField || !countField) return <div className={styles.paper} aria-busy="true" />;
 
   const lines = data.rows.map((r) => {
     const verdict = text(r[verdictField.key]);

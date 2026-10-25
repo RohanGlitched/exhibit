@@ -37,10 +37,17 @@ export default function DeadlineLadder(params: AgWidgetParams<DeadlineLadderWidg
   const windowDays = Math.max(1, Math.min(30, format?.style?.windowDays ?? 10));
   const maxRungs = format?.style?.maxRungs ?? 12;
 
-  const data = useWidgetRows(params as AgWidgetParams, () => ({ fields: [caseField, daysField, amountField, labelField], ready: !!caseField && !!daysField }));
+  // The ladder draws its own line when it has no rows, rather than Studio's generic no-data overlay.
+  const data = useWidgetRows(
+    params as AgWidgetParams,
+    () => ({ fields: [caseField, daysField, amountField, labelField], ready: !!caseField && !!daysField }),
+    undefined,
+    true,
+  );
   const picked = selectedValues(params as AgWidgetParams, caseField);
 
-  if (!data || !caseField || !daysField) return null;
+  // Always an element, never null: Studio attaches a React widget only once it has drawn something.
+  if (!data || !caseField || !daysField) return <div className={styles.paper} aria-busy="true" />;
 
   // Only cases on PayPal's clock have a day count; the rest are filed, decided or with PayPal.
   const { live, missed, urgent: soon } = splitLadder(
@@ -57,6 +64,14 @@ export default function DeadlineLadder(params: AgWidgetParams<DeadlineLadderWidg
 
   const toggle = (id: string) => widgetApi.toggleCrossFilter({ type: "value", field: caseField, value: id, group: 0 });
   const money = (rows: { amount: number | null }[]) => (amountField ? `, ${usd(rows.reduce((s, r) => s + (r.amount ?? 0), 0))}` : "");
+
+  if (data.rows.length === 0) {
+    return (
+      <div className={styles.paper}>
+        <p className={styles.empty}>No cases to put on the ladder: nothing on the desk matches what this page is showing.</p>
+      </div>
+    );
+  }
 
   if (live.length === 0 && missed.length === 0) {
     return (

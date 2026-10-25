@@ -33,7 +33,7 @@ const TONE: Record<string, string> = {
 };
 
 // "missed" (a deadline that passed with no answer) stays in plain ink: nothing on it can be filed any more.
-const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "missed", "lost"];
+const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "missed", "missed deadline", "lost"];
 
 /**
  * Counts as rubber stamps on the page, the way a clerk marks a file: WON in green, LOST and YOUR MOVE in red,
@@ -49,7 +49,8 @@ export default function StampCounts(params: AgWidgetParams<StampCountsWidget>) {
   const filterId = `ink-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
 
   const data = useWidgetRows(params as AgWidgetParams, () => ({ fields: [categoryField, valueField], ready: !!categoryField && !!valueField }));
-  if (!data || !categoryField || !valueField) return null;
+  // Always an element, never null: Studio attaches a React widget only once it has drawn something.
+  if (!data || !categoryField || !valueField) return <div className={styles.paper} aria-busy="true" />;
 
   const picked = selectedValues(params as AgWidgetParams, categoryField);
   const stamps = data.rows

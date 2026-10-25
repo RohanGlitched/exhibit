@@ -38,7 +38,8 @@ export default function Ledger(params: AgWidgetParams<LedgerWidget>) {
     fields: [fields.kept, fields.refunded, fields.lost, fields.atStake],
     ready: !!fields.kept && !!fields.refunded,
   }));
-  if (!data) return null;
+  // Always an element, never null: Studio attaches a React widget only once it has drawn something.
+  if (!data) return <div className={styles.paper} aria-busy="true" />;
 
   const row = data.rows[0] ?? {};
   const v = (k: keyof typeof fields) => (fields[k] ? num(row[fields[k]!.key]) : 0);
