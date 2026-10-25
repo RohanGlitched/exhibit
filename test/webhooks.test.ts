@@ -128,14 +128,15 @@ test("health: the refill is late after 3 hours, or when none is on record", () =
   assert.match(refillProblem(null, NOW)!, /No pool refill/);
 });
 
-test("health: a negative dueInHours is a problem, and pool stock inside 36 hours should have retired", () => {
+test("health: pool stock past or inside 36 hours of its deadline is a problem; a missed case on the desk is not", () => {
   const p = deadlineProblems([
     { id: "PP-R-SFZ-1", dueInHours: -151.2, kind: "on the desk" },
+    { id: "PP-R-STALE-1", dueInHours: -3, kind: "pool stock" },
     { id: "PP-R-OK-1", dueInHours: 40, kind: "on the desk" },
     { id: "PP-R-POOL-1", dueInHours: 20, kind: "pool stock" },
     { id: "PP-R-DESK-1", dueInHours: 20, kind: "on the desk" },
   ]);
   assert.equal(p.length, 2);
-  assert.match(p[0], /PP-R-SFZ-1 is 151\.2 hours past PayPal's deadline/);
+  assert.match(p[0], /PP-R-STALE-1 is pool stock 3 hours past PayPal's deadline/);
   assert.match(p[1], /PP-R-POOL-1 is pool stock inside 36 hours/);
 });

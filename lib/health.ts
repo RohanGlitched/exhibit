@@ -28,11 +28,15 @@ export interface NearDeadline {
   kind: string;
 }
 
-/** Problems among cases still waiting on the seller near PayPal's deadline. */
+/**
+ * Problems among cases still waiting on the seller near PayPal's deadline. A case on the desk that missed its
+ * deadline is not a fault (the desk shows it as missed, and the sandbox never closes it); pool stock that did
+ * is, because the refill should have retired it first.
+ */
 export function deadlineProblems(near: NearDeadline[]): string[] {
   const out: string[] = [];
   for (const n of near) {
-    if (n.dueInHours < 0) out.push(`${n.id} is ${Math.abs(n.dueInHours)} hours past PayPal's deadline and still shows as waiting on the seller (${n.kind}).`);
+    if (n.dueInHours < 0 && n.kind === "pool stock") out.push(`${n.id} is pool stock ${Math.abs(n.dueInHours)} hours past PayPal's deadline and should have retired.`);
     else if (n.kind === "pool stock" && n.dueInHours < READY_HOURS) out.push(`${n.id} is pool stock inside ${READY_HOURS} hours of its deadline and should have retired.`);
   }
   return out;

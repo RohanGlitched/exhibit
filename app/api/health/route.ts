@@ -94,6 +94,8 @@ export async function GET() {
         lastRefill: refill,
       },
       nearDeadline,
+      // Cases that missed PayPal's deadline: shown on the desk as missed, not a fault.
+      missedDeadline: nearDeadline.filter((n) => n.dueInHours < 0).length,
       paypal: { reachable: Boolean(disputes), disputes: disputes?.length ?? null },
       webhooks: webhookSummary(hooks, now),
       store: { kind: storage() ? (process.env.GCS_BUCKET ? "gcs" : "blob") : "local", reachable: storeOk, records: records?.length ?? null },
