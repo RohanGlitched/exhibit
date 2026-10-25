@@ -51,7 +51,9 @@ async function azure<T>(req: StructuredRequest): Promise<{ value: T; usage?: Usa
       model: process.env.AZURE_OPENAI_DEPLOYMENT,
       instructions: req.system,
       input: req.prompt,
-      tools: [{ type: "function", name: req.tool.name, description: req.tool.description, parameters: req.tool.schema, strict: false }],
+      // Strict: the arguments are constrained to the schema (closed objects, every field required), so the
+      // brief can't arrive with cites as one string or a field missing.
+      tools: [{ type: "function", name: req.tool.name, description: req.tool.description, parameters: req.tool.schema, strict: true }],
       tool_choice: { type: "function", name: req.tool.name },
       reasoning: { effort: process.env.AZURE_OPENAI_REASONING || "low" },
       max_output_tokens: req.maxTokens ?? 8000,

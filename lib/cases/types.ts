@@ -25,6 +25,9 @@ export interface BriefSentence {
   cites: string[];
   kept: boolean;
   why?: string; // why it was struck
+  quote?: string; // the words from a cited exhibit the sentence rests on, as the model quoted them (checked verbatim)
+  checked?: string[]; // the figures and names the checker matched to the record (kept sentences)
+  unverified?: true; // kept, but nothing in it the checker can match: held only to its citation
 }
 
 export interface TallyItem {

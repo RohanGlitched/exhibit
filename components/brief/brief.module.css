@@ -88,6 +88,19 @@
   font-size: 13px;
   color: var(--due);
 }
+/* Kept, but nothing in it the checker could match to the record: a dotted underline and a plain note. */
+.unverified .sentenceText {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--ink-faint);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.unverifiedNote {
+  margin: -8px 0 14px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
 @keyframes typeIn {
   from {
     opacity: 0;

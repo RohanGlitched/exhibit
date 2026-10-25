@@ -143,7 +143,8 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
           {sentences.map((s, si) => (
             <Fragment key={si}>
               <p
-                className={`${styles.sentence} ${s.kept ? "" : styles.struck} ${hoverSentence === si ? styles.sentenceLit : ""} ${
+                title={s.kept && s.checked?.length ? `Checked against the record: ${s.checked.join(", ")}` : undefined}
+                className={`${styles.sentence} ${s.kept ? "" : styles.struck} ${s.kept && s.unverified ? styles.unverified : ""} ${hoverSentence === si ? styles.sentenceLit : ""} ${
                   litExhibit && s.kept && s.cites.includes(litExhibit) ? styles.sentenceLit : ""
                 } ${anyHover && !(hoverSentence === si || (litExhibit && s.cites.includes(litExhibit))) ? styles.sentenceDim : ""}`}
                 onMouseEnter={() => s.kept && setHoverSentence(si)}
@@ -179,6 +180,18 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
                 })}
               </p>
               {!s.kept && <p className={styles.strikeNote}>Struck before filing: {s.why}</p>}
+              {s.kept && s.unverified && (
+                <p className={styles.unverifiedNote}>
+                  Unverified: no figure or name in it to check, so it rests on its citation
+                  {s.quote ? (
+                    <>
+                      {" "}
+                      and the words it quotes from Exhibit {s.cites.join(", ")}: &ldquo;{s.quote}&rdquo;
+                    </>
+                  ) : null}
+                  .
+                </p>
+              )}
               {inline?.s === si && (
                 <div className={styles.inlineCard}>
                   {exhibits.filter((e) => e.id === inline.e).map((e) => (
