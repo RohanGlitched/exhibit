@@ -311,7 +311,11 @@ export function citeList(raw: unknown): string[] {
 
 /** The words a sentence quotes as its proof must be in an exhibit it cites (an ellipsis may join two pieces). */
 function quoteFound(quote: string, cited: Exhibit[], textOf: (e: Exhibit) => string): boolean {
-  const pieces = norm(quote)
+  // Each line of a quote that spans lines of the record is its own piece, as an ellipsis would make it.
+  const pieces = quote
+    .split(/\r?\n/)
+    .map(norm)
+    .join(" … ")
     .replace(/^["'\s]+|["'.\s]+$/g, "")
     .split(/\s?(?:\.\.\.|…)\s?/)
     .map((p) => p.trim().replace(/^["']|["']$/g, ""))

@@ -120,18 +120,21 @@ The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/ref
 
 `scripts/eval.ts` runs 26 labelled variants of the seven stories (each changes one or two facts so the right call flips or holds, labelled before running), each with two customers, through the model, the fallback rules engine and a stronger rules baseline ([`lib/eval/baseline.ts`](lib/eval/baseline.ts): delivery ZIP against ship-to ZIP, refund lookup, the issuer's checks, billing against shipping, order history, the mandate check). Each variant is tagged by where its deciding fact sits: in a structured record, or only in free text. Then a pressure set where the seller's note asks for facts no record holds, a held-out set written without the prompt ([`lib/eval/heldout.ts`](lib/eval/heldout.ts)), buyer emails with instructions aimed at the AI, an ablation with the prompt's "How cases are usually decided" rubric removed, repeat runs, and a mutation set that changes one thing in every true sentence. The model is capped at a spend limit you set. Results are committed in [`data/proof.json`](data/proof.json) and shown at [/proof](https://exhibit-desk.vercel.app/proof):
 
-| | Result |
+| | Result (GPT-5.6, 25 Oct, 332 calls, $2.78) |
 |---|---|
-| Deciding fact only in free text: model vs stronger rules | 10 vs 4 of 10 runs (fallback rules: 4) |
-| Deciding fact in the records: model vs stronger rules | 42 vs 42 of 42 |
+| Right call, 26 variants × 2 customers | model 56 of 56; stronger rules 50; fallback rules 44 |
+| Deciding fact only in free text: model vs stronger rules | 10 vs 4 of 10 runs |
+| Deciding fact in the records: model vs stronger rules | 46 vs 46 of 46 |
+| Held-out set, written blind to the prompt: free-text cases | model 12 of 18; stronger rules 2 of 18 |
+| Buyer emails with instructions aimed at the AI | right call 8 of 8; the planted fact written 0 times |
+| Same runs repeated (3 seeds) | 56 of 56 each time |
+| Prompt without its "how cases are usually decided" rubric | 54 of 56 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,059 of 1,089 struck |
-| The model's own true sentences struck | 0 of 248 |
-| Kept sentences with nothing to check, marked unverified | 88 of 248 |
-| Per brief | median 5.8 s, about 1,800 tokens in and 480 out |
-
-These model answers are from the GPT-5.6 run of 15 Oct; the checker, the stronger rules and the mutations were re-run over them on 25 Oct. The held-out set, the injection set, the ablation and the repeat runs need a fresh model run and are reported on /proof once run.
+| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,015 of 1,051 struck |
+| The model's own sentences struck | 4 of 380: 1 real miscitation; 3 were checker mistakes (two denials of a signature read as claims, one quote across lines of a record), fixed since and covered by tests |
+| Kept sentences with nothing to check, marked unverified | 197 of 376 |
+| Per brief | median 6.4 s, about 2,000 tokens in and 550 out |
 
 What it doesn't show is on the page too: the main variants were written by the same people as the prompt, the held-out set by an AI agent that never saw the prompt rather than a person; the eval's PayPal records are built offline in the sandbox's shapes; sandbox rulings follow the filing; and the checker matches figures and names, not meaning.
 
@@ -151,7 +154,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 95 tests: the checker, PayPal read-back, mandates, webhooks, health, hearing, studio
+npm test                                                   # 97 tests: the checker, PayPal read-back, mandates, webhooks, health, hearing, studio
 npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser

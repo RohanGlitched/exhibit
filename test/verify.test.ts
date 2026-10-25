@@ -309,6 +309,8 @@ test("a quote must be in a cited exhibit, word for word", () => {
   // Curly quotes, spacing and an ellipsis are fine.
   assert.equal(check("The buyer asked where it was.", ["F"], "“Where is my  order?”").kept, true);
   assert.equal(check("We told the buyer it was signed for.", ["F"], "USPS shows it delivered … at your front desk").kept, true);
+  // A quote across lines of the record is read line by line.
+  assert.equal(check("USPS delivered it on 1 Oct 2026, signed for at the front desk.", ["E"], "Delivered\nSigned for by M LINDQVIST").kept, true);
 });
 
 test("a sentence with nothing to check is kept but marked unverified, not checked", () => {
