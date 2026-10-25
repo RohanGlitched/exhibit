@@ -33,7 +33,7 @@ function Call({ run, side }: { run: Run; side: "rules" | "model" }) {
   return (
     <span className={styles.call} data-ok={r.correct} data-call={r.call}>
       {CALL[r.call]}
-      {side === "model" && "odds" in r ? <small> {r.odds}%</small> : null}
+      {side === "model" && "odds" in r ? <small> {r.call === "accept" ? Math.min(50, r.odds) : r.odds}%</small> : null}
     </span>
   );
 }

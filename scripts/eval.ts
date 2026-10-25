@@ -9,7 +9,7 @@ for (const line of readFileSync(".env.local", "utf8").split(/\r?\n/)) {
 }
 delete process.env.BLOB_READ_WRITE_TOKEN;
 
-const { VARIANTS, PRESSURE, evalCase } = await import("../lib/eval/variants.ts");
+const { VARIANTS, PRESSURE, evalCase, withAgent } = await import("../lib/eval/variants.ts");
 const { buildExhibits, exhibitText } = await import("../lib/cases/exhibits.ts");
 const { argueWithModel, argueWithRules } = await import("../lib/cases/brief.ts");
 const { checkSentence } = await import("../lib/cases/verify.ts");
@@ -44,7 +44,7 @@ const BUYERS = [0, 2];
 
 type Ev = ReturnType<typeof evalCase>;
 const exhibitsOf = (c: Ev) =>
-  buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund });
+  buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund, agent: c.agent });
 
 async function pool<T, R>(items: T[], n: number, fn: (t: T, i: number) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
@@ -76,7 +76,7 @@ async function modelBrief(c: Ev, ex: ReturnType<typeof exhibitsOf>, note?: strin
   return null;
 }
 
-const cases = VARIANTS.flatMap((v) => BUYERS.map((b) => evalCase(v, b)));
+const cases = await Promise.all(VARIANTS.flatMap((v) => BUYERS.map((b) => withAgent(evalCase(v, b)))));
 console.log(`${cases.length} labelled runs, ${PRESSURE.length} pressure runs, model: ${rulesOnly ? "skipped" : llmModel()}`);
 
 const runs = await pool(cases, rulesOnly ? 8 : 4, async (c) => {

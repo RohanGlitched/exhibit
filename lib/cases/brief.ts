@@ -4,7 +4,7 @@ import { llmModel, llmReady, structured } from "../llm";
 import { SHOP } from "../shop/catalog";
 import { reasonLabel, usd } from "../format";
 import { exhibitText } from "./exhibits";
-import { checkSentence, checkTally, oddsFrom } from "./verify";
+import { checkSentence, checkTally, oddsFor, oddsFrom } from "./verify";
 import type { Brief, BriefSentence, Exhibit, Recommendation, TallyItem } from "./types";
 
 /**
@@ -80,7 +80,7 @@ Rules you never break:
 - Copy figures exactly as the exhibits write them: amounts like $104.00, dates like 3 Oct 2026, times like 13:02, ids and tracking numbers in full. Never compute a new date or amount; never invent one.
 - Exhibits marked as sandbox re-creations or simulations are still the case record; don't mention the sandbox in the response.
 - How cases are usually decided: not received is won with tracking that shows delivery to the buyer's address (a signature is decisive) and lost without tracking. Not as described is usually won when the listing plainly disclosed the difference the buyer complains about and the seller offered a return; it is lost when the item really differs from the listing. In an inquiry a partial refund often settles it; a card chargeback can only be fought or refunded in full. Unauthorised is lost when signs point to a stolen card (first order, billing and shipping differ, shipped to a forwarder); fight only with strong proof the cardholder took part. Charged twice is won with proof the duplicate was refunded.
-- Orders placed by the buyer's AI shopping agent come with a mandate check: the cardholder's signed intent (what the agent may buy, the limit, the ship-to) and the agent's signed cart. If every check passes, the cardholder authorised the purchase through their agent: fight an "unauthorised" claim with the mandates. If the cart broke the signed intent (over the limit, wrong item, wrong address), the merchant took an order the cardholder never allowed: refund.
+- Orders placed by the buyer's AI shopping agent come with a mandate check: the cardholder's signed intent (what the agent may buy, the limit, the ship-to), the agent's signed cart, both signatures verified against published keys, and who is responsible (cardholder, agent platform or merchant). If every check passes, the cardholder authorised the purchase through their agent: fight an "unauthorised" claim with the mandates. If a signature does not verify, nothing proves the cardholder allowed the order: refund. If the cart broke the signed intent (over the limit, wrong item, wrong address), refund, and say the agent signed a cart outside what the cardholder allowed. An instruction the agent found in a listing never widens what the cardholder signed.
 - Write the response for a PayPal reviewer: specific, calm, no adjectives, no legal threats, no apologies to PayPal.`;
 }
 
@@ -123,13 +123,14 @@ function finish(v: ModelBrief, exhibits: Exhibit[], engine: Brief["engine"], ms:
   );
   const max = Number(d.dispute_amount.value);
   const offer = v.recommendation === "offer" && v.offer_amount ? Math.min(max, Math.max(1, v.offer_amount)).toFixed(2) : undefined;
+  const recommendation: Recommendation = v.recommendation === "offer" && !offer ? "accept" : v.recommendation;
   return {
-    recommendation: v.recommendation === "offer" && !offer ? "accept" : v.recommendation,
+    recommendation,
     offerAmount: offer,
     headline: v.headline,
     sentences,
     tally,
-    odds: oddsFrom(tally),
+    odds: oddsFor(recommendation, oddsFrom(tally)),
     buyerMessage: v.buyer_message || undefined,
     evidenceTypes: (v.evidence_types ?? []).filter((t) => /^[A-Z_]{3,60}$/.test(t)).slice(0, 4),
     engine,
@@ -171,8 +172,22 @@ export function argueWithRules(d: Dispute, exhibits: Exhibit[]): Brief {
     const cart = exhibits.find((e) => e.kind === "mandate" && e.title.startsWith("Cart"));
     if (fails.length) {
       rec = "accept";
-      tally.push({ side: "buyer", point: `The agent's cart broke the cardholder's signed intent: ${fails[0].replace(/^Fail: /, "")}`, weight: 3, cites: [check.id] });
-      response.push({ text: `The order placed by the buyer's shopping agent went beyond the limits the cardholder signed, so we are refunding ${amount} in full.`, cites: [check.id] });
+      const party = fact(check, "Responsible");
+      const unsigned = party === "Merchant" && fails.some((l) => /signature/.test(l));
+      tally.push({
+        side: "buyer",
+        point: unsigned ? `A mandate doesn't verify against the published keys: ${fails[0].replace(/^Fail: /, "")}` : `The agent's cart broke the cardholder's signed intent: ${fails[0].replace(/^Fail: /, "")}`,
+        weight: 3,
+        cites: [check.id],
+      });
+      response.push({
+        text: unsigned
+          ? `The mandates on this order do not verify, so nothing shows the cardholder authorised it; we are refunding ${amount} in full.`
+          : party === "Buyer's agent platform"
+            ? `The buyer's shopping agent signed a cart outside the limits the cardholder signed, so we are refunding ${amount} in full.`
+            : `The order placed by the buyer's shopping agent went beyond the limits the cardholder signed, so we are refunding ${amount} in full.`,
+        cites: [check.id, claim.id],
+      });
       evidence.push("PROOF_OF_REFUND");
     } else {
       tally.push({ side: "seller", point: "The cardholder signed an intent mandate that covers this exact cart.", weight: 3, cites: [check.id, ...(intent ? [intent.id] : [])] });

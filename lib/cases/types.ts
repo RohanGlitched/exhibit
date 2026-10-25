@@ -1,5 +1,6 @@
 /** Shared shapes for cases, exhibits and briefs. Safe to import from client components. */
 import type { Hearing } from "./hearing";
+import type { AgentRun } from "../agentic/types";
 
 export interface Fact {
   label: string;
@@ -84,6 +85,7 @@ export interface CaseRecord {
   /** The latest dispute event PayPal delivered for this case, and the state Exhibit read back after it. */
   lastEvent?: { id: string; type: string; receivedAt: string; status: string; outcome?: string };
   hearing?: Hearing; // the latest cross-examination by the simulated reviewer
+  agent?: AgentRun; // an agent story: the signed mandates and the buyer agent's tool calls, kept from the purchase
 }
 
 /** One step the server streams while it argues a case. */

@@ -8,7 +8,7 @@ import { usd } from "../format";
 import { argueWithModel, argueWithRules, modelAvailable } from "./brief";
 import { mergeFilings, paypalFilings, restoredNote, sellerEvidence, splitFiled, storyFromPayPal, trackerNumber } from "./derive";
 import { buildExhibits, exhibitText } from "./exhibits";
-import { checkSentence } from "./verify";
+import { checkSentence, oddsFor } from "./verify";
 import { argueBlocked } from "./guard";
 import { briefPdf } from "./pdf";
 import { repairBrief } from "./repair";
@@ -57,6 +57,7 @@ export async function caseContext(id: string): Promise<CaseContext> {
     openedAt: record?.openedAt ?? dispute.create_time,
     invoiceId,
     refund,
+    agent: record?.agent,
   });
   const filings = mergeFilings(record?.filings ?? [], paypalFilings(dispute));
   const brief = record?.brief ?? restoredBrief(dispute, exhibits);
@@ -82,7 +83,7 @@ function restoredBrief(d: Dispute, exhibits: Exhibit[]): Brief | null {
     headline: `${restoredNote(e.date)}. ${accepted ? "The seller accepted the claim." : "The seller fought it with the records cited in each sentence."}`,
     sentences,
     tally: rules.tally,
-    odds: rules.odds,
+    odds: oddsFor(accepted ? "accept" : "fight", rules.odds),
     evidenceTypes: [e.evidence_type],
     engine: "paypal",
     ms: 0,
