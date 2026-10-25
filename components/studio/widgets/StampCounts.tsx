@@ -32,7 +32,8 @@ const TONE: Record<string, string> = {
   fight: "respondent",
 };
 
-const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "lost"];
+// "missed" (a deadline that passed with no answer) stays in plain ink: nothing on it can be filed any more.
+const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "missed", "lost"];
 
 /**
  * Counts as rubber stamps on the page, the way a clerk marks a file: WON in green, LOST and YOUR MOVE in red,

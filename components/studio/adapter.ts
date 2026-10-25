@@ -1,8 +1,10 @@
 // The OpenAI Responses adapter from the AG Studio 3.0.0 docs (Direct LLM Runner example,
 // https://www.ag-grid.com/studio/react/ai-direct-llm-runner/), kept close to the original so it can be
-// diffed against new releases. One change: it posts to this app's own route (app/api/studio-agent), which
-// holds the Azure OpenAI key and picks the deployment, so the browser sends no key and no model. A failed
-// turn's message comes from that route in plain words, and the chat panel shows it as the turn's error.
+// diffed against new releases. Two changes: it posts to this app's own route (app/api/studio-agent), which
+// holds the model credentials (Claude Haiku 4.5 on Amazon Bedrock, translated from and back to the Responses
+// wire format there), so the browser sends no key and no model; and each request names the agent it is for,
+// with the analyst's page context, so the server can build the analyst's instructions and tools itself. A
+// failed turn's message comes from that route in plain words, and the chat panel shows it as the turn's error.
 
 /**
  * OpenAI Responses API adapter for AG Studio.
@@ -36,6 +38,10 @@ interface OpenAiAdapterOptions {
     endpoint?: string;
     model?: string;
     organization?: string;
+    /** Exhibit: which agent this adapter runs, sent with every turn. */
+    agent?: string;
+    /** Exhibit: page context for the server-built instructions, read fresh on every turn. */
+    context?: () => unknown;
 }
 
 interface OpenAiConfig {
@@ -43,6 +49,8 @@ interface OpenAiConfig {
     key?: string;
     model: string;
     organization?: string;
+    agent?: string;
+    context?: () => unknown;
 }
 
 // =============================================================================
@@ -656,6 +664,7 @@ function runRequest(config: OpenAiConfig, request: AgLlmRequest, signal?: AbortS
         // declared without efforts sends none, so the adapter's own default applies.
         reasoning: { effort: model?.effort ?? 'medium' },
         parallel_tool_calls: true,
+        exhibit: { agent: config.agent, context: config.context?.() ?? null },
     };
 
     const outcome: TurnOutcome = {};
@@ -712,6 +721,8 @@ export function openaiAdapter(options: OpenAiAdapterOptions): AgLlmAdapter {
         key: options.key,
         model: options.model ?? 'deployment',
         organization: options.organization,
+        agent: options.agent,
+        context: options.context,
     };
 
     return {

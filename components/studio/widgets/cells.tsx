@@ -5,32 +5,58 @@ import type { CustomCellRendererProps } from "ag-grid-react";
 import type { ComponentType } from "react";
 import styles from "./widgets.module.css";
 
-/** Case ids print as Bates numbers, in stamp red. */
+/** Opens a case page from inside a widget. Studio renders widgets in its own tree, so this is a plain navigation. */
+export const openCase = (id: string) => window.location.assign(`/case/${encodeURIComponent(id)}`);
+
+/** Case ids print as Bates numbers, in stamp red. A click still cross-filters; a double-click opens the case. */
 function Bates({ value }: CustomCellRendererProps) {
-  return value == null ? null : <span className={styles.bates}>{String(value)}</span>;
+  if (value == null) return null;
+  const id = String(value);
+  return (
+    <span className={styles.bates} data-opens="true" title={`Double-click to open ${id}`} onDoubleClick={() => openCase(id)}>
+      {id}
+    </span>
+  );
 }
 
-/** Where a case stands, as the same quiet chip the desk uses. */
+/** Where a case stands, as the same quiet chip the desk uses (the queue field's order number is not printed). */
 function Stage({ value }: CustomCellRendererProps) {
   if (value == null) return null;
-  const v = String(value);
+  const v = String(value).replace(/^\d+ /, "");
+  const tone = v === "Won" ? "won" : v === "Lost" || v === "Your move" ? "due" : v === "Refunded" ? "ink" : /^miss/i.test(v) ? "missed" : "respondent";
   return (
-    <span className={styles.chip} data-tone={v === "Won" ? "won" : v === "Lost" || v === "Your move" ? "due" : v === "Refunded" ? "ink" : "respondent"}>
+    <span className={styles.chip} data-tone={tone}>
       {v}
     </span>
   );
 }
 
-/** Days left on PayPal's clock: red at two or fewer, blank when it isn't the seller's move. */
+/** Words for days left on PayPal's clock; below zero the deadline passed with no answer. Shared with the ladder. */
+export function daysWords(d: number): string {
+  if (d < 0) return `Missed ${-d} day${d === -1 ? "" : "s"} ago`;
+  if (d === 0) return "Due today";
+  return d === 1 ? "1 day" : `${d} days`;
+}
+
+/**
+ * Days left on PayPal's clock: red at two or fewer, blank when it isn't the seller's move. Below zero the
+ * deadline has passed with no answer, so the cell says how long ago it was missed rather than "today".
+ */
 function Days({ value }: CustomCellRendererProps) {
   if (value == null || value === "") return <span className={styles.faint}>Not on the clock</span>;
   const d = Number(value);
+  if (d < 0)
+    return (
+      <span className={styles.missedCell} title={`PayPal's deadline passed ${-d} day${d === -1 ? "" : "s"} ago with no answer`}>
+        Missed, {-d} d ago
+      </span>
+    );
   return (
     <span className={styles.daysCell} data-soon={d <= 2}>
       <span className={styles.dueBar}>
         <i style={{ width: `${Math.max(0, Math.min(100, d * 10))}%` }} />
       </span>
-      {d <= 0 ? "Today" : `${d} d`}
+      {d === 0 ? "Today" : `${d} d`}
     </span>
   );
 }
@@ -39,6 +65,7 @@ const BY_FIELD: Record<string, ComponentType<CustomCellRendererProps>> = {
   "cases.caseId": Bates,
   "sentences.caseId": Bates,
   "cases.stage": Stage,
+  "cases.queue": Stage,
   "cases.daysLeft": Days,
 };
 

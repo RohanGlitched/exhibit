@@ -1,88 +1,91 @@
-import { createAiHarness, directLlmRunner, type AgAiHarnessSetup, type AgAiPromptStarter, type AgAiTool, type AgStudioApi } from "ag-studio";
+import { createAiHarness, directLlmRunner, type AgAiHarnessSetup, type AgAiPromptStarter, type AgAiTool, type AgWidgetLayoutState } from "ag-studio";
 import { openaiAdapter } from "./adapter";
+import { ANALYST_ID, ANALYST_TOOLS, type AnalystContext } from "./analyst";
 import type { AnalyticsPayload } from "./data";
-import { PAGES } from "./report";
+import { seededHistory } from "./history";
+import { PAGES, type PageId } from "./pages";
 
 /**
  * The analyst behind the analytics page, on Studio's agent framework.
  *
  * "Exhibit analyst" fronts every conversation. It knows the dispute domain (PayPal's ten-day window, fight
- * or refund, the checker), reads the desk through two tools of its own, turns the report to the page that
+ * or refund, the checker), reads the desk through tools of its own, turns the report to the page that
  * answers a question, and uses Studio's built-in tools to read the schema, the report and run queries.
  * Anything that changes the dashboard it hands to Studio's own planning, page and widget agents through
- * delegate_to, so Studio's agents place and configure the widgets, Exhibit's custom ones included.
+ * delegate_to, after taking a fresh widget id and free space from new_widget_slot; check_widget then reads
+ * the report back so the reply says only what really changed.
  *
  * Every agent runs on Studio's direct LLM runner. Its adapter posts each turn to /api/studio-agent, which
- * calls the app's GPT-5.6 deployment on Azure OpenAI; no key or model reaches the browser.
+ * builds the analyst's instructions and tool list on the server and calls Claude Haiku 4.5 on Amazon
+ * Bedrock; no key or model reaches the browser.
  */
 
 const PROMPTS: AgAiPromptStarter[] = [
   { label: "What will cost me money this week?", prompt: "Which cases will cost me money this week?" },
-  { label: "Compare kept and refunded", prompt: "Add a widget comparing what we kept by fighting with what we refunded." },
+  { label: "Add a ledger for unauthorised cases", prompt: "Add a ledger of kept, refunded and lost money for unauthorised cases only, on the Money page." },
   { label: "Where does the checker strike?", prompt: "Where does the checker strike most?" },
 ];
 
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n % 1 ? 2 : 0 }).format(n);
 
-function instructions(api: AgStudioApi, read: () => AnalyticsPayload | null): string {
-  const data = read();
-  const { tables } = api.getAiContext().schema();
-  const page = api.getState().selectedPageId;
-  const desk = data
-    ? `The desk now holds ${data.cases.length} cases and ${data.sentences.length} checked brief sentences (read ${data.at}).`
-    : "The desk's data is still loading.";
-  return `You are Exhibit analyst, the analyst on Exhibit's dispute desk for a small PayPal seller (Halden Ceramics, on PayPal's sandbox). You answer questions about the seller's disputes and change this AG Studio dashboard when asked.
-
-How disputes work here:
-- A buyer opens a dispute with PayPal (not received, not as described, unauthorised). The seller has PayPal's ten-day window to answer; a case with no answer by the deadline is lost by default. "Your move" means PayPal is waiting on the seller; cases.daysLeft counts the days left and is blank otherwise. Two days or fewer is urgent.
-- Exhibit recommends a call per case: Fight (file evidence; cases.odds is the seller's chance in percent) or Refund (accept the claim and return the money). "Not argued" means nobody has asked Exhibit yet.
-- Money: each case's amount sits in exactly one of kept (won by fighting), refunded (accepted), lostAmount (lost) or atStake (undecided). All USD.
-- Exhibit writes each response so every sentence cites a PayPal record. Its checker strikes any sentence without one; the sentences table holds each sentence's verdict (Kept or Struck) and why.
-
-${desk}
-Tables: ${tables.map((t) => `${t.name} (${t.fields.map((f) => f.name).join(", ")})`).join("; ")}.
-The report's pages: ${PAGES.map((p) => `${p.id} ("${p.title}": ${p.note})`).join("; ")}. The reader is on "${page}".
-
-How to work:
-- For deadlines and what will cost money soon, call deadline_ladder. For the money picture, call desk_ledger. For anything else, call view_schema once, then execute_query. Never guess numbers.
-- When an answer lives on another page, call turn_to_page so the reader sees it.
-- To add, change, move or remove widgets, delegate: to "page" to add or position widgets, then to "widget" (with the widget's type and id) to configure each one; use "planning" first for anything that needs three or more widgets. Prefer Exhibit's own widget types where they fit: exhibit-ledger (kept, refunded, lost, at stake), exhibit-deadline-ladder (cases on the seller's move), exhibit-checker-strikes (the checker's verdicts), exhibit-stamps (counts by outcome or stage). Put new widgets in free space below what is there.
-- After a change, say in one line what you added and where.
-
-How to answer: plain words, short. Lead with the answer, then at most five short lines. Name cases by their id (PP-...) and give money in dollars. Say "the seller" or "you", never "the user". No tables in replies. If the data can't answer the question, say so.`;
-}
+type Snapshot = Record<string, string>;
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 32) || "widget";
 
 export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup {
-  const adapter = openaiAdapter({ endpoint: "/api/studio-agent" });
-
   return ({ api }) =>
     createAiHarness(api, ({ builtIn, tools }) => {
       const { studio } = tools;
+      const pageState = (id: string) => api.getState().pages.find((p) => p.id === id);
+      const widgetIds = () => new Set(api.getState().pages.flatMap((p) => Object.keys(p.widgets ?? {})));
+      // Each page's widgets as they stood when the analyst last asked for a slot, to catch an overwrite.
+      const before = new Map<string, Snapshot>();
+      const snapshot = (id: string): Snapshot =>
+        Object.fromEntries(Object.entries(pageState(id)?.widgets ?? {}).map(([wid, w]) => [wid, JSON.stringify({ type: w?.type, format: w?.format, dataMapping: w?.dataMapping })]));
+
+      const context = (): AnalystContext | null => {
+        const data = read();
+        const page = api.getState().selectedPageId;
+        if (!data) return null;
+        return { page: (PAGES.some((p) => p.id === page) ? page : "deadlines") as PageId, cases: data.cases.length, sentences: data.sentences.length, at: data.at };
+      };
+      const analystAdapter = openaiAdapter({ endpoint: "/api/studio-agent", agent: ANALYST_ID, context });
 
       const deadlineLadder: AgAiTool = api.defineAiTool({
-        name: "deadline_ladder",
-        description:
-          "The cases on the seller's move, soonest PayPal deadline first: case id, days left, amount, the buyer's story, Exhibit's call and odds. Reads the whole desk, ignoring dashboard filters.",
+        name: ANALYST_TOOLS.deadline_ladder.name,
+        description: ANALYST_TOOLS.deadline_ladder.description,
         params: (s) => s.object({ withinDays: s.number({ description: "Only cases due within this many days. Omit for all." }).optional() }),
         execute: (args: { withinDays?: number }, ctx) => {
           const data = read();
           if (!data) return ctx.error("The desk's data hasn't loaded yet. Try again in a moment.");
-          const rungs = data.cases
-            .filter((c) => c.daysLeft != null && (args.withinDays == null || (c.daysLeft ?? 0) <= args.withinDays))
+          const clocked = data.cases.filter((c) => c.daysLeft != null);
+          const missed = clocked.filter((c) => (c.daysLeft ?? 0) < 0).sort((a, b) => (b.daysLeft ?? 0) - (a.daysLeft ?? 0));
+          const rungs = clocked
+            .filter((c) => (c.daysLeft ?? 0) >= 0 && (args.withinDays == null || (c.daysLeft ?? 0) <= args.withinDays))
             .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0) || b.amount - a.amount);
-          if (rungs.length === 0) return ctx.success(args.withinDays != null ? `No case is due within ${args.withinDays} days.` : "No case is on the seller's move.");
-          const lines = rungs.map(
-            (c) =>
-              `${c.caseId}: ${c.daysLeft} day${c.daysLeft === 1 ? "" : "s"} left, ${usd(c.amount)}, "${c.story}", buyer ${c.buyer || "unknown"}, call ${c.call}${c.odds != null ? ` (${c.odds}% to win)` : ""}`,
-          );
-          const total = rungs.reduce((s, c) => s + c.amount, 0);
-          return ctx.success(`${rungs.length} cases on the seller's move, ${usd(total)} in all:\n${lines.join("\n")}`, { cases: rungs.map((c) => c.caseId) });
+          const line = (c: (typeof clocked)[number]) =>
+            `${c.caseId}: ${c.daysLeft === 0 ? "due today" : `${c.daysLeft} day${c.daysLeft === 1 ? "" : "s"} left`}, ${usd(c.amount)}, "${c.story}", buyer ${c.buyer || "unknown"}, call ${c.call}${c.odds != null ? ` (evidence balance ${c.odds}%)` : ""}`;
+          const live = rungs.length
+            ? `${rungs.length} cases on the seller's move${args.withinDays != null ? ` due within ${args.withinDays} days` : ""}, ${usd(rungs.reduce((s, c) => s + c.amount, 0))} in all:\n${rungs.map(line).join("\n")}`
+            : args.withinDays != null
+              ? `No live case is due within ${args.withinDays} days.`
+              : "No case is inside PayPal's window on the seller's move.";
+          const gone = missed.length
+            ? `\nMissed (the deadline passed with no answer; not the seller's move any more): ${missed
+                .map((c) => `${c.caseId} missed ${-(c.daysLeft ?? 0)} days ago, ${usd(c.amount)}`)
+                .join("; ")}.`
+            : "";
+          return ctx.success(live + gone, { cases: rungs.map((c) => c.caseId), missed: missed.map((c) => c.caseId) });
         },
       });
 
       const deskLedger: AgAiTool = api.defineAiTool({
-        name: "desk_ledger",
-        description: "The money on the whole desk: kept by fighting, refunded, lost and still at stake, with case counts by where cases stand and by Exhibit's call.",
+        name: ANALYST_TOOLS.desk_ledger.name,
+        description: ANALYST_TOOLS.desk_ledger.description,
         params: (s) => s.object({}),
         execute: (_args: Record<string, never>, ctx) => {
           const data = read();
@@ -100,8 +103,8 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
       });
 
       const turnToPage: AgAiTool = api.defineAiTool({
-        name: "turn_to_page",
-        description: "Show the reader one of the report's pages.",
+        name: ANALYST_TOOLS.turn_to_page.name,
+        description: ANALYST_TOOLS.turn_to_page.description,
         params: (s) => s.object({ page: s.enum(PAGES.map((p) => p.id)) }),
         execute: (args: { page: string }, ctx) => {
           api.setState({ ...api.getState(), selectedPageId: args.page });
@@ -109,18 +112,78 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
         },
       });
 
+      const newWidgetSlot: AgAiTool = api.defineAiTool({
+        name: ANALYST_TOOLS.new_widget_slot.name,
+        description: ANALYST_TOOLS.new_widget_slot.description,
+        params: (s) =>
+          s.object({
+            page: s.enum(PAGES.map((p) => p.id)),
+            name: s.string({ description: "Two to four words naming the widget, e.g. 'kept vs refunded'." }),
+            xSpan: s.number({ description: "Width in tracks out of 24. Default 24." }).optional(),
+            ySpan: s.number({ description: "Height in 18 px rows. Default 16." }).optional(),
+          }),
+        execute: (args: { page: string; name: string; xSpan?: number; ySpan?: number }, ctx) => {
+          const page = pageState(args.page);
+          if (!page) return ctx.error(`There is no page "${args.page}".`);
+          const taken = widgetIds();
+          const base = `added-${slug(args.name)}`;
+          let id = base;
+          for (let i = 2; taken.has(id); i++) id = `${base}-${i}`;
+          const bottom = Object.values(page.widgetLayout ?? {}).reduce((m, l) => (l ? Math.max(m, l.yTrack + l.ySpan) : m), 0);
+          const xSpan = Math.max(6, Math.min(24, Math.round(args.xSpan ?? 24)));
+          const ySpan = Math.max(8, Math.min(30, Math.round(args.ySpan ?? 16)));
+          const slot: AgWidgetLayoutState = { xTrack: 0, yTrack: bottom, xSpan, ySpan };
+          before.set(args.page, snapshot(args.page));
+          return ctx.success(
+            `New widget id "${id}" on page "${args.page}", free at xTrack ${slot.xTrack}, yTrack ${slot.yTrack}, xSpan ${slot.xSpan}, ySpan ${slot.ySpan} (below everything already there). Tell the page agent to add_widget with exactly this id and position, and not to reuse any existing widget.`,
+            { widgetId: id, pageId: args.page, ...slot },
+          );
+        },
+      });
+
+      const checkWidget: AgAiTool = api.defineAiTool({
+        name: ANALYST_TOOLS.check_widget.name,
+        description: ANALYST_TOOLS.check_widget.description,
+        params: (s) => s.object({ page: s.enum(PAGES.map((p) => p.id)), widgetId: s.string() }),
+        execute: (args: { page: string; widgetId: string }, ctx) => {
+          const page = pageState(args.page);
+          if (!page) return ctx.error(`There is no page "${args.page}".`);
+          const w = page.widgets?.[args.widgetId];
+          const l = page.widgetLayout?.[args.widgetId];
+          const was = before.get(args.page) ?? {};
+          const now = snapshot(args.page);
+          const changed = Object.keys(was).filter((id) => id !== args.widgetId && now[id] !== undefined && now[id] !== was[id]);
+          const removed = Object.keys(was).filter((id) => now[id] === undefined);
+          const title = (w?.format as { title?: { text?: string } } | undefined)?.title?.text;
+          const found = w
+            ? `Confirmed: ${args.widgetId} is on page "${args.page}" as a ${w.type}${title ? ` titled "${title}"` : ""}${l ? ` at row ${l.yTrack}, ${l.xSpan} of 24 tracks wide` : ""}.`
+            : `Not found: no widget ${args.widgetId} on page "${args.page}". Nothing was added; say so plainly.`;
+          const harm = [
+            changed.length ? `Changed since the slot was taken: ${changed.join(", ")}. Say so; these were already on the report.` : "",
+            removed.length ? `Removed since the slot was taken: ${removed.join(", ")}. Say so.` : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          return ctx.success(`${found} ${harm || "No widget that was already there changed."}`, { found: !!w, changed, removed });
+        },
+      });
+
       const analyst = directLlmRunner({
-        id: "exhibit-analyst",
+        id: ANALYST_ID,
         name: "Exhibit analyst",
         description: "Answers questions about the seller's PayPal disputes and changes the dashboard through Studio's agents.",
         schema: (s) => s.undefined(),
-        adapter,
+        adapter: analystAdapter,
         maxTurns: 24,
-        instructions: () => instructions(api, read),
+        // The server writes the analyst's real instructions (components/studio/analyst.ts) from the checked
+        // context above and ignores this line.
+        instructions: () => "Exhibit analyst. Instructions are built on the server.",
         tools: () => [
           deadlineLadder,
           deskLedger,
           turnToPage,
+          newWidgetSlot,
+          checkWidget,
           studio.viewSchema(),
           studio.viewReport(),
           studio.viewPage(),
@@ -132,9 +195,12 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
         ],
       });
 
-      // Studio's own specialists, unchanged, as the analyst's delegates on the same model.
-      const team = (["planning", "data", "page", "widget"] as const).map((id) => directLlmRunner({ ...builtIn[id], adapter }));
+      // Studio's own specialists as the analyst's delegates, on the same model. The server adds Exhibit's
+      // rule for additions to the page and widget agents' instructions.
+      const team = (["planning", "data", "page", "widget"] as const).map((id) =>
+        directLlmRunner({ ...builtIn[id], adapter: openaiAdapter({ endpoint: "/api/studio-agent", agent: id }) }),
+      );
 
-      return { agents: [analyst, ...team], primary: "exhibit-analyst", promptStarters: PROMPTS };
+      return { agents: [analyst, ...team], primary: ANALYST_ID, promptStarters: PROMPTS, history: seededHistory() };
     });
 }
