@@ -154,7 +154,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 97 tests: the checker, PayPal read-back, mandates, webhooks, health, hearing, studio
+npm test                                                   # 98 tests: the checker, PayPal read-back, mandates, webhooks, health, hearing, studio
 npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser

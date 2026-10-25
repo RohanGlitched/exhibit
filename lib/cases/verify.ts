@@ -274,9 +274,12 @@ function roleOf(clause: string, at: number) {
   return best?.role ?? null;
 }
 
-/** "never delivered", "not refunded", "no signature": a denial. "does not show delivery" is about the evidence, not a denial. */
+/**
+ * "never delivered", "not refunded", "no signature": a denial. "does not show delivery" is about the evidence,
+ * and "did not require a signature" about a rule, so neither is a denial.
+ */
 const NEGATOR = /^(?:not|never|no|without|nor|neither|cannot|none)$|n't$/;
-const EVIDENTIAL = /^(?:show|shows|showed|shown|establish|establishes|prove|proves|record|records|recorded|confirm|confirms|provide|provides|include|includes|mention|mentions|list|lists|indicate|indicates|reflect|reflects|support|supports)$/;
+const EVIDENTIAL = /^(?:show|shows|showed|shown|establish|establishes|prove|proves|record|records|recorded|confirm|confirms|provide|provides|include|includes|mention|mentions|list|lists|indicate|indicates|reflect|reflects|support|supports|require|requires|required|need|needs|needed|call|calls|demand|demands|ask|asks|request|requests)$/;
 const STEMS: { name: string; re: RegExp }[] = [
   { name: "delivered", re: /\b(?:deliver(?:ed|y|ies)?|arriv(?:ed|al|e|es)?)\b/gi },
   { name: "signed", re: /\bsign(?:ed|ature)\b/gi },
