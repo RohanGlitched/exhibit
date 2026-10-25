@@ -3,6 +3,7 @@ import { allowed } from "../paypal/disputes";
 import { filedDocument, ruledAt, stageLine, stageOf, type Stage } from "./derive";
 import { caseContext } from "./service";
 import type { Brief, Exhibit, Filing } from "./types";
+import type { Hearing } from "./hearing";
 
 /** Everything the case page shows, as plain JSON (also used for the server render). */
 export interface CaseView {
@@ -32,6 +33,8 @@ export interface CaseView {
   mine: boolean;
   openedAt: string;
   restored: boolean;
+  /** The latest cross-examination by the simulated reviewer. */
+  hearing: Hearing | null;
 }
 
 export async function caseView(id: string, visitor: string | null): Promise<CaseView> {
@@ -66,5 +69,6 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     openedAt: ctx.record?.openedAt ?? d.create_time,
     // The page says the response is PayPal's only when it is: read back from the evidence PayPal holds.
     restored: ctx.brief?.engine === "paypal",
+    hearing: ctx.record?.hearing ?? null,
   };
 }

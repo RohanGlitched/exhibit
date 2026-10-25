@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } f
 import type { BriefSentence, Exhibit, Recommendation, TallyItem } from "@/lib/cases/types";
 import ExhibitCard, { sideOf } from "./ExhibitCard";
 import Tally from "./Tally";
+import { repairLabel } from "@/lib/cases/hearing";
 import styles from "./brief.module.css";
 
 export interface Verdict {
@@ -179,6 +180,11 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
                 })}
               </p>
               {!s.kept && <p className={styles.strikeNote}>Struck before filing: {s.why}</p>}
+              {s.kept && s.repaired && (
+                <p className={styles.repairNote} title={`As first written: ${s.repaired.from}`}>
+                  {repairLabel(s)}. As first written it was struck: {s.repaired.why}
+                </p>
+              )}
               {inline?.s === si && (
                 <div className={styles.inlineCard}>
                   {exhibits.filter((e) => e.id === inline.e).map((e) => (
