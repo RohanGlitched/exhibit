@@ -155,6 +155,12 @@ export default function ReviewProof() {
             {s.priceIn !== null ? `, about $${s.spendUsd.toFixed(2)} at $${s.priceIn} and $${s.priceOut} per million tokens in and out` : ""}. The reviewer is
             the same family of model as the drafter and was written by the same people, so agreement measures consistency, not a bank&apos;s judgement.
           </p>
+          <p className={styles.note}>
+            This is the second version of the hearing&apos;s instructions. In the first run on these same cases, Exhibit conceded 18 of 19 objections, and 6 of
+            the 12 cases that should be fought ended for the buyer, matching the right call in 20 of 28. Both roles now know PayPal&apos;s own proof-of-delivery
+            standard (tracking that shows &ldquo;delivered&rdquo;, the date and the city or postal code; a signature only over $750), and Exhibit concedes a
+            fair point without giving up the case unless the point decides it. The cases are the same, so treat the gain as tuned, not held out.
+          </p>
         </div>
         {pick && (
           <Pleading lines={Math.max(10, shown.length * 7 + 2)}>

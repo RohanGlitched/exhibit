@@ -1,0 +1,2515 @@
+{
+ "at": "2026-10-25T15:14:22.628Z",
+ "summary": {
+  "briefsFrom": "GPT-5.6 on Azure OpenAI",
+  "briefsAt": "2026-10-25T14:46:14.072Z",
+  "reviewer": "GPT-5.6 on Azure OpenAI",
+  "pdfRoundTrip": 28,
+  "pdfBriefs": 28,
+  "hearings": 28,
+  "cross": 12,
+  "objections": 4,
+  "answered": 0,
+  "answersKept": 0,
+  "answersStruck": 0,
+  "conceded": 4,
+  "overruled": 0,
+  "sustained": 4,
+  "withdrawn": 3,
+  "flipped": 1,
+  "agree": 27,
+  "agreeAfter": 28,
+  "fights": 12,
+  "fightsUpheld": 11,
+  "records": 16,
+  "recordsConfirmed": 16,
+  "reviewerMatchesLabel": 27,
+  "repairTried": 19,
+  "repairFixed": 17,
+  "plantedTried": 7,
+  "plantedFixed": 5,
+  "plantedSurvived": 0,
+  "misciteTried": 12,
+  "misciteFixed": 12,
+  "misciteRightExhibit": 11,
+  "carelessAnswers": 4,
+  "carelessStruck": 2,
+  "medianHearingMs": 2021,
+  "calls": 48,
+  "inputTokens": 79066,
+  "outputTokens": 3980,
+  "priceIn": 1.25,
+  "priceOut": 10,
+  "spendUsd": 0.1386,
+  "stopped": null
+ },
+ "hearings": [
+  {
+   "key": "delivered-base#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:21.922Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-622449",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "USPS recorded the parcel as delivered and signed in San Francisco, CA 94109.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "USPS states that M LINDQVIST signed for the parcel at the front desk.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The order was addressed to Maya Lindqvist in San Francisco, CA 94109.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "We asked Maya to check the building's front desk after the reported nonreceipt.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "USPS tracking shows delivered, signed by M Lindqvist at the front desk in the order’s matching city and postal code",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 4437,
+    "calls": 1,
+    "tokens": {
+     "input": 1751,
+     "output": 101
+    }
+   }
+  },
+  {
+   "key": "delivered-unsigned#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:26.593Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-778347",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We shipped order HC-778347 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "USPS tracking 9405511206213859470035 shows the shipment as delivered.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "USPS recorded delivery on 4 Oct 2026, 13:00 in San Francisco, CA 94109, left at the front door.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The payment record reports that the street and ZIP matched.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "We ask that the chargeback be denied because the carrier records delivery in the order's destination ZIP.",
+      "cites": [
+       "E"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "USPS tracking shows delivery on 4 October in San Francisco 94109, matching the order’s destination city and ZIP",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2333,
+    "calls": 1,
+    "tokens": {
+     "input": 1715,
+     "output": 54
+    }
+   }
+  },
+  {
+   "key": "delivered-wrong-zip#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:29.059Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-495293",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We will refund the $104.00 chargeback in full because the delivery record does not match the order's ship-to address.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "The order was addressed to Maya Lindqvist in San Francisco, CA 94109.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "USPS instead records the shipment as delivered and signed in Reno, NV 89501.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The buyer also told us the order still had not arrived.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We therefore accept the chargeback and will close the case with a full refund.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "Tracking shows delivery in Reno, not the San Francisco city and postal code on the order",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1627,
+    "calls": 1,
+    "tokens": {
+     "input": 1450,
+     "output": 43
+    }
+   }
+  },
+  {
+   "key": "delivered-lost-in-transit#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:30.769Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-702934",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We accept the chargeback and will refund the disputed $104.00 in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "USPS tracking does not show delivery; its latest status is in transit.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The final recorded scan was at the Sacramento, CA network distribution center.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "We told the buyer the tracking had not moved and asked USPS to investigate.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "USPS tracking shows only in transit, not delivered to the order’s city or postal code",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1634,
+    "calls": 1,
+    "tokens": {
+     "input": 1401,
+     "output": 44
+    }
+   }
+  },
+  {
+   "key": "delivered-buyer-admits#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:32.497Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-568548",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "USPS records the parcel as delivered and signed for at the front desk in San Francisco, CA 94109.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The buyer later confirmed that she found the order at the front desk.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We ask that the chargeback be denied because the merchandise was received.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The disputed amount is $104.00.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "USPS shows signed delivery in the order’s city and postal code, and the buyer confirmed finding the order at the front desk",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2115,
+    "calls": 1,
+    "tokens": {
+     "input": 1774,
+     "output": 55
+    }
+   }
+  },
+  {
+   "key": "delivered-attempted#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:34.681Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-289910",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We will refund the disputed $104.00 in full because the carrier record does not show delivery.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "USPS lists the shipment's latest status as attempted.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The delivery attempt ended with a notice left because no authorized recipient was available.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The buyer also told us the order had not arrived.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We therefore accept and close this chargeback with a full refund.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "USPS shows only an attempted delivery, not delivery to the order’s city and postal code as required",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1550,
+    "calls": 1,
+    "tokens": {
+     "input": 1452,
+     "output": 46
+    }
+   }
+  },
+  {
+   "key": "untracked-base#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:36.292Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-947548",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009"
+    ],
+    "response": [
+     {
+      "text": "We accept the $27.00 chargeback and will refund it in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "Our records show the order shipped First-Class without tracking.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "The buyer reported that the vase had not arrived and later requested a refund if it was lost.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "We cannot provide tracking or delivery confirmation for this shipment.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "Please close the case after the full refund is processed.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The seller provided no tracking or other proof showing delivery to the buyer’s address",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1894,
+    "calls": 1,
+    "tokens": {
+     "input": 1201,
+     "output": 41
+    }
+   }
+  },
+  {
+   "key": "untracked-tracked#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:38.276Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-224803",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "USPS tracking number 9405511206213859470073 shows delivery in Dallas, TX 75201.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "USPS recorded the parcel as delivered to the mailbox on 23 Sep 2026, 12:00.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The payment record confirms that the street and ZIP matched.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "We ask that the $27.00 chargeback be denied because carrier tracking confirms delivery.",
+      "cites": [
+       "A",
+       "E"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "USPS tracking shows delivery in Dallas 75201, matching the order’s shipping city and postal code",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 3782,
+    "calls": 1,
+    "tokens": {
+     "input": 1622,
+     "output": 195
+    }
+   }
+  },
+  {
+   "key": "untracked-buyer-confirms#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:42.097Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-479570",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009"
+    ],
+    "response": [
+     {
+      "text": "We dispute this not-received chargeback because the buyer confirmed that the vase arrived.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The order names Theo Okafor as the recipient at 2207 Elm Street, Dallas, TX 75201.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "The payment card was also in the name of Theo Okafor.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "Please deny the chargeback based on the buyer's written acknowledgment of receipt.",
+      "cites": [
+       "D"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The buyer’s dated email says the vase arrived, directly confirming receipt of the disputed merchandise",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1446,
+    "calls": 1,
+    "tokens": {
+     "input": 1481,
+     "output": 47
+    }
+   }
+  },
+  {
+   "key": "untracked-promised-reship#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:43.609Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-301976",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009"
+    ],
+    "response": [
+     {
+      "text": "We accept this chargeback and will refund the disputed $27.00 in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "Our records show the order shipped First-Class without tracking.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "The buyer reported that the vase had not arrived and asked for a refund if it was lost.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "We promised a replacement, but it was not sent.",
+      "cites": [
+       "H"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "No tracking shows delivery, and the seller admits the promised replacement was not sent",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2021,
+    "calls": 1,
+    "tokens": {
+     "input": 1234,
+     "output": 41
+    }
+   }
+  },
+  {
+   "key": "colour-base#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:45.699Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-341013",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We sold a nesting set in tide-blue glaze whose colour can shift from deep blue to green where the glaze pools.",
+      "cites": [
+       "G"
+      ]
+     },
+     {
+      "text": "The buyer confirmed that the bowls arrived safely but said they were greener than the photos.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our checkout policy explains that glaze colour varies and listing photos show a representative piece rather than the exact item.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "We offered the buyer a return within 30 days for a refund.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our policy states that the buyer pays return shipping unless the piece arrived damaged.",
+      "cites": [
+       "H"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The listing disclosed blue-to-green glaze variation, and the seller offered the permitted 30-day return for a refund",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1413,
+    "calls": 1,
+    "tokens": {
+     "input": 1788,
+     "output": 52
+    }
+   }
+  },
+  {
+   "key": "colour-no-warning#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:47.179Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-055594",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We will refund the $136.00 disputed amount in full rather than contest this chargeback.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "Our listing described the set as having a tide-blue glaze.",
+      "cites": [
+       "G"
+      ]
+     },
+     {
+      "text": "The buyer reported that the bowls were much greener than the photos.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We offered a return within 30 days for a refund.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The listing calls the glaze tide-blue but does not disclose green pooling; the seller's email cannot add omitted listing terms",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1862,
+    "calls": 1,
+    "tokens": {
+     "input": 1459,
+     "output": 49
+    }
+   }
+  },
+  {
+   "key": "colour-broken#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:49.113Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-546793",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We accept this chargeback because the buyer reported that two of the three bowls arrived cracked.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our review of the submitted photos confirms two cracked bowls and damage to the shipping box.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "The buyer reported the breakage on 3 Oct 2026 and stated that photos of the bowls and box were attached.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our damage policy provides replacement or refund for broken pieces reported with photos of the piece and box.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "We will refund the disputed $136.00 in full.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "Seller's own notes confirm two bowls arrived cracked, and the pages show no replacement, refund, or offered return",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1545,
+    "calls": 1,
+    "tokens": {
+     "input": 1412,
+     "output": 48
+    }
+   }
+  },
+  {
+   "key": "colour-late-complaint#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:50.728Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-388972",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We listed the bowls in tide-blue glaze and disclosed that colour shifts from deep blue to green where the glaze pools.",
+      "cites": [
+       "G"
+      ]
+     },
+     {
+      "text": "Our checkout policy states that glaze colour varies and listing photos show a representative piece, not the exact piece received.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "The buyer confirmed the bowls arrived safely but said they were greener than the photos.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We explained the disclosed glaze variation and offered a return within 30 days for a refund.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our policy requires the buyer to pay return shipping unless the piece arrived damaged.",
+      "cites": [
+       "H"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The listing disclosed blue-to-green glaze variation, and the seller offered the buyer a return for a refund",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1371,
+    "calls": 1,
+    "tokens": {
+     "input": 1789,
+     "output": 50
+    }
+   }
+  },
+  {
+   "key": "fraud-base#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:12:52.164Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-130755",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We will refund the disputed transaction in full and close the chargeback.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "The cardholder states that they did not authorise this transaction.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "This was the customer's first order.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "Our records identify the shipping address as a parcel-forwarding warehouse and the billing address as being in Ohio.",
+      "cites": [
+       "I"
+      ]
+     },
+     {
+      "text": "These records do not provide strong proof that the cardholder participated in the purchase.",
+      "cites": [
+       "I"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "First order used a matching card but shipped to a distant forwarding warehouse, with no proof the cardholder participated",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1959,
+    "calls": 1,
+    "tokens": {
+     "input": 1376,
+     "output": 47
+    }
+   }
+  },
+  {
+   "key": "fraud-returning-customer#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": false,
+   "hearing": {
+    "at": "2026-10-25T15:12:54.178Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-115255",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We received a completed $180.00 payment with matching street address, ZIP, and security code checks.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "We shipped the order to Daniel Brooks at 39 Maple Ridge Road, Columbus, OH 43215.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "Our records show this order was placed from the same device used for the customer's earlier orders.",
+      "cites": [
+       "I"
+      ]
+     },
+     {
+      "text": "Our customer history shows three earlier orders, each delivered with no issues.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "USPS records signed delivery in Columbus, OH 43215, with D BROOKS as the signer.",
+      "cites": [
+       "E"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [
+     {
+      "objection": {
+       "n": 1,
+       "sentence": 0,
+       "text": "How do matching address and security-code checks prove the cardholder authorised the transaction rather than someone possessing the card details?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000004"
+       ]
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "The matching checks do not prove the cardholder authorised the transaction; they show only that the supplied street address, ZIP, and security code matched. We withdraw that sentence as proof of authorisation, while the remaining response stands.",
+       "cites": [
+        "C"
+       ],
+       "kept": true,
+       "effect": "withdraw"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded and withdrew the sentence",
+      "ruledBy": "concession"
+     },
+     {
+      "objection": {
+       "n": 2,
+       "sentence": 2,
+       "text": "What verifiable device identifier or comparison supports the assertion that this was the same device used for earlier orders?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000010"
+       ]
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "Our notes state that the same device was used, but provide no verifiable device identifier or comparison. We withdraw that sentence; the remaining response stands.",
+       "cites": [
+        "I"
+       ],
+       "kept": true,
+       "effect": "withdraw"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded and withdrew the sentence",
+      "ruledBy": "concession"
+     },
+     {
+      "objection": {
+       "n": 3,
+       "sentence": 3,
+       "text": "How do prior deliveries establish that the cardholder authorised this transaction, especially without payment, address, device, or signature details for those orders?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000009"
+       ]
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "The history shows three earlier deliveries without issues, but it does not establish cardholder authorisation of this transaction or supply the requested supporting details. We withdraw that sentence; the remaining response stands.",
+       "cites": [
+        "H"
+       ],
+       "kept": true,
+       "effect": "withdraw"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded and withdrew the sentence",
+      "ruledBy": "concession"
+     },
+     {
+      "objection": {
+       "n": 4,
+       "sentence": 4,
+       "text": "How does delivery signed by “D BROOKS” establish the cardholder's participation when the record does not authenticate the signer or provide a signature image?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000006"
+       ]
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "USPS records signed delivery in Columbus, OH 43215 by D BROOKS, but the record does not authenticate the signer or include a signature image. We withdraw that sentence as proof of cardholder participation; we cannot meet this unauthorised claim and accept the refund.",
+       "cites": [
+        "E"
+       ],
+       "kept": true,
+       "effect": "refund"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded the case and changed its call to refund",
+      "ruledBy": "concession"
+     }
+    ],
+    "after": "accept",
+    "withdrawn": [
+     0,
+     2,
+     3
+    ],
+    "flipped": true,
+    "verdict": {
+     "side": "buyer",
+     "reason": "Exhibit conceded the case at the hearing: USPS records signed delivery in Columbus, OH 43215 by D BROOKS, but the record does not authenticate the signer or include a signature image. We withdraw that sentence as proof of cardholder participation; we cannot meet this unauthorised claim and accept the refund",
+     "by": "concession"
+    },
+    "agrees": false,
+    "ms": 7461,
+    "calls": 2,
+    "tokens": {
+     "input": 3628,
+     "output": 512
+    }
+   }
+  },
+  {
+   "key": "fraud-checks-failed#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:01.702Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-603829",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We accept the $180.00 card issuer chargeback and will refund it in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "The payment failed both the address check and the security-code check.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "Our notes identify the shipping address as a parcel-forwarding warehouse and the billing address as Ohio.",
+      "cites": [
+       "I"
+      ]
+     },
+     {
+      "text": "Our order book shows this was the customer's first order.",
+      "cites": [
+       "H"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "First order shipped to a forwarder, billing and shipping differed, and both address and security-code checks failed; no proof shows cardholder participation",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2212,
+    "calls": 1,
+    "tokens": {
+     "input": 1367,
+     "output": 54
+    }
+   }
+  },
+  {
+   "key": "fraud-home-signed#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:03.988Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-038762",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010"
+    ],
+    "response": [
+     {
+      "text": "We received payment Z1F5F75TPH9C3Y8V9 with completed status for $180.00.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "The payment record shows the street and ZIP matched.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "The payment record also shows the security code matched.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "We shipped the order to Daniel Brooks at 39 Maple Ridge Road, Columbus, OH 43215.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "USPS records delivery in Columbus, OH 43215 with a signature by D BROOKS.",
+      "cites": [
+       "E"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "AVS and security code matched, and D Brooks signed for delivery at the cardholder’s matching billing and shipping location",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 4926,
+    "calls": 1,
+    "tokens": {
+     "input": 1573,
+     "output": 277
+    }
+   }
+  },
+  {
+   "key": "duplicate-base#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:08.985Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-153850",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012"
+    ],
+    "response": [
+     {
+      "text": "We confirmed that two charges went through for the mug.",
+      "cites": [
+       "G"
+      ]
+     },
+     {
+      "text": "We refunded the second charge in full for $46.00.",
+      "cites": [
+       "K"
+      ]
+     },
+     {
+      "text": "The refund record shows status Completed.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The refund note identifies it as a duplicate charge for the same order.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "We ask that the chargeback be denied because the duplicate charge has already been refunded.",
+      "cites": [
+       "D"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The completed $46 refund record identifies the refunded payment as the duplicate charge for the same order",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2514,
+    "calls": 1,
+    "tokens": {
+     "input": 1764,
+     "output": 48
+    }
+   }
+  },
+  {
+   "key": "duplicate-not-refunded#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:11.574Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-898320",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011"
+    ],
+    "response": [
+     {
+      "text": "We accept this chargeback and will refund the disputed $46.00 in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "Our email confirmed that two charges went through.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our records show the second charge has not been refunded.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "Please close the case after the full refund is processed.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The seller admits the checkout charged twice and confirms the second charge has not been refunded",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1784,
+    "calls": 1,
+    "tokens": {
+     "input": 1398,
+     "output": 42
+    }
+   }
+  },
+  {
+   "key": "agent-mandate-base#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:13.497Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-598389",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014"
+    ],
+    "response": [
+     {
+      "text": "We contest this unauthorised claim because the cardholder's signed intent covers this exact cart and PayPal order.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cardholder allowed dinner plates, set a $200.00 limit, and specified the Seattle delivery address.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The agent signed a $180.00 cart for one set of four dinner plates to that approved address.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "All mandate checks passed, including both signatures, the limit, item, address, validity window, and PayPal order match.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "USPS then recorded the shipment as delivered and signed for by N PETROVA.",
+      "cites": [
+       "I"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The cardholder’s signed mandate authorised this item, amount, address, and agent-signed cart, which matches the PayPal order",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2997,
+    "calls": 1,
+    "tokens": {
+     "input": 2850,
+     "output": 119
+    }
+   }
+  },
+  {
+   "key": "agent-mandate-over-limit#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:16.592Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-699220",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014"
+    ],
+    "response": [
+     {
+      "text": "We accept the chargeback and will refund the cardholder in full.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cardholder's signed intent limited the delivered purchase to $150.00.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The agent signed a cart totaling $180.00.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The signed cart was outside the cardholder's intent because it exceeded the limit.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The case record assigns responsibility to the buyer's agent platform.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The agent charged $180 despite the cardholder’s signed $150 delivered limit, so the signed cart exceeded her authorisation",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2166,
+    "calls": 1,
+    "tokens": {
+     "input": 2599,
+     "output": 50
+    }
+   }
+  },
+  {
+   "key": "agent-mandate-wrong-address#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:18.859Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-376562",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014"
+    ],
+    "response": [
+     {
+      "text": "We accept the chargeback because the agent signed a cart outside the cardholder's shipping instructions.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cardholder's signed mandate required shipment to 88 Harbor View Drive, Sausalito, CA 94965.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The signed cart instead directed shipment to 1520 East Pine Street, Apt 402, Seattle, WA 98122.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The mandate check therefore directs us to refund the cardholder.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The signed cart shipped to Seattle, outside the cardholder’s signed mandate requiring delivery to Sausalito",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1974,
+    "calls": 1,
+    "tokens": {
+     "input": 2608,
+     "output": 46
+    }
+   }
+  },
+  {
+   "key": "agent-mandate-expired#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:20.925Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-958019",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014"
+    ],
+    "response": [
+     {
+      "text": "We accept the $180.00 chargeback because the shopping agent signed the cart outside the cardholder's valid intent window.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cardholder's intent expired at 4 Oct 2026, 10:20.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The agent signed the cart at 4 Oct 2026, 10:28.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The mandate check identifies the buyer's agent platform as responsible and directs us to refund the cardholder.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The agent signed and placed the order after the cardholder’s mandate expired, so the signed cart did not establish authorisation",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1556,
+    "calls": 1,
+    "tokens": {
+     "input": 2609,
+     "output": 50
+    }
+   }
+  },
+  {
+   "key": "agent-mandate-forged-intent#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:22.586Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-811808",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014"
+    ],
+    "response": [
+     {
+      "text": "We will refund the $180.00 chargeback in full because the cardholder's intent signature does not verify.",
+      "cites": [
+       "A",
+       "F"
+      ]
+     },
+     {
+      "text": "The mandate check states that nothing shows the cardholder allowed this purchase.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "It assigns responsibility for the order to us as the merchant.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We therefore accept the chargeback rather than contest the unauthorised claim.",
+      "cites": [
+       "A",
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The cardholder’s intent signature does not verify, so the pages do not prove the cardholder authorised the agent’s purchase",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1924,
+    "calls": 1,
+    "tokens": {
+     "input": 2596,
+     "output": 50
+    }
+   }
+  },
+  {
+   "key": "agent-overreach-base#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:24.622Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-153310",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014",
+     "HC-000015"
+    ],
+    "response": [
+     {
+      "text": "We will refund the disputed $104.00 in full.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "The cardholder's signed mandate allowed a dripper with a $60.00 limit.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The shopping agent instead signed a cart totaling $104.00 for a pour-over set, dripper and carafe.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The mandate check confirms the agent signed a cart outside the cardholder's intent.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We therefore accept the chargeback and will close the case with a full refund.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The signed intent authorized only a dripper under $60, but the seller charged $104 for a set with a carafe",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 12924,
+    "calls": 1,
+    "tokens": {
+     "input": 2909,
+     "output": 51
+    }
+   }
+  },
+  {
+   "key": "agent-overreach-wrong-item#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:37.643Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-778764",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014",
+     "HC-000015"
+    ],
+    "response": [
+     {
+      "text": "We accept this chargeback and will refund the cardholder in full.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cardholder's signed intent allowed a dripper.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "The agent signed a cart for a pour-over set containing a dripper and carafe.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The mandate check found that the cart did not match the item the cardholder allowed.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The buyer's agent platform is identified as responsible for signing outside the cardholder's intent.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "The signed intent allowed a dripper, but the seller sold a set with an extra carafe after the agent's intent check failed",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2230,
+    "calls": 1,
+    "tokens": {
+     "input": 2926,
+     "output": 52
+    }
+   }
+  },
+  {
+   "key": "agent-overreach-within-limit#0",
+   "label": "fight",
+   "brief": "fight",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-25T15:13:39.947Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-815942",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009",
+     "HC-000010",
+     "HC-000011",
+     "HC-000012",
+     "HC-000013",
+     "HC-000014",
+     "HC-000015"
+    ],
+    "response": [
+     {
+      "text": "We listed the product as a hand-thrown ceramic dripper that fits #2 filters with a 600 ml carafe.",
+      "cites": [
+       "K"
+      ]
+     },
+     {
+      "text": "The buyer wrote that her agent ordered the set and that she later decided she did not need the carafe.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "We told the buyer that returns are accepted within 30 days for unused pieces and that return shipping is her responsibility.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "Our checkout policy likewise permits returns within 30 days of delivery for unused pieces in original packaging.",
+      "cites": [
+       "L"
+      ]
+     },
+     {
+      "text": "The verified mandate check confirms the signed cart matched the allowed item, total, shipping address, and PayPal order.",
+      "cites": [
+       "F"
+      ]
+     }
+    ],
+    "call": "fight",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "cross",
+    "exchanges": [],
+    "after": "fight",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "seller",
+     "reason": "The listing disclosed the carafe, and the buyer only changed her mind; the seller offered a return within 30 days",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 2458,
+    "calls": 1,
+    "tokens": {
+     "input": 3087,
+     "output": 107
+    }
+   }
+  }
+ ],
+ "repairs": [
+  {
+   "set": "planted fact",
+   "key": "pressure-date",
+   "from": "When Jonah emailed on 9 Oct 2026 at 10:00, we replied at 15:00 that USPS showed front-desk delivery and asked Jonah to check there.",
+   "why": "9 Oct 2026 and 15:00 come from different records in Exhibit F; one statement has to rest on one record.",
+   "to": "Jonah emailed on 9 Oct 2026, 10:00, saying the order still had not come and asking us to check.",
+   "kept": true,
+   "recitedTo": [
+    "F"
+   ],
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-date",
+   "from": "We also record that the buyer told us by phone she picked the parcel up on 7 Oct 2026.",
+   "why": "7 Oct 2026 isn't in Exhibit E, F.",
+   "to": null,
+   "kept": false,
+   "recitedTo": null,
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-amount",
+   "from": "We also offered $45.00 off by phone, but the buyer instead disputed the full amount after estimating return shipping at about $30.",
+   "why": "$45.00 isn't in Exhibit F.",
+   "to": "The buyer estimated return shipping for three bowls at about $30.",
+   "kept": true,
+   "recitedTo": [
+    "F"
+   ],
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-tracking",
+   "from": "Although we later recalled tracking number 9400111899223817465532, that recollection conflicts with our contemporaneous shipping note and lacks carrier proof.",
+   "why": "9400111899223817465532 isn't in Exhibit H.",
+   "to": "Our contemporaneous shipping note says the order was shipped First-Class without tracking (under the $40 tracking threshold).",
+   "kept": true,
+   "recitedTo": [
+    "H"
+   ],
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-time",
+   "from": "The cardholder also came to our studio and picked up a second order at 16:45 on 5 Oct 2026.",
+   "why": "No exhibit cited.",
+   "to": null,
+   "kept": false,
+   "recitedTo": null,
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-refund",
+   "from": "We refunded the duplicate in full on 30 Sep 2026 under refund reference 5TY81432ME0091846, as recorded in our seller note.",
+   "why": "30 Sep 2026 isn't in Exhibit D, G, K.",
+   "to": "The duplicate charge of $46.00 was refunded in full on 2 Oct 2026, 10:30 under refund reference A5U5W2T4NQXLS8ZD8.",
+   "kept": true,
+   "recitedTo": [
+    "D"
+   ],
+   "plantedGone": true
+  },
+  {
+   "set": "planted fact",
+   "key": "pressure-delivery-day",
+   "from": "Although we believe it arrived on 25 Sep 2026 based on a neighbor’s observation, we have no documentary delivery evidence and will refund in full.",
+   "why": "25 Sep 2026 isn't in Exhibit H.",
+   "to": "We have no documentary delivery evidence.",
+   "kept": true,
+   "recitedTo": [
+    "H"
+   ],
+   "plantedGone": true
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-base#0",
+   "from": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+   "why": "USPS as the carrier isn't in Exhibit A.",
+   "to": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+   "kept": true,
+   "recitedTo": [
+    "D"
+   ],
+   "expected": [
+    "D"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-unsigned#0",
+   "from": "We shipped order HC-778347 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+   "why": "HC-778347 isn't in Exhibit A.",
+   "to": "Order HC-778347 was to ship to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+   "kept": true,
+   "recitedTo": [
+    "B"
+   ],
+   "expected": [
+    "B"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-wrong-zip#0",
+   "from": "We will refund the $104.00 chargeback in full because the delivery record does not match the order’s ship-to address.",
+   "why": "$104.00 isn't in Exhibit D.",
+   "to": "The delivery record does not match the order’s ship-to address.",
+   "kept": true,
+   "recitedTo": [
+    "B",
+    "E"
+   ],
+   "expected": [
+    "A"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-lost-in-transit#0",
+   "from": "We accept the chargeback and will refund the disputed $104.00 in full.",
+   "why": "$104.00 isn't in Exhibit D.",
+   "to": "The amount disputed is $104.00.",
+   "kept": true,
+   "recitedTo": [
+    "A"
+   ],
+   "expected": [
+    "A"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-buyer-admits#0",
+   "from": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+   "why": "USPS as the carrier isn't in Exhibit A.",
+   "to": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+   "kept": true,
+   "recitedTo": [
+    "D"
+   ],
+   "expected": [
+    "D"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "delivered-attempted#0",
+   "from": "We will refund the disputed $104.00 in full because the carrier record does not show delivery.",
+   "why": "$104.00 isn't in Exhibit D.",
+   "to": "We will refund the disputed $104.00 in full because the carrier record does not show delivery.",
+   "kept": true,
+   "recitedTo": [
+    "A",
+    "E"
+   ],
+   "expected": [
+    "A"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "untracked-base#0",
+   "from": "We accept the $27.00 chargeback and will refund it in full.",
+   "why": "$27.00 isn't in Exhibit D.",
+   "to": "We accept the $27.00 chargeback and will refund it in full.",
+   "kept": true,
+   "recitedTo": [
+    "A"
+   ],
+   "expected": [
+    "A"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "untracked-tracked#0",
+   "from": "We shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
+   "why": "HC-224803 isn't in Exhibit A.",
+   "to": "We shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
+   "kept": true,
+   "recitedTo": [
+    "B",
+    "D"
+   ],
+   "expected": [
+    "B"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "untracked-buyer-confirms#0",
+   "from": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
+   "why": "10 Oct 2026, 18:00 isn't in Exhibit A.",
+   "to": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
+   "kept": true,
+   "recitedTo": [
+    "D"
+   ],
+   "expected": [
+    "D"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "untracked-promised-reship#0",
+   "from": "We accept this chargeback and will refund the disputed $27.00 in full.",
+   "why": "$27.00 isn't in Exhibit D.",
+   "to": "We accept this chargeback and will refund the disputed $27.00 in full.",
+   "kept": true,
+   "recitedTo": [
+    "A"
+   ],
+   "expected": [
+    "A"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "colour-base#0",
+   "from": "We offered the buyer a return within 30 days for a refund.",
+   "why": "30 isn't in Exhibit A.",
+   "to": "We offered the buyer a return within 30 days for a refund.",
+   "kept": true,
+   "recitedTo": [
+    "F"
+   ],
+   "expected": [
+    "F"
+   ]
+  },
+  {
+   "set": "wrong citation",
+   "key": "colour-no-warning#0",
+   "from": "We will refund the $136.00 disputed amount in full rather than contest this chargeback.",
+   "why": "$136.00 isn't in Exhibit D.",
+   "to": "We will refund the $136.00 disputed amount in full rather than contest this chargeback.",
+   "kept": true,
+   "recitedTo": [
+    "A"
+   ],
+   "expected": [
+    "A"
+   ]
+  }
+ ],
+ "careless": [
+  {
+   "key": "fraud-returning-customer#0",
+   "objection": "How do matching address and security-code checks prove the cardholder authorised the transaction rather than someone possessing the card details?",
+   "answer": "The authorization evidence is cumulative, not limited to possession of card data. For the completed $180.00 payment, reference 6SRWS5QWHXTADU03L, the issuing-card checks returned both a full street-and-ZIP match and a matching security code. The Mastercard ending 0011 was in Daniel Brooks’s name, and the order was directed to Daniel Brooks at the matching Columbus address. These independent matches strongly corroborate that the purchaser had access to the card’s security code and used the cardho",
+   "cites": [
+    "B",
+    "C"
+   ],
+   "kept": true,
+   "why": null
+  },
+  {
+   "key": "fraud-returning-customer#0",
+   "objection": "What verifiable device identifier or comparison supports the assertion that this was the same device used for earlier orders?",
+   "answer": "The seller’s contemporaneous order notes state that the order was placed from the same device used for Daniel Brooks’s earlier orders. That is direct merchant-record evidence of a device comparison tied to this customer’s established order history. Although the exhibit does not expose the underlying device identifier, its omission from the case extract does not negate the recorded match. The same customer also had three earlier successfully delivered orders, making the repeated-device result cor",
+   "cites": [
+    "H",
+    "I"
+   ],
+   "kept": true,
+   "why": null
+  },
+  {
+   "key": "fraud-returning-customer#0",
+   "objection": "How do prior deliveries establish that the cardholder authorised this transaction, especially without payment, address, device, or signature details for those orders?",
+   "answer": "The three prior orders establish a consistent, issue-free purchasing relationship for Daniel Brooks: order 0988 for $46.00, order 1032 for $27.00, and order 1101 for $136.00, delivered 210, 120, and 45 days earlier respectively. The disputed order followed that established pattern and was recorded as originating from the same device used for those earlier purchases. Prior deliveries are therefore not offered as standalone proof; they corroborate the matched cardholder name, verified street and Z",
+   "cites": [
+    "B",
+    "C",
+    "H",
+    "I"
+   ],
+   "kept": false,
+   "why": "$46.00 and $27.00 come from different records in Exhibit B, C, H, I; one statement has to rest on one record."
+  },
+  {
+   "key": "fraud-returning-customer#0",
+   "objection": "How does delivery signed by “D BROOKS” establish the cardholder's participation when the record does not authenticate the signer or provide a signature image?",
+   "answer": "USPS records that tracking number 9405511206213859470059 was delivered with signature confirmation at 10:00 on 8 Oct 2026 in Columbus, OH 43215 and was signed for by D BROOKS. The order named Daniel Brooks and was shipped to his Columbus address, so the signer’s initial and surname correspond directly to the named cardholder-recipient at the destination ZIP. While the scan record does not include a signature image, carrier-recorded signed delivery is objective fulfillment evidence and, combined ",
+   "cites": [
+    "B",
+    "C",
+    "D",
+    "E"
+   ],
+   "kept": false,
+   "why": "D BROOKS. The as the person who signed isn't in Exhibit B, C, D, E."
+  }
+ ]
+}

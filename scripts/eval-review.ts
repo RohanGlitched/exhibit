@@ -26,7 +26,7 @@ if (existsSync(ENV)) {
 for (const k of ["BLOB_READ_WRITE_TOKEN", "GCS_BUCKET", "GCS_SA_KEY", "GCS_WIF_AUDIENCE"]) delete process.env[k];
 if (arg("provider") !== "azure") for (const k of Object.keys(process.env)) if (k.startsWith("AZURE_OPENAI")) delete process.env[k];
 
-const { VARIANTS, PRESSURE, evalCase } = await import("../lib/eval/variants.ts");
+const { VARIANTS, PRESSURE, evalCase, withAgent } = await import("../lib/eval/variants.ts");
 const { buildExhibits, exhibitText } = await import("../lib/cases/exhibits.ts");
 const { checkSentence } = await import("../lib/cases/verify.ts");
 const { briefPdf } = await import("../lib/cases/pdf.ts");
@@ -82,11 +82,13 @@ const proof = JSON.parse(readFileSync("data/proof.json", "utf8")) as {
   pressure: { id: string; mode: string; story: string; call: Brief["recommendation"] | null; sentences: { text: string; cites: string[]; kept: boolean; why: string | null }[] }[];
 };
 
-type Ev = ReturnType<typeof evalCase>;
-const exhibitsOf = (c: Ev) => buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund });
+type Ev = Awaited<ReturnType<typeof withAgent>>;
+// Agent stories get their signed purchase, as in scripts/eval.ts: without it the order carries no mandate link.
+const exhibitsOf = (c: Ev) =>
+  buildExhibits({ dispute: c.dispute, order: c.order, capture: c.capture, scenario: c.scenario, openedAt: c.openedAt, invoiceId: c.invoiceId, refund: c.refund, agent: c.agent });
 const caseOf = (key: string) => {
   const [id, b] = key.split("#");
-  return evalCase(VARIANTS.find((v) => v.id === id)!, Number(b));
+  return withAgent(evalCase(VARIANTS.find((v) => v.id === id)!, Number(b)));
 };
 const toBrief = (m: { call: Brief["recommendation"]; odds: number; headline: string; sentences: { text: string; cites: string[]; kept: boolean; why: string | null }[] }, ex: ReturnType<typeof exhibitsOf>): Brief => ({
   recommendation: m.call,
@@ -122,7 +124,7 @@ let roundTrip = 0;
 const hearings: { key: string; label: string; brief: Brief["recommendation"]; reviewerMatchesLabel: boolean; hearing: Hearing; ms: number }[] = [];
 const inputs = new Map<string, Parameters<typeof crossExamine>[0]>();
 for (const r of picked) {
-  const c = caseOf(r.key);
+  const c = await caseOf(r.key);
   const ex = exhibitsOf(c);
   const brief = toBrief(r.model!, ex);
   const record = filedRecord(await pdfLines(await briefPdf(c.dispute, brief, ex, c.invoiceId)));
@@ -166,7 +168,7 @@ async function repairSet(set: string, key: string, c: Ev, ex: ReturnType<typeof 
 // a. The careless drafter's briefs: sentences that state a fact the seller's note planted.
 for (const p of dry ? [] : proof.pressure.filter((x) => x.mode === "Careless drafter")) {
   const base = VARIANTS.find((v) => v.id === `${p.story}-base`)!;
-  const c = evalCase(base, 1);
+  const c = await withAgent(evalCase(base, 1));
   const ex = exhibitsOf(c);
   const planted = PRESSURE.find((x) => x.id === p.id)!.planted;
   const sentences = p.sentences.map((s) => checkSentence({ text: s.text, cites: s.cites }, ex, exhibitText));
@@ -177,7 +179,7 @@ const miscites: { key: string; k: number; expected: string[]; wrong: string }[] 
 for (const r of proof.runs) {
   if (miscites.length >= MISCITE_N) break;
   if (!r.model || miscites.some((m) => m.key.split("#")[0] === r.variant)) continue;
-  const c = caseOf(r.key);
+  const c = await caseOf(r.key);
   const ex = exhibitsOf(c);
   const k = r.model.sentences.findIndex((s) => s.kept && s.cites.length === 1 && /\d{2}/.test(s.text));
   if (k < 0) continue;
@@ -187,7 +189,7 @@ for (const r of proof.runs) {
 }
 for (const m of dry ? [] : miscites) {
   const r = proof.runs.find((x) => x.key === m.key)!;
-  const c = caseOf(m.key);
+  const c = await caseOf(m.key);
   const ex = exhibitsOf(c);
   const sentences = r.model!.sentences.map((s, k) => checkSentence({ text: s.text, cites: k === m.k ? [m.wrong] : s.cites }, ex, exhibitText));
   await repairSet("wrong citation", m.key, c, ex, sentences, () => ({ expected: m.expected }));
