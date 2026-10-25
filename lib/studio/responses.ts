@@ -1,6 +1,6 @@
 /**
  * AG Studio's agents speak the OpenAI Responses wire format (components/studio/adapter.ts, kept close to AG's
- * own example). The model behind them is Claude Haiku 4.5 on Amazon Bedrock's Converse API. These two pure
+ * own example). Behind them is lib/llm.ts's Converse-shaped call (GPT-5.6 on Azure, or Claude Haiku 4.5 on Bedrock). These two pure
  * functions translate one turn each way: a Responses request into a Converse request, and a Converse answer
  * into the Responses stream events the adapter reads. No I/O, so they are unit-tested.
  */

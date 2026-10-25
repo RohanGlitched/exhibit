@@ -16,12 +16,12 @@
 <p align="center">
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20%C2%B7%20Payments%20%C2%B7%20Tracking%20%C2%B7%20Disputes-2b63e8">
-  <img alt="Model" src="https://img.shields.io/badge/model-Claude%20Haiku%204.5%20on%20Amazon%20Bedrock-13203a">
+  <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20%7C%20Claude%20on%20Bedrock-13203a">
   <img alt="Tests" src="https://img.shields.io/badge/tests-32-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
-**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by Claude Haiku 4.5 on Amazon Bedrock, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 42 of 42. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
+**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 42 of 42. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
 
 When a buyer disputes a payment, a small seller has ten days to answer PayPal, and a chargeback costs a $20 fee on top of the sale. Answering means digging out the order, the payment, the tracking, the carrier's scans and the emails, and writing it up. Many sellers don't, and lose cases they should have won. Others fight cases they can't win and pay for it.
 
@@ -66,7 +66,7 @@ Exhibit is never told which story you picked. It only sees the records. Each sto
 flowchart LR
   A[Buyer disputes<br/>a payment] --> B[Read the case<br/>Disputes API]
   B --> C[Gather the records<br/>Orders, Payments,<br/>tracking, store,<br/>agent mandates]
-  C --> D[Argue it<br/>Claude Haiku 4.5, one<br/>forced tool call]
+  C --> D[Argue it<br/>GPT-5.6, one<br/>forced tool call]
   D --> E{Check every figure<br/>and name against<br/>the cited record}
   E -->|matches| F[Brief: sentences,<br/>tally, fight or refund]
   E -->|doesn't| G[Struck, with<br/>the reason]
@@ -77,7 +77,7 @@ flowchart LR
 
 1. **Read the case.** `GET /v1/customer/disputes/{id}`: reason, amount, stage, deadline, and the HATEOAS links that say which responses PayPal will take right now. Exhibit only offers an action when PayPal's links allow it.
 2. **Gather the records.** `GET /v2/checkout/orders/{id}` (items, ship-to, trackers), `GET /v2/payments/captures/{id}` (amount, fees, the issuer's address and security-code checks), `GET /v2/payments/refunds/{id}`, plus the store's own records: carrier scans, the inbox, the listing, the policy shown at checkout and the customer's history. Each becomes a lettered exhibit with its source.
-3. **Argue it.** The exhibits go to Claude Haiku 4.5 on Amazon Bedrock (Converse API, SigV4-signed) with one forced tool call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is closed (every field required, optional ones nullable); Bedrock doesn't enforce a schema, so the server checks the brief's shape, asks once more if it's wrong, and strikes any sentence that arrives in the wrong shape.
+3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced tool call (the same code runs on Claude Haiku 4.5 through Amazon Bedrock's Converse API), `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is closed (every field required, optional ones nullable); Bedrock doesn't enforce a schema, so the server checks the brief's shape, asks once more if it's wrong, and strikes any sentence that arrives in the wrong shape.
 4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) reads every figure and name in a sentence, however it is written: amounts ("$104.00", "104.00 USD"), dates with or without a year ("3 Oct 2026", "October 3, 2026", "2026-10-03", "Oct 3"), times ("1:02 pm"), ids and tracking numbers, ZIPs, city and state, the carrier, who signed, counts and percentages. Each has to appear in the records the sentence cites, and the words it quotes have to be in a cited exhibit verbatim. One clause has to rest on one record (a date and a place, or a date and a time, from two different scans are struck); a date or amount said to be a refund, a delivery or the disputed amount has to be that in the record; and a sentence can't deny what its record says ("never delivered" against a delivery scan) or claim a signature no record shows. Struck sentences are never filed, and the brief shows why. A sentence with nothing to match is kept but marked unverified. The odds come from the tally's weights, not from the model.
 5. **File it.** `POST /v1/customer/disputes/{id}/provide-evidence` (multipart: the response as notes, tracking or refund details, and a PDF with every exhibit Bates-stamped HC-000001…), or `POST /accept-claim` for a full refund. In the sandbox, `POST /adjudicate` then asks PayPal's simulator for a ruling.
 
@@ -145,7 +145,7 @@ npm run dev -- --port 3600
 ```
 
 - **PayPal:** a sandbox REST app (Merchant) on a **US** sandbox business account, with *Customer disputes* and *Transaction search* ticked. Accounts registered elsewhere may not be able to take card payments.
-- **Model:** Claude Haiku 4.5 on Amazon Bedrock, from an IAM user allowed to invoke only that model (`BEDROCK_ACCESS_KEY_ID`, `BEDROCK_SECRET_ACCESS_KEY`). Requests are SigV4-signed in [`lib/aws/sigv4.ts`](lib/aws/sigv4.ts), no SDK. Without a key, the rules engine argues.
+- **Model:** one Converse-shaped interface ([`lib/llm.ts`](lib/llm.ts)) with two providers. GPT-5.6 on Azure OpenAI (`AZURE_OPENAI_API_KEY`, `_ENDPOINT`, `_DEPLOYMENT`; Responses API) is the live one. Claude Haiku 4.5 on Amazon Bedrock (`BEDROCK_ACCESS_KEY_ID`, `BEDROCK_SECRET_ACCESS_KEY`) is called with SigV4 signing from [`lib/aws/sigv4.ts`](lib/aws/sigv4.ts) and no SDK, from an IAM user allowed to invoke only that model. `LLM_PROVIDER` picks one. Without either, the rules engine argues.
 - **Storage:** Exhibit's case notes live in Google Cloud Storage, reached keylessly through Vercel's OIDC token and a workload identity pool (`GCS_BUCKET`, `GCS_WIF_AUDIENCE`). A dev server always keeps them in `.data/`. PayPal's own record is the source of truth either way.
 - **AG Studio:** runs without a licence key, with AG's evaluation watermark. Set `NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY` to a trial or licence key to remove it.
 

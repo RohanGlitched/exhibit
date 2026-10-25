@@ -12,7 +12,7 @@ export const maxDuration = 120;
 /**
  * The model behind the analytics page's analyst. AG Studio runs the agent loop in the browser and calls this
  * once per turn with an OpenAI Responses request (components/studio/adapter.ts). Here the turn becomes one
- * Bedrock Converse call to Claude Haiku 4.5 (lib/llm.ts), and the answer goes back as the Responses event
+ * Converse call through lib/llm.ts (GPT-5.6 on Azure OpenAI, or Claude Haiku 4.5 on Bedrock), and the answer goes back as the Responses event
  * stream the adapter reads, so no key or model reaches the browser. Guards:
  * - same origin only, and a cap on the request size;
  * - only the dashboard's agents: the analyst's instructions and its own tools are built here (lib/studio/

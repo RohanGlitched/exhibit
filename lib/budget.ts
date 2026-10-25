@@ -4,7 +4,7 @@ import { storage } from "./storage";
 /**
  * Spend guards for the public demo, so visitors can't run up the model bill:
  * - per visitor (IP): 12 briefs per 10 minutes, kept in memory per server instance;
- * - per day: DAILY_MODEL_CAP briefs in total (default 400, about five dollars of Claude Haiku 4.5), counted in memory and
+ * - per day: DAILY_MODEL_CAP briefs in total (default 400, a few dollars of model time), counted in memory and
  *   flushed to the shared store every 10 calls (every call once 80% is spent) so the cap holds across instances.
  * When either runs out, cases are still argued, by the rules engine.
  */

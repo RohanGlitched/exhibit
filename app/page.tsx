@@ -30,8 +30,8 @@ const STEPS = [
   },
   {
     title: "Argue it",
-    text: "Claude Haiku 4.5 on Amazon Bedrock weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
-    api: "Amazon Bedrock Converse API, one forced tool call",
+    text: "GPT-5.6 on Azure OpenAI weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
+    api: "Azure OpenAI Responses API, one forced tool call (Bedrock Converse ready)",
   },
   {
     title: "Check every sentence",

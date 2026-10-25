@@ -16,8 +16,8 @@ import { PAGES, type PageId } from "./pages";
  * the report back so the reply says only what really changed.
  *
  * Every agent runs on Studio's direct LLM runner. Its adapter posts each turn to /api/studio-agent, which
- * builds the analyst's instructions and tool list on the server and calls Claude Haiku 4.5 on Amazon
- * Bedrock; no key or model reaches the browser.
+ * builds the analyst's instructions and tool list on the server and calls the app's model (GPT-5.6 on Azure, or Claude Haiku 4.5 on Amazon
+ * Bedrock); no key or model reaches the browser.
  */
 
 const PROMPTS: AgAiPromptStarter[] = [

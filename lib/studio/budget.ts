@@ -5,7 +5,7 @@ import { storage } from "../storage";
  * The analytics analyst's own daily budget, apart from the briefs' (lib/budget.ts), so a busy dashboard can't
  * starve a judge's brief of model time. It counts model turns (one question is several: the analyst's own and
  * those of Studio's agents it hands work to). ANALYST_DAILY_TURNS sets the cap, default 300 a day, about four
- * dollars of Claude Haiku 4.5 at the most. Counted in memory and flushed to the shared store every 10 turns
+ * dollars of model time at the most. Counted in memory and flushed to the shared store every 10 turns
  * (every turn once 80% is spent), so the cap holds across instances.
  */
 const CAP = Number(process.env.ANALYST_DAILY_TURNS || 300);

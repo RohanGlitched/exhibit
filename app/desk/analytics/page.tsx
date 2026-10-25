@@ -32,7 +32,7 @@ const NOTES = [
         Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s ten-day window, fight or refund, and the checker, and has five
         tools of its own: <code>deadline_ladder</code>, <code>desk_ledger</code>, <code>turn_to_page</code>, <code>new_widget_slot</code> and{" "}
         <code>check_widget</code>. It hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents, then reads the report back
-        so it only reports what changed. Every turn runs on Claude Haiku 4.5 on Amazon Bedrock through this server, which writes the analyst&apos;s
+        so it only reports what changed. Every turn runs on the app&apos;s own model (GPT-5.6 on Azure OpenAI) through this server, which writes the analyst&apos;s
         instructions itself; no key reaches the browser.
       </>
     ),

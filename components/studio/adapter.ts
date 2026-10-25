@@ -1,7 +1,7 @@
 // The OpenAI Responses adapter from the AG Studio 3.0.0 docs (Direct LLM Runner example,
 // https://www.ag-grid.com/studio/react/ai-direct-llm-runner/), kept close to the original so it can be
 // diffed against new releases. Two changes: it posts to this app's own route (app/api/studio-agent), which
-// holds the model credentials (Claude Haiku 4.5 on Amazon Bedrock, translated from and back to the Responses
+// holds the model credentials (GPT-5.6 on Azure or Claude Haiku 4.5 on Bedrock, translated from and back to the Responses
 // wire format there), so the browser sends no key and no model; and each request names the agent it is for,
 // with the analyst's page context, so the server can build the analyst's instructions and tools itself. A
 // failed turn's message comes from that route in plain words, and the chat panel shows it as the turn's error.
