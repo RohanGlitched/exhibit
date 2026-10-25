@@ -21,7 +21,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
-**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6, with every sentence checked against the PayPal record it cites and filed with a Bates-stamped PDF.** On 52 labelled dispute variants it made the right call (fight or refund) 52 times; a drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
+**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 42 of 42. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
 
 When a buyer disputes a payment, a small seller has ten days to answer PayPal, and a chargeback costs a $20 fee on top of the sale. Answering means digging out the order, the payment, the tracking, the carrier's scans and the emails, and writing it up. Many sellers don't, and lose cases they should have won. Others fight cases they can't win and pay for it.
 
@@ -67,7 +67,7 @@ flowchart LR
   A[Buyer disputes<br/>a payment] --> B[Read the case<br/>Disputes API]
   B --> C[Gather the records<br/>Orders, Payments,<br/>tracking, store,<br/>agent mandates]
   C --> D[Argue it<br/>GPT-5.6, one forced<br/>function call]
-  D --> E{Check every figure<br/>against the cited<br/>exhibits}
+  D --> E{Check every figure<br/>and name against<br/>the cited record}
   E -->|matches| F[Brief: sentences,<br/>tally, fight or refund]
   E -->|doesn't| G[Struck, with<br/>the reason]
   F --> H[Seller approves]
@@ -77,8 +77,8 @@ flowchart LR
 
 1. **Read the case.** `GET /v1/customer/disputes/{id}`: reason, amount, stage, deadline, and the HATEOAS links that say which responses PayPal will take right now. Exhibit only offers an action when PayPal's links allow it.
 2. **Gather the records.** `GET /v2/checkout/orders/{id}` (items, ship-to, trackers), `GET /v2/payments/captures/{id}` (amount, fees, the issuer's address and security-code checks), `GET /v2/payments/refunds/{id}`, plus the store's own records: carrier scans, the inbox, the listing, the policy shown at checkout and the customer's history. Each becomes a lettered exhibit with its source.
-3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced function call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it.
-4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) extracts every amount, date, time, id and tracking number from a sentence, however it is written ("3 Oct 2026", "October 3, 2026", "2026-10-03", "1:02 pm"), and requires each to appear in the exhibits it cites (a date written with a time must match one record's date and time together). Unmatched sentences are struck before filing, and the brief shows why. The odds come from the tally's weights, not from the model.
+3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced function call, `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is strict (closed objects, every field required), so the brief can't arrive in another shape.
+4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) reads every figure and name in a sentence, however it is written: amounts ("$104.00", "104.00 USD"), dates with or without a year ("3 Oct 2026", "October 3, 2026", "2026-10-03", "Oct 3"), times ("1:02 pm"), ids and tracking numbers, ZIPs, city and state, the carrier, who signed, counts and percentages. Each has to appear in the records the sentence cites, and the words it quotes have to be in a cited exhibit verbatim. One clause has to rest on one record (a date and a place, or a date and a time, from two different scans are struck); a date or amount said to be a refund, a delivery or the disputed amount has to be that in the record; and a sentence can't deny what its record says ("never delivered" against a delivery scan) or claim a signature no record shows. Struck sentences are never filed, and the brief shows why. A sentence with nothing to match is kept but marked unverified. The odds come from the tally's weights, not from the model.
 5. **File it.** `POST /v1/customer/disputes/{id}/provide-evidence` (multipart: the response as notes, tracking or refund details, and a PDF with every exhibit Bates-stamped HC-000001…), or `POST /accept-claim` for a full refund. In the sandbox, `POST /adjudicate` then asks PayPal's simulator for a ruling.
 
 If the model is unavailable or the day's budget is spent, a rules engine argues from the same exhibits through the same checks, so the desk never stops.
@@ -110,18 +110,22 @@ PayPal reviews a new chargeback for five to eight minutes before the seller can 
 
 ## Measured
 
-`scripts/eval.ts` runs 26 labelled variants of the seven stories (each changes one or two facts so the right call flips or holds, labelled before running), each with two customers, through the model and the rules engine; then a pressure set where the seller's note asks for facts no record holds, and a mutation set that changes one figure in every true sentence. Results are committed in [`data/proof.json`](data/proof.json) and shown at [/proof](https://exhibit-desk.vercel.app/proof):
+`scripts/eval.ts` runs 26 labelled variants of the seven stories (each changes one or two facts so the right call flips or holds, labelled before running), each with two customers, through the model, the fallback rules engine and a stronger rules baseline ([`lib/eval/baseline.ts`](lib/eval/baseline.ts): delivery ZIP against ship-to ZIP, refund lookup, the issuer's checks, billing against shipping, order history, the mandate check). Each variant is tagged by where its deciding fact sits: in a structured record, or only in free text. Then a pressure set where the seller's note asks for facts no record holds, a held-out set written without the prompt ([`lib/eval/heldout.ts`](lib/eval/heldout.ts)), buyer emails with instructions aimed at the AI, an ablation with the prompt's "How cases are usually decided" rubric removed, repeat runs, and a mutation set that changes one thing in every true sentence. The model is capped at a spend limit you set. Results are committed in [`data/proof.json`](data/proof.json) and shown at [/proof](https://exhibit-desk.vercel.app/proof):
 
 | | Result |
 |---|---|
-| Right call, GPT-5.6 | 52 of 52 runs (38 of 38 where a fact moved) |
-| Right call, rules engine | 40 of 52 (26 of 38) |
+| Deciding fact only in free text: model vs stronger rules | 10 vs 4 of 10 runs (fallback rules: 4) |
+| Deciding fact in the records: model vs stronger rules | 42 vs 42 of 42 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One figure changed in a true sentence | 152 of 152 struck |
+| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,015 of 1,045 struck |
+| The model's own true sentences struck | 0 of 248 |
+| Kept sentences with nothing to check, marked unverified | 88 of 248 |
 | Per brief | median 5.8 s, about 1,800 tokens in and 480 out |
 
-What it doesn't show is on the page too: the variants were written by the same people as the prompt, the eval's PayPal records are built offline in the sandbox's shapes, sandbox rulings follow the filing, and the checker reads figures, not meaning.
+These model answers are from the GPT-5.6 run of 15 Oct; the checker, the stronger rules and the mutations were re-run over them on 25 Oct. The held-out set, the injection set, the ablation and the repeat runs need a fresh model run and are reported on /proof once run.
+
+What it doesn't show is on the page too: the main variants were written by the same people as the prompt, the held-out set by an AI agent that never saw the prompt rather than a person; the eval's PayPal records are built offline in the sandbox's shapes; sandbox rulings follow the filing; and the checker matches figures and names, not meaning.
 
 ## Run it yourself
 
@@ -139,8 +143,9 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 32 tests: the checker, PayPal read-back, mandates
-npx tsx --conditions=react-server scripts/eval.ts           # the eval behind /proof
+npm test                                                   # 49 tests: the checker, PayPal read-back, mandates
+npx tsx --conditions=react-server scripts/eval.ts --price-in 1 --price-out 5 --max-usd 2.5   # the eval behind /proof (prices per 1M tokens)
+npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
 ```
 
@@ -156,7 +161,7 @@ node scripts/e2e.cjs http://localhost:3600                  # open, argue and fi
 | [`lib/cases/pdf.ts`](lib/cases/pdf.ts) | The Bates-stamped PDF filed with the evidence |
 | [`lib/cases/open.ts`](lib/cases/open.ts) | Opening sandbox cases and the ready pool |
 | [`lib/agentic/`](lib/agentic) | Intent and cart mandates, Ed25519 signatures, and the checks on an agent-placed order |
-| [`lib/eval/variants.ts`](lib/eval/variants.ts), [`scripts/eval.ts`](scripts/eval.ts) | The labelled variants and the eval runner |
+| [`lib/eval/variants.ts`](lib/eval/variants.ts), [`lib/eval/heldout.ts`](lib/eval/heldout.ts), [`lib/eval/baseline.ts`](lib/eval/baseline.ts), [`scripts/eval.ts`](scripts/eval.ts) | The labelled variants, injection and pressure sets, the held-out set, the stronger rules baseline and the eval runner |
 | [`lib/mcp.ts`](lib/mcp.ts) | The MCP server's tools |
 | [`components/desk/DeskGrid.tsx`](components/desk/DeskGrid.tsx) | The desk, in AG Grid |
 | [`components/studio/`](components/studio) | The AG Studio report: theme, pages, custom widgets and the analyst agent |

@@ -190,13 +190,51 @@
   table-layout: fixed;
 }
 .colChange {
-  width: 50%;
+  width: 44%;
 }
 .colLabel {
-  width: 11%;
+  width: 10%;
 }
 .colRules {
-  width: 18%;
+  width: 15%;
+}
+.tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  font-size: 11.5px;
+  line-height: 18px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.source {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+.source a {
+  color: var(--respondent-ink);
+}
+.withRepeats {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.repeats {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 11.5px;
+  opacity: 0.75;
+}
+.repeats .call {
+  font-size: 11.5px;
+}
+.kindSource {
+  font-size: 13px;
+  color: var(--ink-faint);
 }
 .pressure {
   list-style: none;
@@ -398,13 +436,21 @@
     font-size: 12.5px;
   }
   .ledger td:nth-child(3)::before {
-    content: "Rules ";
+    content: "Fallback rules ";
     color: var(--ink-faint);
     font-size: 12.5px;
   }
   .ledger td:nth-child(4)::before {
+    content: "Stronger rules ";
+    color: var(--ink-faint);
+    font-size: 12.5px;
+  }
+  .ledger td:nth-child(5)::before {
     content: "Model ";
     color: var(--ink-faint);
     font-size: 12.5px;
+  }
+  .ledger td:nth-child(4):last-child::before {
+    content: "Model ";
   }
 }

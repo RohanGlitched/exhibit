@@ -71,7 +71,7 @@ export default function Tally({ tally, verdict, amount }: { tally: TallyItem[]; 
           <p className={styles.engine}>
             {verdict.engine === "paypal"
               ? "The response is the one PayPal holds on file, re-checked against its exhibits; the tally is scored again by the rules engine."
-              : `${verdict.engine === "model" ? `Argued by ${verdict.model ?? "the model"}${verdict.ms ? ` in ${(verdict.ms / 1000).toFixed(1)} s` : ""}` : "Argued by the rules engine"}. Every sentence checked against its exhibits.`}
+              : `${verdict.engine === "model" ? `Argued by ${verdict.model ?? "the model"}${verdict.ms ? ` in ${(verdict.ms / 1000).toFixed(1)} s` : ""}` : "Argued by the rules engine"}. Every figure and name checked against the exhibit it cites.`}
           </p>
         </div>
       )}

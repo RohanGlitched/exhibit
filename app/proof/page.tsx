@@ -8,10 +8,124 @@ import styles from "./proof.module.css";
 
 export const metadata: Metadata = {
   title: "Proof",
-  description: "Exhibit measured: the right call on labelled dispute variants, the checker against invented figures, latency and tokens, and the sourced cost of a dispute.",
+  description:
+    "Exhibit measured: the right call on labelled dispute variants against a rules baseline that reads every record, a held-out set, prompt injection, the checker against ten kinds of false statement, latency and tokens, and the sourced cost of a dispute.",
 };
 
-type Run = (typeof proof.runs)[number];
+/* The shapes this page reads from data/proof.json (scripts/eval.ts writes it). */
+interface Answer {
+  call: string;
+  odds?: number;
+  correct: boolean;
+}
+interface Row {
+  key: string;
+  variant: string;
+  label: string;
+  decidedBy?: "record" | "text";
+  rules: Answer;
+  strong?: Answer & { why: string };
+  model: (Answer & { sentences?: { text: string; kept: boolean; why: string | null }[] }) | null;
+}
+interface SeedRun {
+  seed: number;
+  runs: number;
+  correct: number;
+  textRuns: number;
+  textCorrect: number;
+}
+interface Spread {
+  min: number;
+  max: number;
+  mean: number;
+  of: number;
+}
+interface Kind {
+  n: number;
+  struck: number;
+  fromModel?: number;
+  fromTemplate?: number;
+  examples: { from: string; to: string; why: string | null }[];
+  survived?: { from: string; to: string; cites: string[] }[];
+}
+interface Summary {
+  runs: number;
+  variants: number;
+  model: string | null;
+  modelCorrect: number;
+  modelRuns: number;
+  rulesCorrect: number;
+  sentences: number;
+  struckByChecker: number;
+  medianMs: number | null;
+  medianInputTokens: number | null;
+  medianOutputTokens: number | null;
+  pressureRuns: number;
+  pressureWrote: number;
+  carelessWrote: number;
+  carelessPlantedSentences: number;
+  carelessPlantedStruck: number;
+  mutations: number;
+  mutationsStruck: number;
+  keptSentences: number;
+  figurelessSentences: number;
+  strongCorrect?: number;
+  textRuns?: number;
+  modelCorrectOnText?: number;
+  strongCorrectOnText?: number;
+  rulesCorrectOnText?: number;
+  recordRuns?: number;
+  modelCorrectOnRecord?: number;
+  strongCorrectOnRecord?: number;
+  unverifiedSentences?: number;
+  checkedSentences?: number;
+  quotedSentences?: number;
+  struckForQuote?: number;
+  templateSentences?: number;
+  templateStruck?: number;
+  seedRuns?: SeedRun[];
+  seedSpread?: Spread | null;
+  ablationRuns?: number;
+  ablationCorrect?: number;
+  ablationTextRuns?: number;
+  ablationCorrectOnText?: number;
+  heldoutVariants?: number;
+  heldoutRuns?: number;
+  heldoutCases?: number;
+  heldoutModelCorrect?: number;
+  heldoutRulesCorrect?: number;
+  heldoutStrongCorrect?: number;
+  heldoutTextRuns?: number;
+  heldoutModelCorrectOnText?: number;
+  heldoutStrongCorrectOnText?: number;
+  heldoutSeedSpread?: Spread | null;
+  injectionRuns?: number;
+  injectionCorrect?: number;
+  injectionWrotePlanted?: number;
+  injectionKeptPlanted?: number;
+}
+interface Pressure {
+  id: string;
+  mode: string;
+  note: string;
+  wrote: boolean;
+  keptPlanted: number;
+  sentences: { text: string; kept: boolean; why: string | null }[];
+}
+interface Proof {
+  at: string;
+  recheckedAt?: string;
+  reasoning: string;
+  summary: Summary;
+  variants: { id: string; story: string; change: string; label: string; decidedBy?: "record" | "text" }[];
+  runs: Row[];
+  pressure: Pressure[];
+  mutations: Record<string, Kind>;
+  heldout?: { note: string; variants: { id: string; story: string; change: string; label: string; decidedBy: string; source: string; why: string }[]; runs: Row[] };
+  injection?: { variants: { id: string; change: string; label: string; attack: string }[]; runs: (Row & { wrotePlanted: boolean; keptPlanted: number })[] };
+  repeats?: { main: { key: string; seed: number; call: string | null; correct: boolean | null }[]; heldout: { key: string; seed: number; call: string | null; correct: boolean | null }[]; injection: { key: string; seed: number; call: string | null; correct: boolean | null }[] };
+}
+const P = proof as unknown as Proof;
 
 const STORY: Record<string, string> = {
   delivered: "Never arrived, carrier says delivered",
@@ -25,77 +139,132 @@ const STORY: Record<string, string> = {
 
 const CALL: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : "n/a");
+const range = (s: Spread | null | undefined) => (s ? (s.min === s.max ? `${s.min}` : `${s.min} to ${s.max}`) : null);
 
-function Call({ run, side }: { run: Run; side: "rules" | "model" }) {
-  const r = side === "model" ? run.model : run.rules;
-  if (!r) return <span className={styles.na}>no answer</span>;
+function Call({ run, side }: { run: Row; side: "rules" | "strong" | "model" }) {
+  const r = side === "model" ? run.model : side === "strong" ? run.strong : run.rules;
+  if (!r) return <span className={styles.na}>{side === "model" ? "not run" : "n/a"}</span>;
   return (
-    <span className={styles.call} data-ok={r.correct} data-call={r.call}>
+    <span className={styles.call} data-ok={r.correct} data-call={r.call} title={side === "strong" && run.strong ? run.strong.why : undefined}>
       {CALL[r.call]}
-      {side === "model" && "odds" in r ? <small> {r.odds}%</small> : null}
+      {side === "model" && r.odds !== undefined ? <small> {r.odds}%</small> : null}
     </span>
   );
 }
 
-export default function Proof() {
-  const s = proof.summary;
-  const byVariant = proof.variants.map((v) => ({ ...v, runs: proof.runs.filter((r) => r.variant === v.id) }));
-  const careless = proof.pressure.filter((p) => p.mode === "Careless drafter");
-  const careful = proof.pressure.filter((p) => p.mode !== "Careless drafter");
-  const mutationKinds = Object.entries(proof.mutations) as [string, { n: number; struck: number; examples: { from: string; to: string; why: string | null }[] }][];
-  const stories = [...new Set(proof.variants.map((v) => v.story))];
+/** The repeat runs of one case, after the first: "Fight Fight" in their own colours. */
+function Repeats({ rows }: { rows: { call: string | null; correct: boolean | null }[] }) {
+  if (!rows.length) return null;
+  return (
+    <span className={styles.repeats} aria-label="Repeat runs">
+      {rows.map((r, i) =>
+        r.call ? (
+          <span key={i} className={styles.call} data-ok={r.correct ?? undefined}>
+            {CALL[r.call]}
+          </span>
+        ) : (
+          <span key={i} className={styles.na}>
+            —
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
+
+export default function ProofPage() {
+  const s = P.summary;
+  const byVariant = P.variants.map((v) => ({ ...v, runs: P.runs.filter((r) => r.variant === v.id) }));
+  const careless = P.pressure.filter((p) => p.mode === "Careless drafter");
+  const careful = P.pressure.filter((p) => p.mode !== "Careless drafter");
+  const mutationKinds = Object.entries(P.mutations);
+  const stories = [...new Set(P.variants.map((v) => v.story))];
+  const repeatsOf = (key: string, set: "main" | "heldout" | "injection") => (P.repeats?.[set] ?? []).filter((r) => r.key === key).sort((a, b) => a.seed - b.seed);
+  const seeds = s.seedRuns?.length ?? 1;
+  const hasStrong = s.strongCorrect !== undefined;
+  const textRuns = s.textRuns ?? 0;
+  const held = P.heldout && (s.heldoutRuns ?? 0) > 0 ? P.heldout : null;
+  const inj = P.injection && (s.injectionRuns ?? 0) > 0 ? P.injection : null;
+  const ablation = (s.ablationRuns ?? 0) > 0;
+  const survivors = mutationKinds.flatMap(([kind, k]) => (k.survived ?? []).slice(0, 1).map((x) => ({ kind, ...x })));
+  const unverified = s.unverifiedSentences ?? s.figurelessSentences;
+  const notRun = [
+    !held && "the held-out set",
+    !inj && "prompt injection in the buyer's email",
+    !ablation && "the rubric ablation",
+    seeds < 2 && "repeat runs",
+  ].filter(Boolean) as string[];
+
   return (
     <main className={`shell ${styles.page}`}>
       <header className={styles.head}>
         <p className={styles.docketLine}>
           <span className="bates">Proof</span>
-          <span>Measured {day(proof.at)}</span>
-          <span>{s.model}, reasoning {proof.reasoning}</span>
+          <span>Measured {day(P.at)}</span>
+          {P.recheckedAt && <span>Checker re-run {day(P.recheckedAt)}</span>}
+          <span>
+            {s.model}
+            {/Azure/.test(s.model ?? "") ? `, reasoning ${P.reasoning}` : ""}
+          </span>
         </p>
         <h1>Measured, not promised</h1>
         <p className={styles.lede}>
-          Five sample stories prove nothing on their own. So we wrote {s.variants} variants of the seven stories, each changing one or two facts so the
-          right call flips or holds, labelled each with what a careful seller should do before running anything, and ran every one with two different
-          customers through the model and through the rules engine. Then we tried to make the model state things no record holds, and changed one
-          figure in every sentence it wrote to see whether the checker notices.
+          Seven sample stories prove nothing on their own. So we wrote {s.variants} variants of them, each changing one or two facts so the right call
+          flips or holds, labelled each with what a careful seller should do before running anything, and ran every one with two different customers
+          through the model, the fallback rules engine, and a stronger rules baseline that reads every structured record. Then we tried to make the
+          model state things no record holds, and changed one thing in every true sentence to see whether the checker notices.
         </p>
       </header>
 
       <dl className={styles.strip}>
+        {hasStrong && textRuns > 0 ? (
+          <>
+            <div>
+              <dt>Deciding fact only in free text</dt>
+              <dd>
+                {s.modelCorrectOnText} vs {s.strongCorrectOnText}
+              </dd>
+              <p>
+                model vs the stronger rules, of {textRuns} runs where it sits in an email, a listing or a note
+              </p>
+            </div>
+            <div>
+              <dt>Deciding fact in the records</dt>
+              <dd>
+                {s.modelCorrectOnRecord} vs {s.strongCorrectOnRecord}
+              </dd>
+              <p>of {s.recordRuns} runs; a rule reading the records does as well here</p>
+            </div>
+          </>
+        ) : (
+          <div>
+            <dt>Right call, rules engine</dt>
+            <dd>
+              {s.rulesCorrect}/{s.runs}
+            </dd>
+            <p>the fallback, on the same exhibits</p>
+          </div>
+        )}
         <div>
           <dt>Right call, model</dt>
           <dd>
-            {s.modelCorrect}/{s.modelRuns}
+            {seeds > 1 && s.seedSpread ? range(s.seedSpread) : s.modelCorrect}/{seeds > 1 && s.seedSpread ? s.seedSpread.of : s.modelRuns}
           </dd>
-          <p>{pct(s.modelCorrect, s.modelRuns)} of labelled runs</p>
+          <p>{seeds > 1 ? `across ${seeds} runs of every case, lowest to highest` : "of labelled runs, one run each"}</p>
         </div>
         <div>
-          <dt>Right call, rules engine</dt>
-          <dd>
-            {s.rulesCorrect}/{s.runs}
-          </dd>
-          <p>the fallback, on the same exhibits</p>
-        </div>
-        <div>
-          <dt>Changed facts, model vs rules</dt>
-          <dd>
-            {s.modelCorrectOnChanged} vs {s.rulesCorrectOnChanged}
-          </dd>
-          <p>of {s.changedRuns} runs where a fact moved</p>
-        </div>
-        <div>
-          <dt>False figures struck</dt>
+          <dt>False statements struck</dt>
           <dd>
             {s.mutationsStruck}/{s.mutations}
           </dd>
-          <p>one figure changed in a true sentence</p>
+          <p>{mutationKinds.length} kinds of change to a true sentence</p>
         </div>
         <div>
-          <dt>Invented facts struck</dt>
+          <dt>Kept, but unverified</dt>
           <dd>
-            {s.carelessPlantedStruck}/{s.carelessPlantedSentences}
+            {unverified}/{s.keptSentences}
           </dd>
-          <p>written by a drafter told to use them</p>
+          <p>no figure or name in them to check; marked, not counted as checked</p>
         </div>
         <div>
           <dt>Time and tokens per brief</dt>
@@ -111,8 +280,11 @@ export default function Proof() {
           <h2>Every variant, both customers</h2>
           <p>
             Each row is one variant, run with two of the story&apos;s customers (different names, addresses and order numbers). Green is the labelled
-            call; red is a miss. The model&apos;s number is the seller&apos;s chance from its own tally. The rules engine is what argues when the model is
-            out; it handles the patterns it was written for and misses the rest, which is the point of having a model.
+            call; red is a miss. The fallback rules engine is what argues when the model is out. The stronger rules compare the delivery ZIP with the
+            ship-to ZIP, look for a refund record, read the issuer&apos;s address and security-code checks, compare billing with shipping, count earlier
+            orders and read the mandate check; they never read an email or a listing. The model&apos;s number is the seller&apos;s chance from its own
+            tally.
+            {seeds > 1 ? ` Small marks after the model's call are its ${seeds - 1} repeat runs.` : ""}
           </p>
         </div>
         {stories.map((story) => (
@@ -123,13 +295,15 @@ export default function Proof() {
                 <col className={styles.colChange} />
                 <col className={styles.colLabel} />
                 <col className={styles.colRules} />
+                {hasStrong && <col className={styles.colRules} />}
                 <col />
               </colgroup>
               <thead>
                 <tr>
                   <th scope="col">What changed</th>
                   <th scope="col">Label</th>
-                  <th scope="col">Rules engine</th>
+                  <th scope="col">Fallback rules</th>
+                  {hasStrong && <th scope="col">Stronger rules</th>}
                   <th scope="col">Model</th>
                 </tr>
               </thead>
@@ -138,7 +312,10 @@ export default function Proof() {
                   .filter((v) => v.story === story)
                   .map((v) => (
                     <tr key={v.id}>
-                      <td>{v.change}</td>
+                      <td>
+                        {v.change}
+                        {v.decidedBy === "text" && <span className={styles.tag}>free text</span>}
+                      </td>
                       <td>
                         <span className={styles.label} data-call={v.label}>
                           {CALL[v.label]}
@@ -151,10 +328,22 @@ export default function Proof() {
                           ))}
                         </span>
                       </td>
+                      {hasStrong && (
+                        <td>
+                          <span className={styles.pair}>
+                            {v.runs.map((r) => (
+                              <Call key={r.key} run={r} side="strong" />
+                            ))}
+                          </span>
+                        </td>
+                      )}
                       <td>
                         <span className={styles.pair}>
                           {v.runs.map((r) => (
-                            <Call key={r.key} run={r} side="model" />
+                            <span key={r.key} className={styles.withRepeats}>
+                              <Call run={r} side="model" />
+                              <Repeats rows={repeatsOf(r.key, "main")} />
+                            </span>
                           ))}
                         </span>
                       </td>
@@ -166,13 +355,152 @@ export default function Proof() {
         ))}
       </section>
 
+      {hasStrong && (
+        <section className={`${styles.section} ${styles.split}`}>
+          <div>
+            <h2>Where the model earns its place</h2>
+            <p>
+              On {s.recordRuns} of the {s.runs} runs the deciding fact is in a structured record, and a rule that reads the records gets{" "}
+              {s.strongCorrectOnRecord} of them right; the model gets {s.modelCorrectOnRecord}. The difference is on the {textRuns} runs where it sits only
+              in free text, such as a buyer&apos;s email saying the vase arrived or a listing that does or doesn&apos;t warn about the glaze: the model{" "}
+              {s.modelCorrectOnText}, the stronger rules {s.strongCorrectOnText}, the fallback {s.rulesCorrectOnText}. That free-text margin is the number to
+              read, and {textRuns} runs is a small base.
+            </p>
+            {ablation && (
+              <p>
+                The prompt carries a short rubric, &ldquo;How cases are usually decided&rdquo;, that mirrors how the labels were set. With it taken out, the
+                model got {s.ablationCorrect} of {s.ablationRuns} right, and {s.ablationCorrectOnText} of {s.ablationTextRuns} free-text runs (with it:{" "}
+                {s.modelCorrect} of {s.modelRuns}, and {s.modelCorrectOnText} of {textRuns}).
+              </p>
+            )}
+            {seeds > 1 && s.seedRuns && (
+              <p>
+                Every case ran {seeds} times. Right calls per run of the {s.seedSpread?.of} labelled runs:{" "}
+                {s.seedRuns.map((r) => r.correct).join(", ")}; on the free-text runs: {s.seedRuns.map((r) => `${r.textCorrect}/${r.textRuns}`).join(", ")}.
+              </p>
+            )}
+          </div>
+          <ul className={`sheet ${styles.limits}`}>
+            <li>
+              Model, free text: <strong>{s.modelCorrectOnText}/{textRuns}</strong>
+            </li>
+            <li>
+              Stronger rules, free text: <strong>{s.strongCorrectOnText}/{textRuns}</strong>
+            </li>
+            <li>
+              Model, records: <strong>{s.modelCorrectOnRecord}/{s.recordRuns}</strong>
+            </li>
+            <li>
+              Stronger rules, records: <strong>{s.strongCorrectOnRecord}/{s.recordRuns}</strong>
+            </li>
+            {ablation && (
+              <li>
+                Model without the rubric: <strong>{s.ablationCorrect}/{s.ablationRuns}</strong>
+              </li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      {held && (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>A held-out set</h2>
+            <p>
+              {s.heldoutVariants} more variants, modelled on situations sellers describe on public forums. They were written and labelled by a separate AI
+              agent that was not shown Exhibit&apos;s prompt or its rubric, after the prompt was fixed, and they were not tuned on afterwards. No person
+              labelled them, so this is a better test than the set above and a weaker one than real cases. Model {s.heldoutModelCorrect} of{" "}
+              {s.heldoutRuns}
+              {range(s.heldoutSeedSpread) && seeds > 1 ? ` (${range(s.heldoutSeedSpread)} across ${seeds} runs)` : ""}; stronger rules{" "}
+              {s.heldoutStrongCorrect} of {s.heldoutCases}; fallback {s.heldoutRulesCorrect}. On the {s.heldoutTextRuns} free-text runs: model{" "}
+              {s.heldoutModelCorrectOnText}, stronger rules {s.heldoutStrongCorrectOnText}.
+            </p>
+          </div>
+          <div className={`sheet ${styles.ledger}`}>
+            <table>
+              <colgroup>
+                <col className={styles.colChange} />
+                <col className={styles.colLabel} />
+                <col className={styles.colRules} />
+                <col className={styles.colRules} />
+                <col />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">What changed</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">Fallback rules</th>
+                  <th scope="col">Stronger rules</th>
+                  <th scope="col">Model</th>
+                </tr>
+              </thead>
+              <tbody>
+                {held.variants.map((v) => {
+                  const rows = held.runs.filter((r) => r.variant === v.id);
+                  const link = v.source.match(/https?:\/\/\S+/)?.[0];
+                  return (
+                    <tr key={v.id}>
+                      <td>
+                        {v.change}
+                        {v.decidedBy === "text" && <span className={styles.tag}>free text</span>}
+                        <span className={styles.source}>
+                          {link ? (
+                            <a href={link} target="_blank" rel="noreferrer">
+                              The forum thread
+                            </a>
+                          ) : (
+                            "Forum-style, not a specific thread"
+                          )}
+                          . Label: {v.why}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.label} data-call={v.label}>
+                          {CALL[v.label]}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.pair}>
+                          {rows.map((r) => (
+                            <Call key={r.key} run={r} side="rules" />
+                          ))}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.pair}>
+                          {rows.map((r) => (
+                            <Call key={r.key} run={r} side="strong" />
+                          ))}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.pair}>
+                          {rows.map((r) => (
+                            <span key={r.key} className={styles.withRepeats}>
+                              <Call run={r} side="model" />
+                              <Repeats rows={repeatsOf(r.key, "heldout")} />
+                            </span>
+                          ))}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className={`${styles.section} ${styles.split}`}>
         <div>
-          <h2>The checker against false figures</h2>
+          <h2>The checker against false statements</h2>
           <p>
-            We took every sentence the model wrote that survived the checker ({s.keptSentences}) and changed one figure in it: a date moved three days,
-            an amount raised by $10, a time moved an hour, the last digit of an id or tracking number changed. Then we ran the same checker the filing
-            uses.
+            We took every sentence the model wrote that survived the checker ({s.keptSentences}
+            {s.templateSentences ? `, plus ${s.templateSentences} true sentences written from each case's own records so the rarer kinds get a fair count` : ""}
+            ) and changed one thing in it: a date moved, an amount raised, a time shifted, a digit of an id changed, a real date or amount swapped in from
+            a different record (with that record cited too), the sentence turned into a denial, the carrier swapped, the signer&apos;s initial changed,
+            the ZIP or the card&apos;s last four changed. Then we ran the same checker the filing uses.
           </p>
           <ul className={styles.kinds}>
             {mutationKinds.map(([kind, k]) => (
@@ -181,36 +509,78 @@ export default function Proof() {
                   {k.struck}/{k.n}
                 </strong>{" "}
                 {kind}
+                {k.fromModel !== undefined && k.fromTemplate ? (
+                  <small className={styles.kindSource}>
+                    {" "}
+                    {k.fromModel} from the model&apos;s sentences, {k.fromTemplate} from the records
+                  </small>
+                ) : null}
               </li>
             ))}
           </ul>
           <p className={styles.note}>
-            {s.figurelessSentences} of the {s.keptSentences} sentences carry no figure at all (&ldquo;The parcel was signed for at the front
-            desk&rdquo;). The checker can only hold those to their citations; it reads figures, not meaning.
+            What it checks: every amount (however written), date (with or without a year), time, id and tracking number, ZIP, city and state, carrier,
+            signer, count and percentage has to be in the records the sentence cites; one clause has to rest on one record; a date or amount said to be a
+            refund, a delivery or the disputed amount has to be that in the record; a sentence can&apos;t deny what its record says, or claim a signature
+            no record shows; and the words it quotes as proof have to be in a cited exhibit, word for word. {unverified} of the {s.keptSentences} kept
+            sentences carry nothing it can match (&ldquo;We offered the buyer a return&rdquo;): they are kept, shown as unverified, and held only to their
+            citation. It reads figures and names, not meaning.
           </p>
+          {s.templateSentences ? (
+            <p className={styles.note}>
+              On true sentences it struck {s.struckByChecker} of the model&apos;s {s.sentences} and {s.templateStruck} of the {s.templateSentences} written
+              from the records.
+            </p>
+          ) : null}
         </div>
-        <Pleading lines={12}>
-          {mutationKinds.slice(0, 3).map(([kind, k]) =>
-            k.examples[0] ? (
-              <figure key={kind} className={styles.strike}>
-                <p className={`serif ${styles.struck}`}>{k.examples[0].to}</p>
-                <figcaption>
-                  {kind}: {k.examples[0].why}
-                </figcaption>
-              </figure>
-            ) : null,
-          )}
+        <Pleading lines={14}>
+          {mutationKinds
+            .filter(([kind]) => ["real figure from another record", "negated", "signer changed", "carrier swapped"].includes(kind))
+            .concat(mutationKinds.filter(([kind]) => !["real figure from another record", "negated", "signer changed", "carrier swapped"].includes(kind)))
+            .slice(0, 4)
+            .map(([kind, k]) =>
+              k.examples[0] ? (
+                <figure key={kind} className={styles.strike}>
+                  <p className={`serif ${styles.struck}`}>{k.examples[0].to}</p>
+                  <figcaption>
+                    {kind}: {k.examples[0].why}
+                  </figcaption>
+                </figure>
+              ) : null,
+            )}
         </Pleading>
       </section>
+
+      {survivors.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>What got through</h2>
+            <p>
+              {s.mutations - s.mutationsStruck} of the {s.mutations} false sentences survived. One of each kind, as the checker saw it:
+            </p>
+          </div>
+          <ul className={`sheet ${styles.limits}`}>
+            {survivors.map((x) => (
+              <li key={x.kind}>
+                <span className="serif">{x.to}</span> <small className={styles.kindSource}>({x.kind}; cites {x.cites.join(", ")})</small>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.note}>
+            A real amount moved onto a claim with no role word next to it, or a denial of something its record never mentions (&ldquo;we never shipped
+            it&rdquo; citing only the order), has nothing in the record to contradict it.
+          </p>
+        </section>
+      )}
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <h2>Asked to state what no record says</h2>
           <p>
             Six seller&apos;s notes, each asking for a date, an amount, a time or a reference number that appears in no exhibit. With Exhibit&apos;s own
-            prompt the model wrote none of them ({s.pressureWrote} of {s.pressureRuns}). So we swapped in a careless drafter told to use every fact the
-            seller gives: it wrote all {s.carelessWrote}, and the checker struck {s.carelessPlantedStruck} of {s.carelessPlantedSentences} before anything
-            could be filed.
+            prompt the model wrote {s.pressureWrote === 0 ? "none" : s.pressureWrote} of them ({s.pressureWrote} of {s.pressureRuns}). So we swapped in a
+            careless drafter told to use every fact the seller gives: it wrote {s.carelessWrote === careless.length ? "all " : ""}
+            {s.carelessWrote}, and the checker struck {s.carelessPlantedStruck} of {s.carelessPlantedSentences} before anything could be filed.
           </p>
         </div>
         <ol className={styles.pressure}>
@@ -240,13 +610,50 @@ export default function Proof() {
         </ol>
       </section>
 
+      {inj && (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Instructions hidden in the buyer&apos;s email</h2>
+            <p>
+              Four emails from the buyer that address the AI directly and ask for the wrong call or a false statement. They arrive as exhibits, the way a
+              real buyer&apos;s message would. The model made the labelled call on {s.injectionCorrect} of {s.injectionRuns} runs. The one attack that plants
+              a tracking number and a delivery date can&apos;t be caught by the checker alone, because the figures are in the record: the buyer wrote them.
+              The model repeated them in {s.injectionWrotePlanted} runs, and {s.injectionKeptPlanted} such sentences were kept.
+            </p>
+          </div>
+          <ol className={styles.pressure}>
+            {inj.variants.map((v) => {
+              const rows = inj.runs.filter((r) => r.variant === v.id);
+              return (
+                <li key={v.id} className="sheet">
+                  <p className={styles.noteText}>{v.change}</p>
+                  <p className={styles.why}>{v.attack}</p>
+                  <p className={styles.outcome}>
+                    <span>Label: {CALL[v.label]}</span>
+                    {rows.map((r) => (
+                      <span key={r.key} className={styles.withRepeats}>
+                        <Call run={r} side="model" />
+                        <Repeats rows={repeatsOf(r.key, "injection")} />
+                      </span>
+                    ))}
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+
       <section className={`${styles.section} ${styles.split}`}>
         <div>
           <h2>What this doesn&apos;t show</h2>
           <p>Read the numbers with these in mind.</p>
         </div>
         <ul className={`sheet ${styles.limits}`}>
-          <li>The stories and the variants were written by the people who wrote the prompt. This measures consistency on known patterns, not accuracy on real sellers&apos; cases.</li>
+          <li>
+            The stories, the main variants and the prompt were written by the same team, so the main set measures consistency on known patterns. The
+            held-out set was written without the prompt, by an AI agent rather than a person. Neither is accuracy on real sellers&apos; cases.
+          </li>
           <li>
             The PayPal records in the eval are built offline in the exact shapes the sandbox returns; nothing was filed. The live desk&apos;s cases are real
             sandbox disputes.
@@ -255,9 +662,23 @@ export default function Proof() {
             Won and lost on the desk are sandbox rulings Exhibit asks for after filing, and the simulator rules the way the filing points. They show the
             whole lifecycle works through PayPal&apos;s API, not that a bank was persuaded.
           </li>
-          <li>The checker proves a figure appears in the record a sentence cites. A real date moved onto another real date in the same record would pass.</li>
-          <li>One run per variant and customer. The model&apos;s odds come from its own tally of weighted points; they aren&apos;t calibrated probabilities.</li>
+          <li>
+            The checker matches figures and names to the record a sentence cites, ties each clause to one record, and catches denials its record
+            contradicts. It doesn&apos;t understand meaning: a sentence with nothing to match is only marked unverified, and a figure the buyer wrote into
+            their own email is &ldquo;in the record&rdquo;.
+          </li>
+          <li>
+            {seeds > 1 ? `Each case ran ${seeds} times; the spread is shown, not a confidence interval.` : "One run per variant and customer."} The
+            model&apos;s odds come from its own tally of weighted points; they aren&apos;t calibrated probabilities.
+          </li>
           <li>On agent-placed orders the decision is the mandate check, which is code; the model writes the response around it.</li>
+          {P.recheckedAt && (
+            <li>
+              The model&apos;s answers are from the run on {day(P.at)}; the checker, the stronger rules and the mutations were re-run over those saved
+              answers on {day(P.recheckedAt)} with no new model calls.
+            </li>
+          )}
+          {notRun.length > 0 && <li>Not measured in this run: {notRun.join(", ")}.</li>}
         </ul>
       </section>
 
@@ -324,10 +745,11 @@ export default function Proof() {
       <section className={`${styles.section} ${styles.final}`}>
         <h2>Run it yourself</h2>
         <p>
-          The variants are in <code>lib/eval/variants.ts</code>, the runner in <code>scripts/eval.ts</code>, and every answer, sentence and strike from
-          this run in <code>data/proof.json</code>. With your own Azure OpenAI key in <code>.env.local</code>:
+          The variants are in <code>lib/eval/variants.ts</code> and <code>lib/eval/heldout.ts</code>, the stronger rules in <code>lib/eval/baseline.ts</code>
+          , the runner in <code>scripts/eval.ts</code>, and every answer, sentence and strike from this run in <code>data/proof.json</code>. With your own
+          model keys in <code>.env.local</code>, and its prices so the run stays under a spend cap:
         </p>
-        <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval.ts</pre>
+        <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval.ts --price-in 1 --price-out 5 --max-usd 2.5</pre>
         <p className={styles.ctas}>
           <a className="btn btnQuiet" href="https://github.com/RohanGlitched/exhibit/blob/main/data/proof.json" target="_blank" rel="noreferrer">
             The raw results

@@ -34,7 +34,7 @@ const STEPS = [
   },
   {
     title: "Check every sentence",
-    text: "Before anything is filed, each amount, date, time and id in the response is matched against the exhibits it cites. Anything unmatched is struck, and you see why.",
+    text: "Before anything is filed, every figure and name in the response (amounts, dates, ids, ZIPs, carriers, signers) is matched against the record it cites, along with the words it quotes. Anything unmatched is struck, and you see why; a sentence with nothing to match is marked unverified.",
     api: "Runs on Exhibit's server, no model involved",
   },
   {
@@ -81,8 +81,8 @@ export default async function Home() {
           <div className={styles.heroSide}>
             <p>
               Exhibit is the dispute desk for small PayPal sellers. Click once and you get a real PayPal sandbox chargeback against a real card
-              payment. GPT-5.6 argues it with every sentence pinned to the PayPal record that proves it, a checker strikes anything it can&apos;t prove,
-              and it&apos;s filed with a Bates-stamped PDF, or refunded when you&apos;d lose.
+              payment. The model argues it with every sentence pinned to the record it cites, a checker holds every figure and name to that record and
+              strikes what it can&apos;t match, and it&apos;s filed with a Bates-stamped PDF, or refunded when you&apos;d lose.
             </p>
             <div className={styles.ctas}>
               <Link className="btn btnPrimary" href="/new">
@@ -140,8 +140,9 @@ export default async function Home() {
         <div>
           <h2>No claim without a record</h2>
           <p>
-            A response that gets one date wrong hands the case to the buyer. So Exhibit never takes the model&apos;s word for a fact. Every amount, date,
-            time, tracking number and id in a sentence has to appear in the exhibits that sentence cites, or the sentence is struck before filing.
+            A response that gets one date wrong hands the case to the buyer. So Exhibit never takes the model&apos;s word for a fact. Every amount,
+            date, time, id, ZIP, carrier and signer in a sentence has to appear in the record that sentence cites, one clause to one record, or the
+            sentence is struck before filing. A sentence with nothing to match is marked unverified.
           </p>
           <p>The model argues. The records decide what it&apos;s allowed to say.</p>
         </div>
@@ -307,17 +308,21 @@ export default async function Home() {
         <div className={styles.lede}>
           <h2>Measured, not promised</h2>
           <p>
-            {proof.summary.variants} labelled variants of the seven stories, each run with two customers. Then a careless drafter told to use facts no
-            record holds, and one figure changed in every true sentence. All of it is on the proof page, with what it doesn&apos;t show.
+            {proof.summary.variants} labelled variants of the seven stories, each run with two customers, against a rules baseline that reads every
+            record. Then a careless drafter told to use facts no record holds, and one thing changed in every true sentence. All of it is on the proof
+            page, with what it doesn&apos;t show.
           </p>
         </div>
         <dl className={styles.measured}>
           <div>
-            <dt>Right call</dt>
+            <dt>Deciding fact only in free text</dt>
             <dd>
-              {proof.summary.modelCorrect}/{proof.summary.modelRuns}
+              {proof.summary.modelCorrectOnText} vs {proof.summary.strongCorrectOnText}
             </dd>
-            <p>GPT-5.6; the rules engine gets {proof.summary.rulesCorrect}/{proof.summary.runs}</p>
+            <p>
+              the model vs the stronger rules, of {proof.summary.textRuns} runs; on the other {proof.summary.recordRuns} both get{" "}
+              {Math.min(proof.summary.modelCorrectOnRecord, proof.summary.strongCorrectOnRecord)} or more
+            </p>
           </div>
           <div>
             <dt>Invented facts struck</dt>
@@ -327,11 +332,11 @@ export default async function Home() {
             <p>Exhibit&apos;s own prompt wrote none of them</p>
           </div>
           <div>
-            <dt>Changed figures struck</dt>
+            <dt>False statements struck</dt>
             <dd>
               {proof.summary.mutationsStruck}/{proof.summary.mutations}
             </dd>
-            <p>dates, amounts, times and ids</p>
+            <p>figures, names, places, recombined records and denials</p>
           </div>
           <div>
             <dt>Per brief</dt>

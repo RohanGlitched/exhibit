@@ -65,7 +65,7 @@ export const OPTIONS: Option[] = [
     cost: "Planned: free to argue, a flat $2 per response filed, no share of what you win",
     writes: "A brief from PayPal's records and your store's, pinned sentence by sentence",
     refund: "Says refund when the records say you'd lose, and files the acceptance",
-    proof: "Every amount, date, time and id checked against the record it cites; failures struck before filing",
+    proof: "Every figure and name checked against the record it cites; failures struck before filing, sentences with nothing to check marked unverified",
   },
 ];
 

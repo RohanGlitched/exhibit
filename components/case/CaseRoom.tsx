@@ -318,7 +318,10 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           ) : (
             <div className={styles.empty}>
               <p>Exhibit reads the case from PayPal, pulls the order, payment and tracking behind it, and writes the response here, one sentence at a time.</p>
-              <p>Every sentence is pinned to the record that proves it. A sentence it can&apos;t prove gets struck before anything is filed.</p>
+              <p>
+                Every sentence is pinned to the record that proves it, and every figure and name in it is checked against that record. A sentence that
+                doesn&apos;t match gets struck before anything is filed; one with nothing to check is marked unverified.
+              </p>
               <button className="btn btnPrimary" onClick={argue} disabled={phase === "arguing"}>
                 Argue this case
               </button>

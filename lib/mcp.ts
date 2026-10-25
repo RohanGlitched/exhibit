@@ -35,8 +35,8 @@ function briefText(id: string, b: Brief): string {
   const struck = b.sentences.filter((s) => !s.kept);
   return [
     `${id}: ${b.recommendation === "accept" ? "Refund it" : "Fight it"}, ${b.odds}% chance for the seller. ${b.headline}`,
-    `Response (${kept.length} sentences, each checked against the exhibits it cites):`,
-    ...kept.map((s) => `- ${s.text} [${s.cites.join(", ")}]`),
+    `Response (${kept.length} sentences; every figure and name checked against the exhibits each cites):`,
+    ...kept.map((s) => `- ${s.text} [${s.cites.join(", ")}]${s.unverified ? " (unverified: nothing in it to check)" : ""}`),
     ...(struck.length ? ["Struck before filing:", ...struck.map((s) => `- ${s.text} (${s.why})`)] : []),
     "Tally:",
     ...b.tally.map((t) => `- ${t.side === "seller" ? "Seller" : "Buyer"}, weight ${t.weight}: ${t.point} [${t.cites.join(", ")}]`),
@@ -107,7 +107,7 @@ function register(server: McpServer) {
     "argue_case",
     {
       title: "Argue a case",
-      description: "Exhibit writes the brief for a case: fight or refund, the odds from a weighted tally, and the response to PayPal with every sentence citing the exhibits that prove it. A checker strikes any sentence whose amounts, dates, times or ids aren't in the exhibits it cites. Takes about ten seconds. Saves the brief on the case; files nothing.",
+      description: "Exhibit writes the brief for a case: fight or refund, the odds from a weighted tally, and the response to PayPal with every sentence citing the exhibits that prove it. A checker strikes any sentence whose figures or names (amounts, dates, times, ids, ZIPs, carriers, signers) aren't in the exhibits it cites, and marks sentences with nothing to check as unverified. Takes about ten seconds. Saves the brief on the case; files nothing.",
       inputSchema: z.object({ id: idArg }),
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },

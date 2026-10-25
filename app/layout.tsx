@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "Exhibit: the dispute desk for PayPal sellers", template: "%s · Exhibit" },
   description:
-    "Exhibit reads every PayPal dispute, gathers the order, payment and tracking, and writes a response where every sentence points to the record that proves it. Fight the cases you should win; refund the rest.",
+    "Exhibit reads every PayPal dispute, gathers the order, payment and tracking, and writes a response where every sentence points to the record that proves it and every figure and name is checked against that record. Fight the cases you should win; refund the rest.",
   openGraph: { type: "website", siteName: "Exhibit" },
   twitter: { card: "summary_large_image" },
 };
