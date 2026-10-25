@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://exhibit-desk.vercel.app"><b>Live demo</b></a> ·
-  <a href="https://youtu.be/3qteMA9solQ"><b>Demo video (2:43)</b></a> ·
+  <a href="https://youtu.be/TVQXFh42zas"><b>Demo video (2:58)</b></a> ·
   <a href="https://exhibit-desk.vercel.app/new">Open a sandbox case</a> ·
   <a href="https://exhibit-desk.vercel.app/desk">The desk</a> ·
   <a href="https://exhibit-desk.vercel.app/desk/analytics">Analytics (AG Studio)</a> ·
