@@ -17,11 +17,11 @@
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20%C2%B7%20Payments%20%C2%B7%20Tracking%20%C2%B7%20Disputes-2b63e8">
   <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20%7C%20Claude%20on%20Bedrock-13203a">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-32-17845a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-98-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
-**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 42 of 42. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
+**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 46 of 46; on held-out cases written without the prompt, 12 of 18 against 2. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
 
 When a buyer disputes a payment, a small seller has ten days to answer PayPal, and a chargeback costs a $20 fee on top of the sale. Answering means digging out the order, the payment, the tracking, the carrier's scans and the emails, and writing it up. Many sellers don't, and lose cases they should have won. Others fight cases they can't win and pay for it.
 
@@ -32,7 +32,7 @@ Exhibit reads each dispute, gathers every record behind it as a numbered exhibit
 1. Open **[exhibit-desk.vercel.app/new](https://exhibit-desk.vercel.app/new)** and pick a story, for example *"It never arrived", but the carrier says delivered*.
 2. Exhibit takes a real sandbox card payment to the demo shop, adds the tracking number and has the card issuer file a chargeback through PayPal. You land on the case as the seller and watch it argued live.
 3. Hover any exhibit to see which sentences rely on it. Click **File the response** (or **Accept and refund** on the cases you should lose), then **Read the PDF**.
-4. About 20 minutes later the case offers **Ask the sandbox to rule**; PayPal resolves it within about a day, and the desk shows it won, lost or refunded.
+4. About 20 minutes later the case offers **Ask the sandbox to rule**; Exhibit asks for the side its simulated reviewer decided, and the desk shows it won, lost or refunded. The sandbox also closes some cases by itself, and those are labelled.
 
 No sign-up. Everything runs in the PayPal sandbox with test money; the shop, Halden Ceramics, and its buyers are fictional.
 
@@ -118,15 +118,15 @@ The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/ref
 
 ## Measured
 
-`scripts/eval.ts` runs 26 labelled variants of the seven stories (each changes one or two facts so the right call flips or holds, labelled before running), each with two customers, through the model, the fallback rules engine and a stronger rules baseline ([`lib/eval/baseline.ts`](lib/eval/baseline.ts): delivery ZIP against ship-to ZIP, refund lookup, the issuer's checks, billing against shipping, order history, the mandate check). Each variant is tagged by where its deciding fact sits: in a structured record, or only in free text. Then a pressure set where the seller's note asks for facts no record holds, a held-out set written without the prompt ([`lib/eval/heldout.ts`](lib/eval/heldout.ts)), buyer emails with instructions aimed at the AI, an ablation with the prompt's "How cases are usually decided" rubric removed, repeat runs, and a mutation set that changes one thing in every true sentence. The model is capped at a spend limit you set. Results are committed in [`data/proof.json`](data/proof.json) and shown at [/proof](https://exhibit-desk.vercel.app/proof):
+`scripts/eval.ts` runs 28 labelled variants of the seven stories (each changes one or two facts so the right call flips or holds, labelled before running), each with two customers, through the model, the fallback rules engine and a stronger rules baseline ([`lib/eval/baseline.ts`](lib/eval/baseline.ts): delivery ZIP against ship-to ZIP, refund lookup, the issuer's checks, billing against shipping, order history, the mandate check). Each variant is tagged by where its deciding fact sits: in a structured record, or only in free text. Then a pressure set where the seller's note asks for facts no record holds, a held-out set written without the prompt ([`lib/eval/heldout.ts`](lib/eval/heldout.ts)), buyer emails with instructions aimed at the AI, an ablation with the prompt's "How cases are usually decided" rubric removed, repeat runs, and a mutation set that changes one thing in every true sentence. The model is capped at a spend limit you set. Results are committed in [`data/proof.json`](data/proof.json) and shown at [/proof](https://exhibit-desk.vercel.app/proof):
 
 | | Result (GPT-5.6, 25 Oct, 332 calls, $2.78) |
 |---|---|
-| Right call, 26 variants × 2 customers | model 56 of 56; stronger rules 50; fallback rules 44 |
+| Right call, 28 variants × 2 customers | model 56 of 56; stronger rules 50; fallback rules 44 |
 | Deciding fact only in free text: model vs stronger rules | 10 vs 4 of 10 runs |
 | Deciding fact in the records: model vs stronger rules | 46 vs 46 of 46 |
 | Held-out set, written blind to the prompt: free-text cases | model 12 of 18; stronger rules 2 of 18 |
-| Buyer emails with instructions aimed at the AI | right call 8 of 8; the planted fact written 0 times |
+| Buyer emails with instructions aimed at the AI (4 emails × 2 customers) | right call 8 of 8 runs; the planted fact written 0 times |
 | Same runs repeated (3 seeds) | 56 of 56 each time |
 | Prompt without its "how cases are usually decided" rubric | 54 of 56 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
