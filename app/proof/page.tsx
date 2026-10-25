@@ -5,6 +5,7 @@ import { FIGURES, OPTIONS, CHARGEFLOW_PRICING } from "@/lib/impact";
 import { day } from "@/lib/format";
 import proof from "@/data/proof.json";
 import styles from "./proof.module.css";
+import ReviewProof from "./ReviewProof";
 
 export const metadata: Metadata = {
   title: "Proof",
@@ -239,6 +240,8 @@ export default function Proof() {
           })}
         </ol>
       </section>
+
+      <ReviewProof />
 
       <section className={`${styles.section} ${styles.split}`}>
         <div>

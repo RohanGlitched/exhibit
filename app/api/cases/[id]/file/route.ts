@@ -15,11 +15,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!CASE_ID.test(id) || !body.action || !ACTIONS.includes(body.action)) {
     return NextResponse.json({ error: "Choose what to file." }, { status: 400 });
   }
-  if (!allow("file", await clientIp(), 30, 10 * MINUTE)) {
+  const ip = await clientIp();
+  if (!allow("file", ip, 30, 10 * MINUTE)) {
     return NextResponse.json({ error: "That's a lot of filings in ten minutes from one place. Give it a few minutes." }, { status: 429 });
   }
   try {
-    return NextResponse.json({ filing: await fileAction(id, body.action) });
+    return NextResponse.json({ filing: await fileAction(id, body.action, "seller", { ip }) });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 409 });
   }

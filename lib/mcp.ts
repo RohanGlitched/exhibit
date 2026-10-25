@@ -13,6 +13,8 @@ import { HOUR, MINUTE, allow } from "./limits";
 import { SITE_URL } from "./site";
 import { reasonLabel, usd } from "./format";
 import type { Brief } from "./cases/types";
+import { objectCase, reviewCase } from "./cases/cross";
+import { transcriptText } from "./cases/hearing";
 
 /**
  * Exhibit as an MCP server (Streamable HTTP at /api/mcp), so a seller's own agent can run the dispute desk:
@@ -23,7 +25,7 @@ import type { Brief } from "./cases/types";
  */
 
 export const SERVER_INSTRUCTIONS = `Exhibit is a dispute desk for PayPal sellers, running on the PayPal sandbox for a demo shop, Halden Ceramics.
-Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the odds from a weighted tally, and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. open_case opens a fresh sandbox dispute from one of the stories.
+Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the odds from a weighted tally, and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. cross_examine puts the case before a simulated PayPal reviewer that reads only the PDF and objects sentence by sentence; Exhibit answers from the exhibits, the checker strikes answers it can't back, and the reviewer's verdict is what a later sandbox ruling request follows. Pass an objection of your own to take the reviewer's chair. open_case opens a fresh sandbox dispute from one of the stories.
 PayPal gives a seller ten days to answer a chargeback. Recommend refunding when the records say the seller would lose.`;
 
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
@@ -139,10 +141,46 @@ function register(server: McpServer) {
     async ({ id, action }) => {
       if (!allow("mcp-file", await ipKey(), 30, 10 * MINUTE)) return text("That's a lot of filings in ten minutes from one place. Try again in a few minutes.");
       try {
-        const f = await fileAction(id, action, "autopilot");
+        const f = await fileAction(id, action, "autopilot", { ip: await ipKey() });
         return text(`${f.summary}. PayPal now holds it on ${id}. Case page: ${caseLink(id)}`);
       } catch (e) {
         return text(`PayPal didn't take it: ${(e as Error).message}`);
+      }
+    },
+  );
+
+  server.registerTool(
+    "cross_examine",
+    {
+      title: "Cross-examine a case",
+      description:
+        "Puts an argued case before a simulated PayPal dispute reviewer (a second model role) that reads only the PDF PayPal holds, or the PDF Exhibit would file, and raises up to four objections sentence by sentence. Exhibit answers each from the exhibits or concedes; the same checker strikes any answer whose figures aren't in the exhibits it cites; the reviewer rules and gives a verdict, which a later 'ruling' filing follows. On an unfiled draft, concessions withdraw sentences or change the call to refund. With `objection`, you take the reviewer's chair instead: Exhibit answers your objection, checked, and nothing is saved. Takes up to a minute.",
+      inputSchema: z.object({
+        id: idArg,
+        objection: z.string().min(8).max(300).optional().describe("Your own objection to the response. Leave out to run the full hearing."),
+        sentence: z.number().int().min(1).max(20).optional().describe("The response sentence your objection is about (1-based). Leave out for the response as a whole."),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async ({ id, objection, sentence }) => {
+      const key = await ipKey();
+      if (!allow("mcp-review", key, 6, 10 * MINUTE)) return text("That's a lot of hearings in ten minutes from one place. Try again in a few minutes.");
+      try {
+        if (objection) {
+          const x = await objectCase(id, objection, sentence ? sentence - 1 : null, key);
+          return text(
+            [
+              `OBJECTION: ${x.objection.text}`,
+              x.answer.stance === "concede" ? `A. (concedes) ${x.answer.text}` : `A. ${x.answer.text} [${x.answer.cites.join(", ")}]${x.answer.kept ? " (checked: every figure is in the exhibits cited)" : ` (struck by the checker: ${x.answer.why})`}`,
+              `${x.ruling.toUpperCase()}. ${x.reason}.`,
+              "Nothing was saved or filed.",
+            ].join("\n"),
+          );
+        }
+        const { hearing } = await reviewCase(id, key);
+        return text(`${transcriptText(hearing)}\nCase page: ${caseLink(id)}`);
+      } catch (e) {
+        return text(`Couldn't cross-examine ${id}: ${(e as Error).message}`);
       }
     },
   );

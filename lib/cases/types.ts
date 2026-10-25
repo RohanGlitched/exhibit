@@ -1,4 +1,5 @@
 /** Shared shapes for cases, exhibits and briefs. Safe to import from client components. */
+import type { Hearing } from "./hearing";
 
 export interface Fact {
   label: string;
@@ -25,6 +26,8 @@ export interface BriefSentence {
   cites: string[];
   kept: boolean;
   why?: string; // why it was struck
+  /** Set when the checker struck the sentence as first written and one re-cite attempt fixed it. */
+  repaired?: { from: string; fromCites: string[]; why: string };
 }
 
 export interface TallyItem {
@@ -80,6 +83,7 @@ export interface CaseRecord {
   autopilot?: { eventId: string; receivedAt: string; arguedAt: string; briefAt: string; engine: Brief["engine"] };
   /** The latest dispute event PayPal delivered for this case, and the state Exhibit read back after it. */
   lastEvent?: { id: string; type: string; receivedAt: string; status: string; outcome?: string };
+  hearing?: Hearing; // the latest cross-examination by the simulated reviewer
 }
 
 /** One step the server streams while it argues a case. */

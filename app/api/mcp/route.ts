@@ -14,7 +14,7 @@ async function get(req: Request) {
 <h1 style="margin:.2em 0 .4em;font-size:30px">Run the dispute desk from your own agent</h1>
 <p>This is Exhibit's Model Context Protocol server, over Streamable HTTP. There is nothing to see in a browser: add this address to an assistant that supports remote MCP servers (Claude, ChatGPT, VS Code and others):</p>
 <p><code>${url}</code></p>
-<p>Tools: <b>list_cases</b>, <b>get_case</b>, <b>argue_case</b>, <b>file_response</b> (evidence, accept or ruling; asks for confirmation) and <b>open_case</b>. Every action is gated by PayPal's own links and checked by the same code as the website, on the PayPal sandbox with test money.</p>
+<p>Tools: <b>list_cases</b>, <b>get_case</b>, <b>argue_case</b>, <b>file_response</b> (evidence, accept or ruling; asks for confirmation), <b>cross_examine</b> (a simulated PayPal reviewer objects, Exhibit answers, the checker rules) and <b>open_case</b>. Every action is gated by PayPal's own links and checked by the same code as the website, on the PayPal sandbox with test money.</p>
 <p>Then ask: "Which cases are waiting on me, and which should I refund?"</p>
 <p><a href="/desk">The desk</a> · <a href="/">Exhibit home</a></p></main>`;
     return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
