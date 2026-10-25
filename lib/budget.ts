@@ -4,8 +4,8 @@ import { storage } from "./storage";
 /**
  * Spend guards for the public demo, so visitors can't run up the model bill:
  * - per visitor (IP): 12 briefs per 10 minutes, kept in memory per server instance;
- * - per day: DAILY_MODEL_CAP briefs in total (default 400, about a dollar of Haiku), counted in memory and
- *   flushed to a private blob every 10 calls (every call once 80% is spent) so the cap holds across instances.
+ * - per day: DAILY_MODEL_CAP briefs in total (default 400, about five dollars of Claude Haiku 4.5), counted in memory and
+ *   flushed to the shared store every 10 calls (every call once 80% is spent) so the cap holds across instances.
  * When either runs out, cases are still argued, by the rules engine.
  */
 const IP_WINDOW_MS = 10 * 60_000;
@@ -13,7 +13,7 @@ const IP_LIMIT = 12;
 const DAILY_CAP = Number(process.env.DAILY_MODEL_CAP || 400);
 const FLUSH_EVERY = 10;
 
-const IP_DAY_LIMIT = Number(process.env.IP_DAILY_MODEL_CAP || 250);
+const IP_DAY_LIMIT = Number(process.env.IP_DAILY_MODEL_CAP || 60);
 const ipCalls = new Map<string, number[]>();
 
 export function ipAllowed(ip: string): boolean {
@@ -34,7 +34,7 @@ export function ipAllowed(ip: string): boolean {
 }
 
 let day = "";
-let persisted = 0; // count stored in the blob when we last synced
+let persisted = 0; // count in the shared store when we last synced
 let local = 0; // calls this instance made since then
 
 const today = () => new Date().toISOString().slice(0, 10);

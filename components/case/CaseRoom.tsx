@@ -182,8 +182,9 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
               {!closed && !view.filings.some((f) => f.action === "ruling") && (
                 <div className={styles.ruling}>
                   <p>
-                    In the sandbox nobody at PayPal reads the evidence. When PayPal opens the case for a ruling (about 20 minutes after filing), you can ask
-                    its simulator to decide. It rules the way the filing points.
+                    In the sandbox nobody at PayPal reads the evidence: its simulator rules for whichever side it is asked to. So Exhibit first puts the
+                    filing before a simulated PayPal reviewer (the hearing below), and asks the simulator to rule the way that reviewer decided. PayPal
+                    opens the case for a ruling about 20 minutes after filing.
                   </p>
                   <button className="btn btnQuiet" onClick={() => file("ruling")} disabled={phase === "filing" || !can.has("adjudicate")}>
                     {can.has("adjudicate") ? "Ask the sandbox to rule" : "Waiting for PayPal to open the ruling"}

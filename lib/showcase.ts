@@ -6,6 +6,7 @@ import { caseContext } from "./cases/service";
 import { checkSentence } from "./cases/verify";
 import { exhibitText } from "./cases/exhibits";
 import { reasonLabel, usd } from "./format";
+import { ruledAt } from "./cases/derive";
 import type { Brief, BriefSentence, Exhibit } from "./cases/types";
 
 export interface Showcase {
@@ -14,6 +15,7 @@ export interface Showcase {
   brief: Brief;
   filed: string | null;
   status: string;
+  ruling: { where: "won" | "lost"; at: string | null } | null;
   strikeDemo: { original: BriefSentence; altered: BriefSentence } | null;
 }
 
@@ -34,10 +36,24 @@ function shiftedDates(text: string): string[] {
  */
 export const showcase = unstable_cache(
   async (): Promise<Showcase | null> => {
-    const cases = (await listCases()).filter((c) => c.brief && c.scenarioId && !c.retired);
-    // The "delivered" story, filed, argued by the model, newest first; the checker demo needs a dated sentence.
+    // Where each case stands, as the desk reads it from PayPal: the hero never shows a case PayPal ruled
+    // against the seller, or one whose deadline lapsed, and prefers one PayPal ruled for them.
+    const where = new Map((await deskRows(null).catch(() => [])).map((r) => [r.id, r.where]));
+    const cases = (await listCases()).filter(
+      (c) =>
+        c.brief &&
+        c.scenarioId &&
+        !c.retired &&
+        !(c.autopilot && !c.claimedBy) && // pool stock the webhook argued, not yet anyone's case
+        !["lost", "lapsed"].includes(where.get(c.disputeId) ?? ""),
+    );
+    // A won case first, then the "delivered" story, filed, argued by the model, newest first; the checker demo
+    // needs a dated sentence.
     const rank = (c: (typeof cases)[number]) =>
-      (c.scenarioId === "delivered" ? 4 : 0) + (c.filings.some((f) => f.action === "evidence") ? 2 : 0) + (c.brief?.engine === "model" ? 1 : 0);
+      (where.get(c.disputeId) === "won" ? 8 : 0) +
+      (c.scenarioId === "delivered" ? 4 : 0) +
+      (c.filings.some((f) => f.action === "evidence") ? 2 : 0) +
+      (c.brief?.engine === "model" ? 1 : 0);
     const pick = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt))[0];
     if (!pick?.brief) return null;
     const ctx = await caseContext(pick.disputeId);
@@ -65,10 +81,11 @@ export const showcase = unstable_cache(
       brief,
       filed: ctx.filings.filter((f) => f.action === "evidence").at(-1)?.at ?? null,
       status: ctx.dispute.status,
+      ruling: where.get(pick.disputeId) === "won" ? { where: "won", at: ruledAt(ctx.dispute) } : null,
       strikeDemo,
     };
   },
-  ["showcase-v3"],
+  ["showcase-v4"],
   { revalidate: 300 },
 );
 

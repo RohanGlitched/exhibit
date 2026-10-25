@@ -662,8 +662,10 @@ export default function ProofPage() {
             sandbox disputes.
           </li>
           <li>
-            Won and lost on the desk are sandbox rulings Exhibit asks for after filing, and the simulator rules the way the filing points. They show the
-            whole lifecycle works through PayPal&apos;s API, not that a bank was persuaded.
+            Nobody at PayPal reads evidence in the sandbox. Its simulator rules for whichever side it is asked to, and it also closes many cases on its
+            own. So a won or lost case on the desk shows the lifecycle working through PayPal&apos;s API, not that a bank was persuaded. Since 25 Oct, the
+            side Exhibit asks for is the verdict of the simulated reviewer that cross-examined the filing. Each case says whether PayPal ruled at
+            Exhibit&apos;s request or closed the case by itself.
           </li>
           <li>
             The checker matches figures and names to the record a sentence cites, ties each clause to one record, and catches denials its record

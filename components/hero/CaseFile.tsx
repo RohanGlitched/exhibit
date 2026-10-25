@@ -11,6 +11,7 @@ interface Props {
   exhibits: Exhibit[];
   brief: Brief;
   filedAt: string | null;
+  ruling?: { where: "won" | "lost"; at: string | null } | null; // what PayPal ruled, once it has
   onPhase?: (phase: number) => void; // 0 read, 1 gather, 2 argue, 3 check, 4 file
 }
 
@@ -23,7 +24,7 @@ const CALL = { fight: "Fight it", accept: "Refund it", offer: "Offer a refund" }
  * time, and as each sentence cites a record, that exhibit lifts out of the tabbed stack on the right with a
  * thread back to its mark. It ends with the stamp. Real case, real records; only the pacing is staged.
  */
-export default function CaseFile({ head, exhibits, brief, filedAt, onPhase }: Props) {
+export default function CaseFile({ head, exhibits, brief, filedAt, ruling, onPhase }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [step, setStep] = useState(-1);
@@ -65,7 +66,8 @@ export default function CaseFile({ head, exhibits, brief, filedAt, onPhase }: Pr
         started = true;
         tick(0);
       }
-    }, { threshold: 0.7 });
+    // Start as soon as a little of the desk shows: on a laptop the desk's lower half sits below the fold.
+    }, { threshold: 0.15 });
     if (wrap.current) io.observe(wrap.current);
     return () => {
       io.disconnect();
@@ -155,11 +157,15 @@ export default function CaseFile({ head, exhibits, brief, filedAt, onPhase }: Pr
             <span className={styles.bates}>HC-000001</span>
             {stamped && (
               <div className={styles.stampAt}>
-                <Stamp
-                  key={run}
-                  word={brief.recommendation === "accept" ? "REFUNDED" : "FILED"}
-                  line={`WITH PAYPAL ${day(filedAt ?? brief.createdAt).toUpperCase()}`}
-                />
+                {ruling?.where === "won" ? (
+                  <Stamp key={run} word="WON" tone="won" line={`PAYPAL RULED ${day(ruling.at ?? filedAt ?? brief.createdAt).toUpperCase()}`} />
+                ) : (
+                  <Stamp
+                    key={run}
+                    word={brief.recommendation === "accept" ? "REFUNDED" : "FILED"}
+                    line={`WITH PAYPAL ${day(filedAt ?? brief.createdAt).toUpperCase()}`}
+                  />
+                )}
               </div>
             )}
           </article>

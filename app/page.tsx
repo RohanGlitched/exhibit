@@ -30,8 +30,8 @@ const STEPS = [
   },
   {
     title: "Argue it",
-    text: "GPT-5.6 on Azure OpenAI weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
-    api: "Azure OpenAI Responses API, one forced function call",
+    text: "Claude Haiku 4.5 on Amazon Bedrock weighs the exhibits, tallies the points for each side, recommends fighting or refunding, and writes the response with an exhibit mark on every sentence.",
+    api: "Amazon Bedrock Converse API, one forced tool call",
   },
   {
     title: "Check every sentence",
@@ -100,7 +100,7 @@ export default async function Home() {
         </div>
 
         {show ? (
-          <HomeStage head={show.head} exhibits={show.exhibits} brief={show.brief} filedAt={show.filed} />
+          <HomeStage head={show.head} exhibits={show.exhibits} brief={show.brief} filedAt={show.filed} ruling={show.ruling} />
         ) : (
           <div className={`sheet ${styles.noShow}`}>
             <p>No case has been argued on this desk yet.</p>

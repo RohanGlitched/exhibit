@@ -51,7 +51,7 @@ export interface Scenario {
   title: string; // what the visitor picks
   blurb: string;
   reason: DisputeReason;
-  reasonCode: string; // card-network reason code for the sandbox chargeback (Visa 13.1/C2, Mastercard 4855/4837/4834 map to these reasons)
+  reasonCode: string; // the code PayPal's sandbox chargeback simulator takes (13.1, C2, 4855, 4837, 4834); /new shows the network's own code
   cardBrand: "VISA" | "MASTERCARD" | "AMEX";
   buyer: Buyer; // the customer on this case
   buyerIndex: number;

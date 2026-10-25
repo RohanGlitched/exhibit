@@ -19,7 +19,7 @@ export interface CaseFact {
   stageKey: Stage;
   outcome: "Won" | "Lost" | "Refunded" | "Pending";
   call: "Fight" | "Refund" | "Not argued";
-  engine: "GPT-5.6" | "Rules engine" | "Read back from PayPal" | "Not argued";
+  engine: "Model" | "Rules engine" | "Read back from PayPal" | "Not argued";
   odds: number | null; // the seller's chance from the brief's tally
   sentences: number;
   struck: number;
@@ -69,7 +69,7 @@ function fact(r: DeskRow, sentences: number, struck: number, evidence: string | 
     stageKey: r.where,
     outcome,
     call: r.recommendation === "fight" ? "Fight" : r.recommendation === "accept" ? "Refund" : "Not argued",
-    engine: r.engine === "model" ? "GPT-5.6" : r.engine === "rules" ? "Rules engine" : r.engine === "paypal" || (r.source === "paypal" && r.filed) ? "Read back from PayPal" : "Not argued",
+    engine: r.engine === "model" ? "Model" : r.engine === "rules" ? "Rules engine" : r.engine === "paypal" || (r.source === "paypal" && r.filed) ? "Read back from PayPal" : "Not argued",
     odds: r.odds,
     sentences,
     struck,
@@ -115,7 +115,7 @@ export const analytics = unstable_cache(
       return brief.sentences.map((s) => ({
         caseId: r.id,
         story: r.story?.replace(/[“”]/g, "") ?? "Other",
-        engine: brief.engine === "model" ? "GPT-5.6" : brief.engine === "rules" ? "Rules engine" : "Read back from PayPal",
+        engine: brief.engine === "model" ? "Model" : brief.engine === "rules" ? "Rules engine" : "Read back from PayPal",
         kept: s.kept ? ("Kept" as const) : ("Struck" as const),
         why: s.kept ? "" : (s.why ?? ""),
         cites: s.cites.length,

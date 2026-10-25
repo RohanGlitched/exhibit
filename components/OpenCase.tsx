@@ -13,6 +13,7 @@ interface Option {
   buyer: string;
   network: string;
   code: string;
+  sandboxCode?: string;
 }
 
 const STEPS = ["Taking the buyer's card payment", "Adding the tracking number", "Filing the chargeback", "Putting the case on your desk"];
@@ -49,7 +50,7 @@ export default function OpenCase({ cases }: { cases: Option[] }) {
           <li key={c.id} className={`sheet ${styles.item}`} data-busy={busy === c.id}>
             <div className={styles.meta}>
               <span className={styles.reason}>{c.reason}</span>
-              <span className={styles.notice}>
+              <span className={styles.notice} title={c.sandboxCode && c.sandboxCode !== c.code ? `PayPal's sandbox simulator files it as reason code ${c.sandboxCode}` : undefined}>
                 {c.network} {c.code}
               </span>
               <span>{c.amount}</span>

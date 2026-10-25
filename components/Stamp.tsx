@@ -6,6 +6,8 @@ import styles from "./stamp.module.css";
  */
 export default function Stamp({ word, line, tone = "due", animate = true, className = "" }: { word: string; line: string; tone?: "due" | "won" | "ink"; animate?: boolean; className?: string }) {
   const id = `ink-${word.toLowerCase().replace(/\W/g, "")}`;
+  // Long words ("REFUNDED") are squeezed to the frame instead of running off it.
+  const fit = word.length > 6 ? { textLength: 252, lengthAdjust: "spacingAndGlyphs" as const } : {};
   return (
     <div className={`${styles.stamp} ${animate ? styles.animate : ""} ${className}`} data-tone={tone} role="img" aria-label={`${word}, ${line}`}>
       <svg viewBox="0 0 300 120" width="100%" height="100%" aria-hidden="true">
@@ -21,7 +23,7 @@ export default function Stamp({ word, line, tone = "due", animate = true, classN
         <g filter={`url(#${id})`} fill="none" stroke="currentColor">
           <rect x="6" y="6" width="288" height="108" rx="10" strokeWidth="5" />
           <rect x="15" y="15" width="270" height="90" rx="6" strokeWidth="1.6" />
-          <text x="150" y="72" textAnchor="middle" fill="currentColor" stroke="none" fontSize="50" fontWeight="800" letterSpacing="6" fontFamily="var(--font-sans), sans-serif">
+          <text x="150" y="72" textAnchor="middle" fill="currentColor" stroke="none" fontSize="50" fontWeight="800" letterSpacing={word.length > 6 ? 2 : 6} fontFamily="var(--font-sans), sans-serif" {...fit}>
             {word}
           </text>
           <text x="150" y="95" textAnchor="middle" fill="currentColor" stroke="none" fontSize="13.5" fontWeight="700" letterSpacing="2.4" fontFamily="var(--font-sans), sans-serif">

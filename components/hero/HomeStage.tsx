@@ -13,6 +13,7 @@ interface Props {
   exhibits: Exhibit[];
   brief: Brief;
   filedAt: string | null;
+  ruling?: { where: "won" | "lost"; at: string | null } | null;
 }
 
 const PHASES = [
@@ -24,7 +25,7 @@ const PHASES = [
 ];
 
 /** The landing's stage: a real case argued on a dark desk, with the steps lighting up beside it. */
-export default function HomeStage({ head, exhibits, brief, filedAt }: Props) {
+export default function HomeStage({ head, exhibits, brief, filedAt, ruling }: Props) {
   const [phase, setPhase] = useState(-1);
   const kept = brief.sentences.filter((s) => s.kept).length;
   return (
@@ -53,14 +54,15 @@ export default function HomeStage({ head, exhibits, brief, filedAt }: Props) {
         <p className={styles.facts}>
           {exhibits.length} exhibits, {kept} sentences, {brief.sentences.length - kept} struck.{" "}
           {brief.engine === "model" ? `Argued by ${brief.model}` : "Argued by the rules engine"}
-          {filedAt ? `, filed ${day(filedAt)}.` : "."}
+          {filedAt ? `, filed ${day(filedAt)}` : ""}
+          {ruling?.where === "won" ? `; PayPal ruled for the seller${ruling.at ? ` on ${day(ruling.at)}` : ""}.` : "."}
         </p>
         <Link href={`/case/${head.id}`} className={styles.open}>
           Open this case
         </Link>
       </div>
       <div className={styles.desk}>
-        <CaseFile head={head} exhibits={exhibits} brief={brief} filedAt={filedAt} onPhase={setPhase} />
+        <CaseFile head={head} exhibits={exhibits} brief={brief} filedAt={filedAt} ruling={ruling} onPhase={setPhase} />
       </div>
       <div className={styles.narrow}>
         <HeroReplay head={head} exhibits={exhibits} brief={brief} />

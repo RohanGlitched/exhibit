@@ -107,14 +107,21 @@ export function stageOf(d: Resolvable, filings: Pick<Filing, "action">[], now = 
   }
 }
 
+/**
+ * The sandbox rules only when asked, but it also closes filed cases by itself. When nobody asked, say so: no
+ * reviewer read anything, so the outcome says nothing about the filing.
+ */
+const byItself = (filings: Pick<Filing, "action">[]) =>
+  filings.some((f) => f.action === "evidence") && !filings.some((f) => f.action === "ruling") ? " (the sandbox closed it by itself; nobody asked it to rule)" : "";
+
 /** One line on how the case ended or where it is, for the case page and the desk. */
 export function stageLine(stage: Stage, d: Resolvable & Pick<DisputeSummary, "dispute_amount">, filings: Pick<Filing, "action">[]): string {
   const amount = usd(d.dispute_amount.value);
   switch (stage) {
     case "won":
-      return `Won: the seller keeps ${amount}`;
+      return `Won: the seller keeps ${amount}${byItself(filings)}`;
     case "lost":
-      return filings.length ? `Lost: ${amount} returned to the buyer` : `Lost: no response before the deadline, ${amount} returned to the buyer`;
+      return filings.length ? `Lost: ${amount} returned to the buyer${byItself(filings)}` : `Lost: no response before the deadline, ${amount} returned to the buyer`;
     case "refunded":
       return d.status === "RESOLVED" ? `Refunded: the seller accepted, ${amount} back to the buyer` : `Refund accepted; PayPal is closing the case`;
     case "filed":

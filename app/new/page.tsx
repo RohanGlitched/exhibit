@@ -7,6 +7,9 @@ import styles from "./new.module.css";
 export const metadata: Metadata = { title: "Open a sandbox case" };
 
 export default function NewCase() {
+  // The card network's own name for each code. PayPal's sandbox chargeback simulator takes a few codes of its
+  // own (C2 for "not as described", the retired 4855 for "not received"); the notice shows the network's.
+  const NETWORK_CODE: Record<string, string> = { C2: "13.3", "4855": "4853" };
   const cases = SCENARIOS.map((s) => {
     const total = s.items.reduce((t, i) => t + Number(i.price) * i.quantity, 0) + Number(s.shipping);
     return {
@@ -17,7 +20,8 @@ export default function NewCase() {
       amount: usd(total),
       buyer: s.buyer.name.split(" ")[0],
       network: s.cardBrand === "VISA" ? "Visa" : s.cardBrand === "MASTERCARD" ? "Mastercard" : "Amex",
-      code: s.reasonCode,
+      code: NETWORK_CODE[s.reasonCode] ?? s.reasonCode,
+      sandboxCode: s.reasonCode,
     };
   });
   return (
