@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SAVED_THREAD } from "@/components/studio/saved";
 import StudioLoader from "@/components/studio/StudioLoader";
 import { day } from "@/lib/format";
 import styles from "../desk.module.css";
@@ -89,7 +90,8 @@ export default function Analytics() {
         <h2 id="made">How the report is made</h2>
         <p className={made.madeLede}>
           The report runs on AG Studio, embedded in Exhibit. Switch to <b>Edit with the analyst</b> to move widgets, change what they show, add Exhibit&apos;s
-          own from the widget menu, or ask for one in words. The analyst opens on a saved conversation in which it built a widget on the Money page.
+          own from the widget menu, or ask for one in words.
+          {SAVED_THREAD ? " The analyst opens on a saved conversation in which it built a widget on the Money page." : ""}
         </p>
         <ol className={made.notes}>
           {NOTES.map((n) => (

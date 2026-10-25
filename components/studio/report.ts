@@ -241,7 +241,8 @@ function stacked(page: Page): Page {
     }
     // The ladder keeps the height it was sized to; anything else is capped so one widget isn't a whole screen.
     // On a phone the ladder's lines wrap, so it gets a few rows more than on a desktop.
-    const h = id === "ladder" ? Math.max(16, l.ySpan + 5) : Math.max(16, Math.min(l.ySpan, 26));
+    // A short strip (the call filter) stays short, with a row for its buttons to wrap.
+    const h = id === "ladder" ? Math.max(16, l.ySpan + 5) : l.ySpan <= 9 ? l.ySpan + 1 : Math.max(16, Math.min(l.ySpan, 26));
     next[id] = at(0, y, 24, h);
     y += h;
   }

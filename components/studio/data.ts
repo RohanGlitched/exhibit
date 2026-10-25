@@ -94,7 +94,7 @@ const CASE_FIELDS: Spec[] = [
   ["order", "Queue order", "integerFormat", "0 for the seller's live moves, 1 for missed deadlines, 2 with PayPal, 3 decided: sort by it to put live work first.", { hide: true }],
   [
     "queue",
-    "Where it stands",
+    "Queue",
     "textFormat",
     "Where the case stands, prefixed with its queue order so a sort puts live work first (\"0 Your move\", \"1 Missed\", \"2 Filed\", \"3 Won\"). Grids print it without the number.",
   ],

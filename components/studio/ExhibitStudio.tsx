@@ -117,13 +117,14 @@ function Report({ payload, read }: { payload: AnalyticsPayload; read: () => Anal
     a.setState({ ...a.getState(), selectedPageId: id });
   };
 
-  // Editing opens with the analyst's panel out, since that is what the switch promises.
+  // Editing opens with the analyst's panel out, since that is what the switch promises, and Studio's compose
+  // and data panels folded so the canvas keeps its width; both open from their rails.
   const edit = () => {
     setMode("edit");
     const a = api.current;
     if (!a) return;
     const s = a.getState();
-    a.setState({ ...s, panels: { ...s.panels, ai: { ...s.panels?.ai, collapsed: false } } });
+    a.setState({ ...s, panels: { ...s.panels, ai: { ...s.panels?.ai, collapsed: false }, edit: { collapsed: true }, data: { collapsed: true } } });
   };
 
   const decided = payload.cases.filter((c) => c.outcome !== "Pending").length;
@@ -163,6 +164,8 @@ function Report({ payload, read }: { payload: AnalyticsPayload; read: () => Anal
             localeText={LOCALE}
             onApiReady={(e) => {
               api.current = e.api as unknown as AgStudioApi<ExhibitRegistry>;
+              // Development only: lets a recording script read the report back after an analyst run.
+              if (process.env.NODE_ENV !== "production") (window as unknown as { __exhibitState?: () => unknown }).__exhibitState = () => api.current?.getState();
             }}
             onStateUpdated={(e) => {
               setPage(e.state.selectedPageId);
