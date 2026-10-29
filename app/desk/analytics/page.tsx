@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SAVED_THREAD } from "@/components/studio/saved";
+import { SAVED_RECORDED, SAVED_THREAD } from "@/components/studio/saved";
 import StudioLoader from "@/components/studio/StudioLoader";
 import { day } from "@/lib/format";
 import styles from "../desk.module.css";
@@ -91,7 +91,9 @@ export default function Analytics() {
         <p className={made.madeLede}>
           The report runs on AG Studio, embedded in Exhibit. Switch to <b>Edit with the analyst</b> to move widgets, change what they show, add Exhibit&apos;s
           own from the widget menu, or ask for one in words.
-          {SAVED_THREAD ? " The analyst opens on a saved conversation in which it built a widget on the Money page." : ""}
+          {SAVED_THREAD
+            ? ` The analyst opens on a conversation recorded on ${SAVED_RECORDED}, saved as it ran: asked for a chart of disputed money by who decided, it built the "Disputed money by who decided" chart at the foot of the Money page. Opening it replays the record; it calls no model.`
+            : ""}
         </p>
         <ol className={made.notes}>
           {NOTES.map((n) => (

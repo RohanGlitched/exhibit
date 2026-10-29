@@ -184,9 +184,12 @@ function money(): Page {
       widget: { "who-decided": [{ field: field("cases.decided"), model: { operator: "notEqual", value: "Not decided" } }] },
     },
   };
-  // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it.
+  // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it, as it built it.
+  // The one thing the page adds is the legend the other charts here have, so its three series can be told apart.
   if (SAVED_WIDGET) {
-    page.widgets![SAVED_WIDGET.id] = SAVED_WIDGET.widget as never;
+    const w = SAVED_WIDGET.widget as { format?: { style?: Record<string, unknown> } };
+    const withLegend = { ...w, format: { ...w.format, style: { ...w.format?.style, theme: { common: { legend: { enabled: true } } } } } };
+    page.widgets![SAVED_WIDGET.id] = withLegend as never;
     page.widgetLayout![SAVED_WIDGET.id] = SAVED_WIDGET.layout;
   }
   return page;
