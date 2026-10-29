@@ -108,7 +108,7 @@ const CASE_FIELDS: Spec[] = [
   ],
   ["call", "Exhibit's call", "textFormat", "Fight (file evidence), Refund (accept the claim), or Not argued yet."],
   ["engine", "Argued by", "textFormat", "Who wrote the brief: the model, the rules engine, or read back from what PayPal holds as filed."],
-  ["odds", "Odds", "integerFormat", "Evidence balance: how much of the brief's tally favours the seller, in percent. Not a promise of winning.", { formatOptions: { format: pct } }],
+  ["odds", "Evidence balance", "integerFormat", "How much of the brief's tally favours the seller, in percent. Not a chance of winning.", { formatOptions: { format: pct } }],
   ["sentences", "Sentences", "integerFormat", "Sentences in the brief."],
   ["struck", "Struck", "integerFormat", "Sentences the checker struck from the brief."],
   ["evidenceType", "What was filed", "textFormat", "The evidence filed with PayPal, or Nothing filed."],

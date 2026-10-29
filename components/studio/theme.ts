@@ -1,4 +1,5 @@
 import { studioTheme } from "ag-studio";
+import { PALETTE } from "./palette";
 
 /**
  * AG Studio in Exhibit's paperwork: the canvas is the blue backing sheet filings are stapled to, every
@@ -21,9 +22,9 @@ const line = (color: string) => ({ width: 1, color });
 
 const sans = "var(--font-sans), 'Public Sans', system-ui, sans-serif";
 
-// Series colours in the order a chart hands them out. The report orders its series to match: at stake or kept
-// sentences in the seller's blue, lost or struck in due red, won in green, refunded in plain ink.
-const PALETTE = [respondent, "#d3242c", "#17845a", ink, "#f3cf3a", inkFaint, "#1d4bc4", "#c9a400", "#7fa0f0", "#a9b4c6"];
+// Series colours in the order a chart hands them out. The report orders its money series to match (report.ts
+// MONEY_SERIES): at stake or kept sentences in the seller's blue, lost or struck in due red, kept (won) in green,
+// refunded in plain ink. The saved analyst widget is put in the same order on the page.
 const palette = Object.fromEntries(
   PALETTE.flatMap((color, i) => [
     [`chartPaletteFills${i + 1}Color`, color],

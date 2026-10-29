@@ -115,7 +115,9 @@ function money(): Page {
   const page: Page = {
     id: "money",
     widgets: {
-      "kpi-kept": kpi("Kept by fighting", sum("cases.kept"), "Won, whoever decided: see below"),
+      // Kept by fighting, split by who decided: a ruling at Exhibit's request, or the sandbox closing it on its own.
+      "kpi-kept-asked": kpi("Kept, ruled on request", sum("cases.keptAsked"), "Ruled for the seller when asked"),
+      "kpi-kept-sandbox": kpi("Kept, sandbox closed it", sum("cases.keptByItself"), "Closed on its own, unasked"),
       "kpi-refunded": kpi("Refunded", sum("cases.refunded"), "Claims accepted"),
       "kpi-lost": kpi("Lost", sum("cases.lostAmount"), "Fought and lost, or late"),
       "kpi-stake": kpi("Still at stake", sum("cases.atStake"), "Not decided yet"),
@@ -138,7 +140,7 @@ function money(): Page {
         type: "column-chart-stacked",
         dataMapping: {
           categoryKey: [field("cases.reason")],
-          valueKey: [sum("cases.atStake"), sum("cases.lostAmount"), sum("cases.kept"), sum("cases.refunded")],
+          valueKey: MONEY_SERIES.map((id) => sum(id)),
         },
         format: {
           ...titled("Disputed money by reason", "Still at stake, lost, kept by fighting, refunded"),
@@ -165,13 +167,14 @@ function money(): Page {
         format: { ...titled("What the seller filed with PayPal", "Cases by the evidence on file"), crossFilter: "highlight", style: roomForLabels },
       },
     },
-    // Four money figures at six tracks each, so no figure is cut to "…"; the call filter heads the ledger column,
-    // with room for its buttons on one line and no scrollbar.
+    // Five money figures: the two kinds of kept at six tracks each, the rest at four, so no figure is cut to "…";
+    // the call filter heads the ledger column, with room for its buttons on one line and no scrollbar.
     widgetLayout: {
-      "kpi-kept": at(0, 0, 6, 7),
-      "kpi-refunded": at(6, 0, 6, 7),
-      "kpi-lost": at(12, 0, 6, 7),
-      "kpi-stake": at(18, 0, 6, 7),
+      "kpi-kept-asked": at(0, 0, 6, 7),
+      "kpi-kept-sandbox": at(6, 0, 6, 7),
+      "kpi-refunded": at(12, 0, 4, 7),
+      "kpi-lost": at(16, 0, 4, 7),
+      "kpi-stake": at(20, 0, 4, 7),
       "call-filter": at(0, 7, 9, 10),
       ledger: at(0, 17, 9, 19),
       "outcome-by-reason": at(9, 7, 15, 29),
@@ -184,15 +187,31 @@ function money(): Page {
       widget: { "who-decided": [{ field: field("cases.decided"), model: { operator: "notEqual", value: "Not decided" } }] },
     },
   };
-  // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it, as it built it.
-  // The one thing the page adds is the legend the other charts here have, so its three series can be told apart.
+  // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it. Two things were set
+  // after recording, and the page says so: the legend the other charts here have, and its series in the palette's
+  // order (a chart hands colours out by series order, so the recorded kept/refunded/lost came out blue/red/green).
   if (SAVED_WIDGET) {
-    const w = SAVED_WIDGET.widget as { format?: { style?: Record<string, unknown> } };
-    const withLegend = { ...w, format: { ...w.format, style: { ...w.format?.style, theme: { common: { legend: { enabled: true } } } } } };
-    page.widgets![SAVED_WIDGET.id] = withLegend as never;
+    const w = SAVED_WIDGET.widget as { format?: { style?: Record<string, unknown> }; dataMapping?: Record<string, unknown> };
+    page.widgets![SAVED_WIDGET.id] = inPaletteOrder(w) as never;
     page.widgetLayout![SAVED_WIDGET.id] = SAVED_WIDGET.layout;
   }
   return page;
+}
+
+/**
+ * Money series in the order the theme's palette hands out its inks (./theme.ts): still at stake in the seller's
+ * blue, lost in due red, kept in won green, refunded in plain ink. The saved widget's kept, refunded and lost go
+ * in this order (with the still-at-stake series added in front, so the cases not decided yet show too), and the
+ * page's other money chart uses the same order.
+ */
+export const MONEY_SERIES = ["cases.atStake", "cases.lostAmount", "cases.kept", "cases.refunded"] as const;
+
+export function inPaletteOrder<W extends { format?: { style?: Record<string, unknown> }; dataMapping?: Record<string, unknown> }>(w: W): W {
+  return {
+    ...w,
+    dataMapping: { ...w.dataMapping, valueKey: MONEY_SERIES.map((id) => sum(id)) },
+    format: { ...w.format, style: { ...w.format?.style, theme: { common: { legend: { enabled: true } } } } },
+  };
 }
 
 const checker = (): Page => ({

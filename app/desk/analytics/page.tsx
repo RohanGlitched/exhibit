@@ -43,7 +43,8 @@ const NOTES = [
     body: (
       <>
         Studio&apos;s theme sets the blue backing sheet, white widgets ruled in hairlines, the site&apos;s type, and a chart palette in Exhibit&apos;s inks: blue
-        for money at stake, red for lost or struck, green only for a win. Grid widgets print case ids as red Bates numbers, and the pages are binder tabs.
+        for money at stake, red for lost or struck, green only for a win, plain ink for a refund. Grid widgets print case ids as red Bates numbers, and the
+        pages are binder tabs.
       </>
     ),
   },
@@ -92,7 +93,7 @@ export default function Analytics() {
           The report runs on AG Studio, embedded in Exhibit. Switch to <b>Edit with the analyst</b> to move widgets, change what they show, add Exhibit&apos;s
           own from the widget menu, or ask for one in words.
           {SAVED_THREAD
-            ? ` The analyst opens on a conversation recorded on ${SAVED_RECORDED}, saved as it ran: asked for a chart of disputed money by who decided, it built the "Disputed money by who decided" chart at the foot of the Money page. Opening it replays the record; it calls no model.`
+            ? ` The analyst opens on a conversation recorded on ${SAVED_RECORDED}, saved as it ran: asked for a chart of disputed money by who decided, it built the "Disputed money by who decided" chart at the foot of the Money page. Opening it replays the record; it calls no model. Two things on that chart were set after recording: a legend, and its colours. As recorded, its kept, refunded and lost series came out blue, red and green; the page puts them in the palette's order, with the money still at stake added in front, so lost is red, kept green and refunded plain ink.`
             : ""}
         </p>
         <ol className={made.notes}>
