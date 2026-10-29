@@ -13,6 +13,7 @@ import { argueBlocked } from "./guard";
 import { briefPdf } from "./pdf";
 import { repairBrief } from "./repair";
 import { rulingRequest } from "./hearing";
+import { withHearing } from "./hearing-log";
 import type { ArgueEvent, Brief, CaseRecord, Exhibit, Filing } from "./types";
 
 export interface CaseContext {
@@ -230,7 +231,8 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
       summary,
       detail: `Asked the sandbox to rule ${outcome === "SELLER_FAVOR" ? "for the seller" : "for the buyer"}${by === "autopilot" ? ", by the autopilot under house rule 5" : ""}`,
     };
-    await updateCase(id, (r) => ({ ...r, filings: [...r.filings, f], ...(fresh && hearing.engine === "model" ? { hearing } : {}) }));
+    // The hearing the ruling followed is kept beside the earlier ones (the draft's included), so each stays readable.
+    await updateCase(id, (r) => ({ ...(fresh && hearing.engine === "model" ? withHearing(r, hearing) : r), filings: [...r.filings, f] }));
     return f;
   }
 

@@ -10,6 +10,7 @@ import { openCase } from "./open";
 import { isFiled } from "./guard";
 import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue, type HousePlan } from "./autopilot";
 import { readThroughToolkit } from "../paypal/toolkit";
+import { hearingsOf, latestOn } from "./hearing-log";
 import type { Brief, CaseRecord } from "./types";
 
 /**
@@ -58,7 +59,8 @@ async function planLane(rec: CaseRecord): Promise<string> {
   const status = read.dispute?.status ?? d.status;
   if (status !== "WAITING_FOR_SELLER_RESPONSE") return `${id}: not with the seller yet (${status.toLowerCase()})`;
   if (!rec.brief) return `${id}: ${await argueLane(rec)}`;
-  let hearing = rec.hearing && rec.hearing.source === "draft" ? rec.hearing : null;
+  // Any hearing already held on the draft, even if a later one (on PayPal's copy) is the record's latest.
+  let hearing = latestOn(hearingsOf(rec), "draft");
   let brief = rec.brief;
   if (!hearing) {
     try {

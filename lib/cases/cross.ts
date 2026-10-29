@@ -5,6 +5,7 @@ import { llmReady } from "../llm";
 import { updateCase } from "../store";
 import { filedDocument } from "./derive";
 import { applyHearing, rulesHearing, type ChairExchange, type Hearing } from "./hearing";
+import { hearingsOf, latestOn, withHearing } from "./hearing-log";
 import { filedRecord, pdfLines, type FiledRecord } from "./pdftext";
 import { briefPdf } from "./pdf";
 import { answerVisitor, crossExamine, type HearingInput } from "./review";
@@ -51,8 +52,8 @@ export async function hearingFor(ctx: CaseContext, ip: string): Promise<Hearing>
 /** The hearing the ruling request follows: a saved one held on PayPal's copy after the latest filing, else a new one, else the rules engine. */
 export async function hearingForRuling(ctx: CaseContext, ip: string): Promise<{ hearing: Hearing; fresh: boolean }> {
   const filedAt = ctx.filings.filter((f) => f.action === "evidence").map((f) => f.at).sort().at(-1) ?? "";
-  const saved = ctx.record?.hearing;
-  if (saved && saved.source === "paypal" && saved.at >= filedAt) return { hearing: saved, fresh: false };
+  const saved = latestOn(hearingsOf(ctx.record), "paypal");
+  if (saved && saved.at >= filedAt) return { hearing: saved, fresh: false };
   try {
     return { hearing: await hearingFor(ctx, ip), fresh: true };
   } catch (e) {
@@ -62,14 +63,14 @@ export async function hearingForRuling(ctx: CaseContext, ip: string): Promise<{ 
   }
 }
 
-/** POST /api/cases/[id]/review: cross-examines the case and saves the hearing (and, on a draft, the brief it changed). */
+/** POST /api/cases/[id]/review: cross-examines the case and saves the hearing beside the earlier ones (and, on a draft, the brief it changed). */
 export async function reviewCase(id: string, ip: string): Promise<{ hearing: Hearing; brief: Brief | null }> {
   const ctx = await caseContext(id);
   const hearing = await hearingFor(ctx, ip);
   await ensureRecord(ctx);
   const saved = await updateCase(id, (r) => {
     const brief = r.brief ?? ctx.brief ?? undefined;
-    return { ...r, hearing, brief: brief && hearing.source === "draft" ? applyHearing(brief, hearing) : brief };
+    return { ...withHearing(r, hearing), brief: brief && hearing.source === "draft" ? applyHearing(brief, hearing) : brief };
   });
   return { hearing, brief: saved?.brief ?? ctx.brief };
 }

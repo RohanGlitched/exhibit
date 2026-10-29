@@ -42,6 +42,28 @@ export const shortDay = (iso: string | Date) => {
   return `${p.d} ${MONTHS[p.m - 1]}`;
 };
 
+/**
+ * Real events (a filing, a ruling, a hearing, a webhook, PayPal's deadline) in one labelled zone, UTC, on
+ * every case page: "29 Oct 2026, 20:57 UTC". The shop's own day (above) stays for the store's story inside
+ * the exhibits, where the checker matches dates.
+ */
+export const utcDay = (iso: string | Date) => {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
+
+export const utcShortDay = (iso: string | Date) => {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+};
+
+export const utcClock = (iso: string | Date) => {
+  const d = new Date(iso);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+};
+
+export const utcTime = (iso: string | Date) => `${utcDay(iso)}, ${utcClock(iso)}`;
+
 export const usd = (v: string | number) =>
   `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

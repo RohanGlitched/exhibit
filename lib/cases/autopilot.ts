@@ -9,7 +9,7 @@ import type { Hearing, Side } from "./hearing";
 import type { Brief, Filing } from "./types";
 
 export const HOUSE_RULES = {
-  version: "v1, 30 Oct 2026",
+  version: "v1, 29 Oct 2026",
   /** Refund on its own only below this amount (USD). */
   refundUnder: 150,
   /** File on its own only with at least this long left before PayPal's deadline. */

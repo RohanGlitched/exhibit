@@ -43,7 +43,18 @@ export default function HouseRules({ id, house }: { id: string; house: HouseView
           {view.audit.map((a, i) => (
             <li key={i}>
               <time dateTime={a.at}>{utcStamp(a.at)}</time>
-              <span>{a.text}</span>
+              <span>
+                {a.text}
+                {a.hearing && (
+                  <>
+                    {" "}
+                    <a className={styles.transcript} href={`#${a.hearing}`}>
+                      Read the transcript
+                    </a>
+                  </>
+                )}
+                {a.missing && <em className={styles.missing}> ({a.missing})</em>}
+              </span>
             </li>
           ))}
         </ol>
