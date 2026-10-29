@@ -69,8 +69,9 @@ const add = (t?: { input: number; output: number }, calls = 1) => {
   }
   spent.calls += calls;
 };
-// The most a single step could cost (three calls of about 3,500 tokens in and 1,500 out), so a step never starts past the cap.
-const STEP_MAX = () => (3 * 3500 * PRICE_IN + 3 * 1500 * PRICE_OUT) / 1e6;
+// The most a single step could cost: four calls (objections, answers, rulings, one re-ask) at the run's own cost per
+// call so far, or about 3,500 tokens in and 1,500 out before the first; a step never starts past the cap.
+const STEP_MAX = () => 4 * (spent.calls ? usd() / spent.calls : (3500 * PRICE_IN + 1500 * PRICE_OUT) / 1e6);
 let stopped = "";
 const room = () => {
   if (stopped) return false;
@@ -254,6 +255,9 @@ for (const h of dry || !STEPS.has("careless") ? [] : hearings.filter((x) => x.he
 // The repair step didn't run: its rows come from the file this replaces, with that run's date.
 const repairsAt = STEPS.has("repair") ? null : (before?.repairsAt ?? before?.at ?? null);
 if (!STEPS.has("repair") && before?.repairs) repairs.push(...before.repairs);
+// Nor the careless answerer: its rows too, with their date.
+const carelessAt = STEPS.has("careless") ? null : (before?.carelessAt ?? before?.at ?? null);
+if (!STEPS.has("careless") && before?.careless) careless.push(...before.careless);
 const hs = hearings.map((h) => h.hearing);
 const stats = hearingStats(hs);
 const fights = hearings.filter((h) => h.hearing.mode === "cross");
@@ -296,6 +300,16 @@ const summary = {
   onCard: hs.flatMap((h) => h.exchanges).filter((e) => e.objection.requirement).length,
   fightsWithObjections: fights.filter((h) => h.hearing.exchanges.length > 0).length,
   fightsWithOverruled: fights.filter((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled")).length,
+  // Whose objections they are: the reviewer's own, and those the requirements card adds in code where it left an item alone.
+  reviewerObjections: hs.flatMap((h) => h.exchanges).filter((e) => !e.objection.pressed).length,
+  fightsWithReviewerObjections: fights.filter((h) => h.hearing.exchanges.some((e) => !e.objection.pressed)).length,
+  overruledOnReviewer: hs.flatMap((h) => h.exchanges).filter((e) => e.ruling === "overruled" && !e.objection.pressed).length,
+  // The bounded re-ask, and verdicts still resting on a point the hearing sustained after it.
+  reasked: hs.filter((h) => h.reasked).length,
+  reaskedUnruled: hs.reduce((n, h) => n + (h.reasked?.unruled.length ?? 0), 0),
+  reaskedRests: hs.reduce((n, h) => n + (h.reasked?.rests.length ?? 0), 0),
+  stillUnruled: hs.flatMap((h) => h.exchanges).filter((e) => /didn't rule on it/.test(e.reason)).length,
+  verdictCaveats: hs.filter((h) => h.verdict.caveat).length,
 };
 console.log(summary);
 if (dry) process.exit(0);
@@ -303,21 +317,31 @@ if (dry) process.exit(0);
 const previous = before
   ? {
       at: before.at,
-      instructions: before.previous ? "second version" : "second version (25 Oct 2026)",
-      summary: before.summary,
+      instructions: before.instructions ?? (before.previous ? "second version" : "second version (25 Oct 2026)"),
+      // Whose objections they were, counted from that run's saved hearings where its summary predates the split.
+      summary: {
+        ...before.summary,
+        reviewerObjections: before.summary.reviewerObjections ?? (before.hearings ?? []).flatMap((h: { hearing: Hearing }) => h.hearing.exchanges).filter((e: Hearing["exchanges"][number]) => !e.objection.pressed).length,
+        fightsWithReviewerObjections:
+          before.summary.fightsWithReviewerObjections ?? (before.hearings ?? []).filter((h: { hearing: Hearing }) => h.hearing.mode === "cross" && h.hearing.exchanges.some((e) => !e.objection.pressed)).length,
+      },
       recheck: await recheckSaved(before),
     }
   : null;
+// The versions before that, newest first, so /proof can show each one beside this run.
+const earlier = before ? [...(before.previous ? [{ at: before.previous.at, instructions: before.previous.instructions, summary: before.previous.summary }] : []), ...(before.earlier ?? [])] : [];
 mkdirSync("data", { recursive: true });
 writeFileSync(
   OUT,
   JSON.stringify(
     {
       at: new Date().toISOString(),
-      instructions: "third version: the requirements card drives the reviewer's objections",
+      instructions: "fourth version: the cards read whether the cardholder returned the item and when it was delivered, and the reviewer is asked once more about an unruled answer or a verdict resting on a sustained point",
       ...(repairsAt ? { repairsAt } : {}),
+      ...(carelessAt ? { carelessAt } : {}),
       summary,
       previous,
+      earlier,
       hearings: hearings.map((h) => ({ key: h.key, label: h.label, brief: h.brief, reviewerMatchesLabel: h.reviewerMatchesLabel, hearing: h.hearing })),
       repairs,
       careless,

@@ -8,6 +8,9 @@
 //   npx tsx --conditions=react-server scripts/eval.ts --update heldout --max-usd 0.25
 //       the held-out set alone through the model, once; every other answer is kept from data/proof.json and
 //       re-checked, and the held-out answers it replaces are kept under heldout.previous
+//   npx tsx --conditions=react-server scripts/eval.ts --update main --max-usd 0.52
+//       the 56 main runs alone through the model, once, on today's prompt; the held-out, injection, pressure and
+//       ablation answers are kept and re-checked, and the main answers it replaces are kept under main.previous
 //
 // Credentials: .env.local in the working directory, or node's --env-file=<path> (npx tsx --env-file=<path> ...).
 //
@@ -28,6 +31,8 @@ if (existsSync(".env.local")) {
   }
 }
 delete process.env.BLOB_READ_WRITE_TOKEN;
+// The eval never calls PayPal: the drafter's Agent Toolkit reads are for live cases only.
+process.env.EXHIBIT_NO_TOOLKIT = "1";
 
 const { VARIANTS, PRESSURE, INJECTIONS, evalCase, withAgent, decidedBy } = await import("../lib/eval/variants.ts");
 const { HELDOUT } = await import("../lib/eval/heldout.ts");
@@ -48,10 +53,11 @@ const flag = (name: string) => process.argv.includes(`--${name}`);
 const recheck = flag("recheck") || flag("rescore");
 const rulesOnly = flag("rules-only");
 const smoke = flag("smoke");
-const update = arg("update") === "heldout";
+const updateSet = arg("update") === "heldout" || arg("update") === "main" ? (arg("update") as "heldout" | "main") : null;
+const update = updateSet !== null;
 const useModel = !recheck && !rulesOnly;
 const SEEDS = Math.max(1, Number(arg("seeds") ?? 3));
-const ONLY = new Set(update ? ["heldout"] : (arg("only") ?? "main,pressure,heldout,injection,ablation").split(","));
+const ONLY = new Set(update ? [updateSet!] : (arg("only") ?? "main,pressure,heldout,injection,ablation").split(","));
 const PRICE_IN = Number(arg("price-in") ?? process.env.EVAL_PRICE_IN ?? PRICE.input);
 const PRICE_OUT = Number(arg("price-out") ?? process.env.EVAL_PRICE_OUT ?? PRICE.output);
 const CAP = Number(arg("max-usd") ?? 2.5);
@@ -112,7 +118,7 @@ async function modelBrief(c: Ev, opts: { note?: string; system?: string } = {}):
       return null;
     }
     try {
-      const b = await argueWithModel(c.dispute, exhibitsOf(c), opts);
+      const b = await argueWithModel(c.dispute, exhibitsOf(c), { ...opts, toolkit: false });
       spend.calls++;
       spend.inputTokens += b.tokens?.input ?? 0;
       spend.outputTokens += b.tokens?.output ?? 0;
@@ -231,10 +237,12 @@ let at = new Date().toISOString();
 // The reasoning effort the Azure calls ran at (lib/llm.ts sends AZURE_OPENAI_REASONING, default "low").
 const reasoning = useModel && /Azure/.test(llmModel()) ? process.env.AZURE_OPENAI_REASONING || "low" : null;
 let heldPrevious: unknown = null;
+let mainPrevious: unknown = null;
 
 if (recheck || update) {
   if (!saved) throw new Error(`No ${SAVED} to recheck.`);
-  at = saved.at;
+  // A main re-run dates the file; a held-out re-run or a recheck keeps the main run's date.
+  at = updateSet === "main" ? new Date().toISOString() : saved.at;
   modelName = saved.summary.model;
   const merge = (rows: Row[] | undefined, cases: Ev[]) =>
     cases.map((c) => {
@@ -247,7 +255,44 @@ if (recheck || update) {
   repeats = saved.repeats ?? { main: [], heldout: [], injection: [] };
   ablation = saved.ablation?.runs ?? [];
   pressure = saved.pressure ?? [];
-  if (update) {
+  if (updateSet === "main") {
+    // The main set again, once, on today's prompt; what it replaces is kept beside it, with its date and prompt.
+    const s0 = saved.summary;
+    mainPrevious = {
+      at: saved.main?.at ?? saved.at,
+      reasoning: saved.main?.reasoning ?? saved.reasoning ?? null,
+      prompt: saved.main?.prompt ?? "the 25 Oct prompt, before the requirements card",
+      summary: {
+        runs: s0.modelRuns,
+        correct: s0.modelCorrect,
+        textRuns: s0.textRuns,
+        textCorrect: s0.modelCorrectOnText,
+        recordRuns: s0.recordRuns,
+        recordCorrect: s0.modelCorrectOnRecord,
+        changedRuns: s0.changedRuns,
+        changedCorrect: s0.modelCorrectOnChanged,
+        seedRuns: s0.seedRuns,
+        seedSpread: s0.seedSpread,
+        sentences: s0.sentences,
+        keptSentences: s0.keptSentences,
+        unverifiedSentences: s0.unverifiedSentences,
+        medianMs: s0.medianMs,
+        medianInputTokens: s0.medianInputTokens,
+        medianOutputTokens: s0.medianOutputTokens,
+      },
+      runs: (saved.runs ?? []).map((r: Row) => ({ key: r.key, variant: r.variant, label: r.label, model: r.model ? { call: r.model.call, odds: r.model.odds, correct: r.model.correct } : null })),
+      repeats: saved.repeats?.main ?? [],
+      spend: saved.main?.spend ?? saved.spend ?? null,
+    };
+    console.log(`main only: ${mainCases.length} calls planned, about ${(nextCost() * mainCases.length).toFixed(2)}, cap ${CAP}`);
+    runs = await pool(mainCases, PARALLEL, async (c) => {
+      const r: Row = { ...baseRow(c), model: answer(await modelBrief(c), c.variant.label, true) };
+      log("main", r);
+      return r;
+    });
+    repeats = { ...repeats, main: [] };
+  }
+  if (updateSet === "heldout") {
     // The held-out set again, once, on today's prompt; what it replaces is kept beside it.
     const s0 = saved.summary;
     heldPrevious = {
@@ -657,10 +702,24 @@ writeFileSync(
   JSON.stringify(
     {
       at,
-      ...(recheck || update ? { recheckedAt: new Date().toISOString() } : {}),
-      reasoning: recheck || update ? saved.reasoning : reasoning,
+      ...(recheck || updateSet === "heldout" ? { recheckedAt: new Date().toISOString() } : {}),
+      reasoning: updateSet === "main" ? reasoning : recheck || update ? saved.reasoning : reasoning,
       summary,
       spend: useModel && !update ? runSpend : previousSpend,
+      // The main set's own run, when it was re-run alone (--update main), with the answers it replaced.
+      ...(updateSet === "main"
+        ? {
+            main: {
+              at: new Date().toISOString(),
+              reasoning,
+              prompt: "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
+              spend: runSpend,
+              previous: mainPrevious,
+            },
+          }
+        : saved?.main && (recheck || updateSet === "heldout")
+          ? { main: saved.main }
+          : {}),
       variants: VARIANTS.map((v: Variant) => ({ id: v.id, story: v.story, change: v.change, label: v.label, decidedBy: decidedBy(v) })),
       runs,
       pressure,
@@ -669,15 +728,15 @@ writeFileSync(
         note: "Written and labelled by a separate agent that was not shown Exhibit's prompt or rubric, after the prompt was fixed for this run; not labelled by a person.",
         variants: HELDOUT.map((v) => ({ id: v.id, story: v.story, change: v.change, label: v.label, decidedBy: v.decidedBy, source: v.source, why: v.why })),
         runs: heldRuns,
-        ...(update
+        ...(updateSet === "heldout"
           ? {
               at: new Date().toISOString(),
               reasoning,
-              prompt: "with the requirements card, the AP2 line and the agent-log consent check",
+              prompt: "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
               spend: runSpend,
               previous: heldPrevious,
             }
-          : saved?.heldout?.previous && recheck
+          : saved?.heldout?.previous && (recheck || updateSet === "main")
             ? { at: saved.heldout.at, reasoning: saved.heldout.reasoning, prompt: saved.heldout.prompt, spend: saved.heldout.spend, previous: saved.heldout.previous }
             : {}),
       },
