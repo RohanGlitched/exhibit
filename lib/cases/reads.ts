@@ -7,7 +7,7 @@ import type { Brief } from "./types";
 
 /** The toolkit tools the drafter may call before it writes: reads only, never a write. */
 export const DRAFTER_READS = ["get_dispute", "get_shipment_tracking", "get_refund", "get_order"] as const;
-/** At most this many toolkit reads per brief, over at most two turns, then write_brief is forced. */
+/** At most this many toolkit reads per brief, made in one turn, then write_brief is forced. */
 export const MAX_READS = 3;
 
 /** What a toolkit read answered, without PayPal's HATEOAS links, cut to a size the model reads cheaply. */

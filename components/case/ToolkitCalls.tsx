@@ -31,7 +31,7 @@ export default function ToolkitCalls({ calls }: { calls?: Brief["toolkit"] }) {
         ))}
       </ol>
       <p className={styles.foot}>
-        GPT-5.6 called these itself, at most three, before writing. A read is PayPal&apos;s record, not an exhibit: the brief cites only the lettered exhibits.
+        GPT-5.6 called these itself before writing, at most three in one turn. A read is PayPal&apos;s record, not an exhibit: the brief cites only the lettered exhibits.
       </p>
     </section>
   );

@@ -1,0 +1,80 @@
+{
+ "at": "2026-10-29T22:16:22.674Z",
+ "dispute": "PP-R-GQZ-10195194",
+ "model": "GPT-5.6 on Azure OpenAI",
+ "maxReads": 3,
+ "toolkit": [
+  {
+   "tool": "get_dispute",
+   "args": {
+    "dispute_id": "PP-R-GQZ-10195194"
+   },
+   "ms": 1689,
+   "ok": true,
+   "summary": "RESOLVED, CHARGEBACK, $136.00"
+  },
+  {
+   "tool": "get_shipment_tracking",
+   "args": {
+    "transaction_id": "15A843909K919942D"
+   },
+   "ms": 770,
+   "ok": true,
+   "summary": "USPS 9405511206213825904898 SHIPPED"
+  },
+  {
+   "tool": "get_order",
+   "args": {
+    "id": "3WR49366BG8315049"
+   },
+   "ms": 787,
+   "ok": true,
+   "summary": "COMPLETED, $136.00"
+  }
+ ],
+ "recommendation": "fight",
+ "odds": 97,
+ "headline": "Fight: buyer did not return the bowls after the disclosed colour shift and offered return.",
+ "sentences": [
+  {
+   "text": "The buyer did not return the bowls because return shipping would be about $30.",
+   "cites": [
+    "F"
+   ],
+   "kept": true,
+   "why": null
+  },
+  {
+   "text": "We offered the buyer a return within 30 days for a refund.",
+   "cites": [
+    "F"
+   ],
+   "kept": true,
+   "why": null
+  },
+  {
+   "text": "Our listing disclosed that colour shifts from deep blue to green where the glaze pools.",
+   "cites": [
+    "G"
+   ],
+   "kept": true,
+   "why": null
+  },
+  {
+   "text": "Our checkout policy states that the buyer pays return shipping unless the piece arrived damaged.",
+   "cites": [
+    "H"
+   ],
+   "kept": true,
+   "why": null
+  }
+ ],
+ "ms": 34628,
+ "tokens": {
+  "input": 7698,
+  "output": 592
+ },
+ "priceIn": 1.25,
+ "priceOut": 10,
+ "usd": 0.0155
+}
