@@ -5,6 +5,8 @@ import { useState } from "react";
 import HeroReplay from "@/components/HeroReplay";
 import type { Brief, Exhibit } from "@/lib/cases/types";
 import { day } from "@/lib/format";
+import { heroRulingLine } from "@/lib/showcase-rank";
+import type { DecidedBy } from "@/lib/cases/derive";
 import CaseFile from "./CaseFile";
 import styles from "./stage.module.css";
 
@@ -13,7 +15,7 @@ interface Props {
   exhibits: Exhibit[];
   brief: Brief;
   filedAt: string | null;
-  ruling?: { where: "won" | "lost"; at: string | null } | null;
+  ruling?: { where: "won" | "lost"; at: string | null; by: DecidedBy | null; reviewer: boolean } | null;
 }
 
 const PHASES = [
@@ -55,7 +57,7 @@ export default function HomeStage({ head, exhibits, brief, filedAt, ruling }: Pr
           {exhibits.length} exhibits, {kept} sentences, {brief.sentences.length - kept} struck.{" "}
           {brief.engine === "model" ? `Argued by ${brief.model}` : "Argued by the rules engine"}
           {filedAt ? `, filed ${day(filedAt)}` : ""}
-          {ruling?.where === "won" ? `; PayPal ruled for the seller${ruling.at ? ` on ${day(ruling.at)}` : ""}.` : "."}
+          {ruling ? `. ${heroRulingLine({ where: ruling.where, by: ruling.by, reviewer: ruling.reviewer, day: ruling.at ? day(ruling.at) : null })}` : "."}
         </p>
         <Link href={`/case/${head.id}`} className={styles.open}>
           Open this case

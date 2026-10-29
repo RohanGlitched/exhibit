@@ -28,6 +28,7 @@ interface Props {
   compact?: boolean; // the landing hero: shorter cards
   stamp?: React.ReactNode; // shown on the paper once something is filed
   below?: React.ReactNode; // under the paper, in the same column (the filing panel)
+  decided?: string | null; // once PayPal has decided: the outcome, shown in place of the evidence balance
 }
 
 interface Thread {
@@ -44,7 +45,7 @@ interface Thread {
  * a routed thread running from the sheet's margin to the exhibit card on the rail. Hover either end to see
  * what depends on what. On narrow screens the rail folds away and each citation opens its exhibit inline.
  */
-export default function PinnedBrief({ head, exhibits, sentences, tally, verdict, status, placeholder, compact, stamp, below }: Props) {
+export default function PinnedBrief({ head, exhibits, sentences, tally, verdict, status, placeholder, compact, stamp, below, decided }: Props) {
   const board = useRef<HTMLDivElement>(null);
   const sheet = useRef<HTMLElement>(null);
   const marks = useRef(new Map<string, HTMLElement>());
@@ -210,7 +211,7 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
           {status && <p className={styles.working}>{status}</p>}
         </div>
 
-        {(tally.length > 0 || verdict) && <Tally tally={tally} verdict={verdict} amount={head.amount} />}
+        {(tally.length > 0 || verdict) && <Tally tally={tally} verdict={verdict} amount={head.amount} decided={decided} />}
       </article>
       {below}
       </div>

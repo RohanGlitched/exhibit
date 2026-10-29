@@ -1,7 +1,7 @@
 import type { Dispute, DisputeSummary, Evidence } from "../paypal/disputes";
 import type { Order } from "../paypal/orders";
 import { scenario as findScenario, storyForSku, type Scenario } from "../shop/scenarios";
-import { dayTime, usd } from "../format";
+import { day, dayTime, daysMissed, missedWords, shortDay, usd } from "../format";
 import type { Filing } from "./types";
 
 /**
@@ -77,12 +77,8 @@ export function resolvedFor(d: Resolvable): "won" | "lost" | null {
   return null;
 }
 
-/** Whole days since PayPal's deadline for the seller passed; null while it hasn't. */
-export function daysPastDue(due: string | null | undefined, now = Date.now()): number | null {
-  if (!due) return null;
-  const late = now - new Date(due).getTime();
-  return late > 0 ? Math.floor(late / 86_400_000) : null;
-}
+/** Whole days since PayPal's deadline passed; null while it hasn't. The same count as every other page (lib/format.ts). */
+export const daysPastDue = (due: string | null | undefined, now = Date.now()): number | null => daysMissed(due, now);
 
 /**
  * Where a case stands, from PayPal's status and what was filed on it. A case still waiting on the seller after
@@ -108,20 +104,74 @@ export function stageOf(d: Resolvable, filings: Pick<Filing, "action">[], now = 
 }
 
 /**
- * The sandbox rules only when asked, but it also closes filed cases by itself. When nobody asked, say so: no
- * reviewer read anything, so the outcome says nothing about the filing.
+ * Who decided a case that is over. The sandbox rules only when asked (adjudicate), but it also closes filed
+ * cases by itself, and that outcome says nothing about the filing. So a win or a loss counts as ruled at
+ * Exhibit's request only when Exhibit's own record holds a ruling request made before PayPal resolved the
+ * case; otherwise the sandbox closed it on its own (or, with nothing filed, after the deadline passed).
+ * A refund is the seller's own decision.
  */
-const byItself = (filings: Pick<Filing, "action">[]) =>
-  filings.some((f) => f.action === "evidence") && !filings.some((f) => f.action === "ruling") ? " (the sandbox closed it by itself; nobody asked it to rule)" : "";
+export type DecidedBy = "requested" | "sandbox" | "deadline" | "seller";
+
+export const DECIDED_LABEL: Record<DecidedBy, string> = {
+  requested: "Ruled at Exhibit's request",
+  sandbox: "Closed by the sandbox on its own",
+  deadline: "Closed after the deadline passed",
+  seller: "Refunded by the seller",
+};
+
+type FilingLike = Pick<Filing, "action"> & Partial<Pick<Filing, "at" | "ok" | "summary">>;
+
+/** The ruling request Exhibit made on a case, if it made one before PayPal resolved it. */
+export function rulingRequestOf(filings: FilingLike[], resolvedAt?: string | null): FilingLike | null {
+  const asked = filings.filter((f) => f.action === "ruling" && f.ok !== false && (!resolvedAt || !f.at || f.at <= resolvedAt));
+  return asked.at(-1) ?? null;
+}
+
+export function decidedBy(stage: Stage, filings: FilingLike[], resolvedAt?: string | null): DecidedBy | null {
+  if (stage === "refunded") return "seller";
+  if (stage !== "won" && stage !== "lost") return null;
+  if (rulingRequestOf(filings, resolvedAt)) return "requested";
+  return filings.some((f) => f.action === "evidence") ? "sandbox" : "deadline";
+}
+
+/** Whether a ruling request followed the simulated reviewer's verdict (the line fileAction writes says so). */
+export const followedReviewer = (ruling: FilingLike | null) => Boolean(ruling?.summary && /^Ruled by the simulated reviewer/.test(ruling.summary));
+
+/**
+ * How a decided case ended, saying who decided it, as one line and as a stamp's date line: "Closed for the
+ * seller by the sandbox on its own, 16 Oct 2026" and "SANDBOX CLOSED 16 OCT", or "PayPal ruled for the seller
+ * at Exhibit's request, 16 Oct 2026" and "PAYPAL RULED 16 OCT". Null while the case is undecided.
+ */
+export function outcomeWords(where: Stage, by: DecidedBy | null, at: string | null): { line: string; what: string; stamp: string } | null {
+  if (where !== "won" && where !== "lost") return null;
+  const side = where === "won" ? "seller" : "buyer";
+  const date = at ? ` ${shortDay(at).toUpperCase()}` : "";
+  const out = (what: string, stamp: string, tail = "") => ({ what: what + tail, line: `${what}${at ? `, ${day(at)}` : ""}${tail}`, stamp: stamp + date });
+  if (by === "requested") return out(`PayPal ruled for the ${side} at Exhibit's request`, "PAYPAL RULED");
+  if (by === "deadline") return out("Closed for the buyer after the deadline passed", "CLOSED");
+  return out(`Closed for the ${side} by the sandbox on its own`, "SANDBOX CLOSED", "; nobody asked it to rule");
+}
 
 /** One line on how the case ended or where it is, for the case page and the desk. */
-export function stageLine(stage: Stage, d: Resolvable & Pick<DisputeSummary, "dispute_amount">, filings: Pick<Filing, "action">[]): string {
+export function stageLine(
+  stage: Stage,
+  d: Resolvable & Pick<DisputeSummary, "dispute_amount">,
+  filings: FilingLike[],
+  resolvedAt?: string | null,
+  now = Date.now(),
+): string {
   const amount = usd(d.dispute_amount.value);
+  const by = decidedBy(stage, filings, resolvedAt);
   switch (stage) {
     case "won":
-      return `Won: the seller keeps ${amount}${byItself(filings)}`;
+      return by === "requested"
+        ? `Won: PayPal ruled for the seller at Exhibit's request; the seller keeps ${amount}`
+        : `Won: the sandbox closed it for the seller on its own, nobody asked it to rule; the seller keeps ${amount}`;
     case "lost":
-      return filings.length ? `Lost: ${amount} returned to the buyer${byItself(filings)}` : `Lost: no response before the deadline, ${amount} returned to the buyer`;
+      if (by === "deadline") return `Lost: no response before the deadline, ${amount} returned to the buyer`;
+      return by === "requested"
+        ? `Lost: PayPal ruled for the buyer at Exhibit's request; ${amount} returned to the buyer`
+        : `Lost: the sandbox closed it for the buyer on its own, nobody asked it to rule; ${amount} returned to the buyer`;
     case "refunded":
       return d.status === "RESOLVED" ? `Refunded: the seller accepted, ${amount} back to the buyer` : `Refund accepted; PayPal is closing the case`;
     case "filed":
@@ -131,8 +181,8 @@ export function stageLine(stage: Stage, d: Resolvable & Pick<DisputeSummary, "di
     case "waiting":
       return "Waiting on the seller";
     case "lapsed": {
-      const n = daysPastDue(d.seller_response_due_date) ?? 0;
-      return `Missed: PayPal's deadline passed ${n === 0 ? "today" : n === 1 ? "a day ago" : `${n} days ago`}; the sandbox keeps the case open, but no response can win it now`;
+      const n = daysPastDue(d.seller_response_due_date, now) ?? 1;
+      return `Missed: PayPal's deadline passed ${missedWords(n)}; the sandbox keeps the case open, but no response can win it now`;
     }
     case "reviewing":
       return "PayPal reviewing";

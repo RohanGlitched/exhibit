@@ -45,7 +45,8 @@ test("a deadline that passed is missed, not today", () => {
   assert.equal(isMissed({ ...waiting, due: iso(NOW + 3600_000) }, NOW), false);
   assert.equal(isMissed({ where: "lapsed" as never, status: "WAITING_FOR_SELLER_RESPONSE", due: null }, NOW), true);
   assert.equal(isLive({ ...waiting, due: iso(NOW - 1) }, NOW), false);
-  assert.deepEqual(dueWords(iso(NOW - 9 * DAY - 3600_000), NOW), { text: "Missed 10 d ago", days: -10, missed: true });
+  // Whole days since the deadline (9 days and an hour is 9), the same count the case line and the ladder use.
+  assert.deepEqual(dueWords(iso(NOW - 9 * DAY - 3600_000), NOW), { text: "Missed 9 d ago", days: -9, missed: true });
   assert.equal(dueWords(iso(NOW + 5 * 3600_000), NOW).text, "Today");
   assert.equal(dueWords(iso(NOW + 2.5 * DAY), NOW).text, "3 d");
   assert.equal(daysToDue(iso(NOW - 60_000), NOW), -1);

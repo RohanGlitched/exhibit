@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { getDispute, listDisputes, type Dispute, type DisputeSummary } from "./paypal/disputes";
 import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
-import { mergeFilings, paypalFilings, stageLine, stageOf, type Stage } from "./cases/derive";
+import { decidedBy, mergeFilings, paypalFilings, ruledAt, stageLine, stageOf, type DecidedBy, type Stage } from "./cases/derive";
 import { inPool, untouched } from "./cases/pool";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
 import { oddsFor } from "./cases/verify";
@@ -17,6 +17,8 @@ export interface DeskRow {
   stage: string;
   where: Stage;
   whereLine: string;
+  /** Who decided a case that is over: PayPal at Exhibit's request, the sandbox on its own, the deadline, or the seller's refund. */
+  decidedBy: DecidedBy | null;
   due: string | null;
   opened: string;
   updated: string;
@@ -82,6 +84,8 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
         : undefined;
     const merged = { ...d, ...(full ? { dispute_outcome: full.dispute_outcome, fund_movements: full.fund_movements } : {}) };
     const where = stageOf(merged, filings);
+    // When PayPal resolved it: its adjudication time when the detail was read, else the list's update time.
+    const resolvedAt = d.status === "RESOLVED" ? ((full && ruledAt(full)) ?? d.update_time) : null;
     const last = filings.filter((f) => f.action !== "ruling").at(-1);
     const buyerName = full?.disputed_transactions?.[0]?.buyer?.name;
     const exhibitCase = Boolean(r?.scenarioId || s);
@@ -93,7 +97,8 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       status: d.status,
       stage: d.dispute_life_cycle_stage ?? "",
       where,
-      whereLine: stageLine(where, merged, filings),
+      whereLine: stageLine(where, merged, filings, resolvedAt),
+      decidedBy: decidedBy(where, filings, resolvedAt),
       due: d.seller_response_due_date ?? null,
       opened: d.create_time,
       updated: d.update_time,
@@ -121,6 +126,11 @@ export interface DeskCounts {
   reviewing: number;
   won: number;
   lost: number;
+  /** Won and lost, split by who decided: PayPal at Exhibit's request, or the sandbox on its own. */
+  wonAsked: number;
+  wonByItself: number;
+  lostAsked: number;
+  lostByItself: number;
   refunded: number;
   open: number;
   lapsed: number;
@@ -131,11 +141,16 @@ export interface DeskCounts {
 export function deskCounts(rows: DeskRow[]): DeskCounts {
   const live = rows.filter((r) => !r.pooled && !r.retired && r.source !== "probe");
   const n = (w: Stage[]) => live.filter((r) => w.includes(r.where)).length;
+  const by = (w: Stage, asked: boolean) => live.filter((r) => r.where === w && (r.decidedBy === "requested") === asked).length;
   return {
     waiting: n(["waiting"]),
     reviewing: n(["filed", "reviewing"]),
     won: n(["won"]),
     lost: n(["lost"]),
+    wonAsked: by("won", true),
+    wonByItself: by("won", false),
+    lostAsked: by("lost", true),
+    lostByItself: by("lost", false),
     refunded: n(["refunded"]),
     open: n(["open"]),
     lapsed: n(["lapsed"]),

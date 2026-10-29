@@ -115,26 +115,36 @@ export default async function Home() {
             <div>
               <dt>Cases argued</dt>
               <dd>{stats.argued}</dd>
+              <p>on the shop&apos;s sandbox account</p>
             </div>
             <div>
               <dt>Sentences checked</dt>
               <dd>{stats.sentences}</dd>
+              <p>in those briefs</p>
             </div>
             <div>
               <dt>Struck before filing</dt>
               <dd>{stats.struck}</dd>
+              <p>by the checker</p>
             </div>
             <div>
-              <dt>Filed with PayPal</dt>
-              <dd>{stats.filed}</dd>
+              <dt>Answered through PayPal</dt>
+              <dd>{stats.filed + stats.refunded}</dd>
+              <p>
+                {stats.filed} filed, {stats.refunded} refunded
+              </p>
             </div>
             <div>
               <dt>Won in the sandbox</dt>
               <dd>{stats.won}</dd>
+              <p>
+                {stats.wonAsked} ruled at Exhibit&apos;s request, {stats.wonByItself} closed by the sandbox on its own
+              </p>
             </div>
             <div>
-              <dt>On the desk now</dt>
+              <dt>Still at stake</dt>
               <dd>{usd(stats.atStake)}</dd>
+              <p>waiting on the seller or PayPal</p>
             </div>
           </dl>
         )}

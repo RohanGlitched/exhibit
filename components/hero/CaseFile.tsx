@@ -3,7 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Stamp from "@/components/Stamp";
 import type { Brief, Exhibit } from "@/lib/cases/types";
-import { day, usd } from "@/lib/format";
+import { day, shortDay, usd } from "@/lib/format";
+import type { DecidedBy } from "@/lib/cases/derive";
 import styles from "./casefile.module.css";
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
   exhibits: Exhibit[];
   brief: Brief;
   filedAt: string | null;
-  ruling?: { where: "won" | "lost"; at: string | null } | null; // what PayPal ruled, once it has
+  ruling?: { where: "won" | "lost"; at: string | null; by: DecidedBy | null; reviewer: boolean } | null; // how PayPal decided it, once it has
   onPhase?: (phase: number) => void; // 0 read, 1 gather, 2 argue, 3 check, 4 file
 }
 
@@ -146,19 +147,32 @@ export default function CaseFile({ head, exhibits, brief, filedAt, ruling, onPha
               ))}
             </div>
             <footer className={`${styles.verdict} ${showTally ? styles.on : ""}`}>
-              <div className={styles.bar}>
-                <span style={{ width: showTally ? `${brief.odds}%` : 0 }} />
-              </div>
+              {!ruling && (
+                <div className={styles.bar} title="Evidence balance: how much of the tally favours the seller, not a chance of winning">
+                  <span style={{ width: showTally ? `${brief.odds}%` : 0 }} />
+                </div>
+              )}
               <p>
                 <b>{brief.recommendation === "offer" && brief.offerAmount ? `Offer ${usd(brief.offerAmount)}` : CALL[brief.recommendation]}</b>
-                <span>{brief.odds}% for the seller</span>
+                <span>
+                  {ruling?.where === "won"
+                    ? ruling.by === "requested"
+                      ? "Won: PayPal ruled at Exhibit's request"
+                      : "Won: the sandbox closed it on its own"
+                    : `Evidence balance ${brief.odds}%`}
+                </span>
               </p>
             </footer>
             <span className={styles.bates}>HC-000001</span>
             {stamped && (
               <div className={styles.stampAt}>
                 {ruling?.where === "won" ? (
-                  <Stamp key={run} word="WON" tone="won" line={`PAYPAL RULED ${day(ruling.at ?? filedAt ?? brief.createdAt).toUpperCase()}`} />
+                  <Stamp
+                    key={run}
+                    word="WON"
+                    tone="won"
+                    line={`${ruling.by === "requested" ? "PAYPAL RULED" : "SANDBOX CLOSED"} ${shortDay(ruling.at ?? filedAt ?? brief.createdAt).toUpperCase()}`}
+                  />
                 ) : (
                   <Stamp
                     key={run}

@@ -48,6 +48,9 @@ export default async function Desk() {
         <div>
           <dt>Won</dt>
           <dd data-tone="won">{c.won}</dd>
+          <p className={styles.split}>
+            {c.wonAsked} ruled at Exhibit&apos;s request, {c.wonByItself} closed by the sandbox on its own
+          </p>
         </div>
         <div>
           <dt>Refunded</dt>
@@ -56,6 +59,9 @@ export default async function Desk() {
         <div>
           <dt>Lost</dt>
           <dd data-tone="lost">{c.lost}</dd>
+          <p className={styles.split}>
+            {c.lostAsked} ruled at Exhibit&apos;s request, {c.lostByItself} closed by the sandbox or the deadline
+          </p>
         </div>
         <div>
           <dt>Soonest deadline</dt>

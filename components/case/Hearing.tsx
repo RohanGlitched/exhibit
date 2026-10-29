@@ -51,6 +51,8 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
   }
 
   const stale = hearing && filed && hearing.source === "draft";
+  // A hearing held after PayPal had already decided the case played no part in the outcome.
+  const afterRuling = Boolean(hearing && view.ruledAt && view.status === "RESOLVED" && hearing.at > view.ruledAt);
   const response = hearing && !stale ? hearing.response : view.brief.sentences.filter((s) => s.kept).map((s) => ({ text: s.text, cites: s.cites }));
   const advisedRefund = !filed && view.brief.recommendation !== "fight";
   const lines = hearing ? Math.max(8, hearing.exchanges.length * 7 + 3) : 6;
@@ -129,8 +131,20 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
               />
               <div>
                 <h3>
-                  {hearing.verdict.by === "rules" ? "Ruled by the rules engine" : hearing.verdict.by === "concession" ? "Conceded on the record" : "Ruled by the simulated reviewer"}
+                  {afterRuling
+                    ? "Heard after PayPal ruled"
+                    : hearing.verdict.by === "rules"
+                      ? "Ruled by the rules engine"
+                      : hearing.verdict.by === "concession"
+                        ? "Conceded on the record"
+                        : "Ruled by the simulated reviewer"}
                 </h3>
+                {afterRuling && (
+                  <p>
+                    PayPal had already closed this case on {dayTime(view.ruledAt!).split(",")[0]}, so this verdict played no part in the outcome. It shows how
+                    the simulated reviewer reads the filing PayPal holds.
+                  </p>
+                )}
                 <p>
                   <strong>For the {hearing.verdict.side}:</strong> {hearing.verdict.reason.replace(/\.$/, "")}.
                 </p>

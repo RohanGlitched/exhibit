@@ -29,7 +29,7 @@ import type { CartMandate, IntentMandate, Signed } from "./agentic/types";
  */
 
 export const SERVER_INSTRUCTIONS = `Exhibit is a dispute desk for PayPal sellers, running on the PayPal sandbox for a demo shop, Halden Ceramics.
-Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the odds from a weighted tally, and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. cross_examine puts the case before a simulated PayPal reviewer that reads only the PDF and objects sentence by sentence; Exhibit answers from the exhibits, the checker strikes answers it can't back, and the reviewer's verdict is what a later sandbox ruling request follows. Pass an objection of your own to take the reviewer's chair. open_case opens a fresh sandbox dispute from one of the stories.
+Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the evidence balance from a weighted tally (how much of it favours the seller, not a chance of winning), and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. cross_examine puts the case before a simulated PayPal reviewer that reads only the PDF and objects sentence by sentence; Exhibit answers from the exhibits, the checker strikes answers it can't back, and the reviewer's verdict is what a later sandbox ruling request follows. Pass an objection of your own to take the reviewer's chair. open_case opens a fresh sandbox dispute from one of the stories.
 PayPal gives a seller ten days to answer a chargeback. Recommend refunding when the records say the seller would lose.
 For buyer agents and agent platforms: preflight_cart checks a cart against a signed intent mandate before anything is signed or paid, and verify_mandate runs Exhibit's full mandate check on a signed intent and cart (and, given a PayPal order id, the order), with who is responsible. Keys are at ${SITE_URL}/.well-known/exhibit-keys.json.`;
 
@@ -65,6 +65,9 @@ const signed = <T extends z.ZodTypeAny>(m: T) =>
 
 const checkLines = (checks: Check[]) => checks.map((c) => `- ${c.ok ? "Pass" : "Fail"}: ${c.label}. ${c.detail}.`);
 
+/** Once PayPal has decided a case, its evidence balance is not reported: the outcome is known. */
+const DECIDED = new Set(["won", "lost", "refunded"]);
+
 const text = (t: string) => ({ content: [{ type: "text" as const, text: t }] });
 const caseLink = (id: string) => `${SITE_URL}/case/${id}`;
 const idArg = z.string().regex(CASE_ID, "A PayPal case id like PP-R-ABC-10190311").describe("The PayPal dispute id, e.g. PP-R-NMS-10190311");
@@ -73,7 +76,7 @@ function briefText(id: string, b: Brief): string {
   const kept = b.sentences.filter((s) => s.kept);
   const struck = b.sentences.filter((s) => !s.kept);
   return [
-    `${id}: ${b.recommendation === "accept" ? "Refund it" : "Fight it"}, ${b.odds}% chance for the seller. ${b.headline}`,
+    `${id}: ${b.recommendation === "accept" ? "Refund it" : "Fight it"}, evidence balance ${b.odds}% for the seller (how much of the tally favours the seller, not a chance of winning). ${b.headline}`,
     `Response (${kept.length} sentences; every figure and name checked against the exhibits each cites):`,
     ...kept.map((s) => `- ${s.text} [${s.cites.join(", ")}]${s.unverified ? " (unverified: nothing in it to check)" : ""}`),
     ...(struck.length ? ["Struck before filing:", ...struck.map((s) => `- ${s.text} (${s.why})`)] : []),
@@ -172,7 +175,7 @@ function register(server: McpServer) {
           `${shown.length} case${shown.length === 1 ? "" : "s"}${stage === "all" ? "" : ` (${stage})`}:`,
           ...shown.slice(0, 40).map(
             (r) =>
-              `${r.id}: ${reasonLabel(r.reason)}, ${usd(r.amount)}${r.buyer ? `, ${r.buyer}` : ""}. ${r.whereLine}.${r.recommendation ? ` Exhibit's call: ${r.recommendation === "accept" ? "refund" : "fight"}${r.odds !== null ? ` (${r.odds}%)` : ""}.` : ""}${r.due && r.where === "waiting" ? ` Respond by ${r.due.slice(0, 10)}.` : ""}`,
+              `${r.id}: ${reasonLabel(r.reason)}, ${usd(r.amount)}${r.buyer ? `, ${r.buyer}` : ""}. ${r.whereLine}.${r.recommendation ? ` Exhibit's call: ${r.recommendation === "accept" ? "refund" : "fight"}${r.odds !== null && !DECIDED.has(r.where) ? ` (evidence balance ${r.odds}%)` : ""}.` : ""}${r.due && r.where === "waiting" ? ` Respond by ${r.due.slice(0, 10)}.` : ""}`,
           ),
         ].join("\n"),
       );
@@ -198,7 +201,9 @@ function register(server: McpServer) {
           ...v.exhibits.map((e) => `[${e.id}] ${e.title} (${e.source}): ${e.facts.map((f) => `${f.label} ${f.value}`).join("; ")}${e.lines?.length ? ` | ${e.lines.join(" | ")}` : ""}`),
           v.filings.length ? "Filed:" : "Nothing filed yet.",
           ...v.filings.map((f) => `- ${f.at}: ${f.summary}${f.source === "paypal" ? " (from PayPal's record)" : ""}`),
-          v.brief ? `Exhibit's call: ${v.brief.recommendation === "accept" ? "refund" : "fight"}, ${v.brief.odds}%. ${v.brief.headline}` : "Not argued yet: call argue_case.",
+          v.brief
+            ? `Exhibit's call: ${v.brief.recommendation === "accept" ? "refund" : "fight"}${DECIDED.has(v.where) ? "" : `, evidence balance ${v.brief.odds}% for the seller`}. ${v.brief.headline}`
+            : "Not argued yet: call argue_case.",
           `Case page: ${caseLink(v.id)}`,
         ]
           .filter(Boolean)
@@ -211,7 +216,7 @@ function register(server: McpServer) {
     "argue_case",
     {
       title: "Argue a case",
-      description: "Exhibit writes the brief for a case: fight or refund, the odds from a weighted tally, and the response to PayPal with every sentence citing the exhibits that prove it. A checker strikes any sentence whose figures or names (amounts, dates, times, ids, ZIPs, carriers, signers) aren't in the exhibits it cites, and marks sentences with nothing to check as unverified. Takes about ten seconds. Saves the brief on the case; files nothing.",
+      description: "Exhibit writes the brief for a case: fight or refund, the evidence balance from a weighted tally, and the response to PayPal with every sentence citing the exhibits that prove it. A checker strikes any sentence whose figures or names (amounts, dates, times, ids, ZIPs, carriers, signers) aren't in the exhibits it cites, and marks sentences with nothing to check as unverified. Takes about ten seconds. Saves the brief on the case; files nothing.",
       inputSchema: z.object({ id: idArg }),
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },

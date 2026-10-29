@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { deskRows, type DeskRow } from "./desk";
 import { listCases } from "./store";
-import { REASONS, day } from "./format";
+import { REASONS, day, daysToDue } from "./format";
 import type { Stage } from "./cases/derive";
 
 /**
@@ -18,6 +18,8 @@ export interface CaseFact {
   stage: string; // "Your move", "Filed", "Won", "Lost", "Refunded", "PayPal reviewing"
   stageKey: Stage;
   outcome: "Won" | "Lost" | "Refunded" | "Pending";
+  /** Who decided a case that is over: PayPal ruling at Exhibit's request, the sandbox closing it on its own, the deadline, or the seller's refund. */
+  decided: "Ruled on request" | "Sandbox closed it" | "Deadline passed" | "Seller refunded" | "Not decided";
   call: "Fight" | "Refund" | "Not argued";
   engine: "Model" | "Rules engine" | "Read back from PayPal" | "Not argued";
   odds: number | null; // the seller's chance from the brief's tally
@@ -31,6 +33,8 @@ export interface CaseFact {
   due: string | null;
   daysLeft: number | null; // days to PayPal's deadline while it's the seller's move; below zero once missed
   kept: number; // money the seller kept (won)
+  keptAsked: number; // kept, ruled at Exhibit's request
+  keptByItself: number; // kept, the sandbox closed it on its own
   refunded: number; // money returned by accepting
   lostAmount: number; // money lost after fighting or not answering
   atStake: number; // still undecided
@@ -50,6 +54,13 @@ const STAGE: Record<Stage, string> = {
   other: "Other",
 };
 
+const DECIDED: Record<string, CaseFact["decided"]> = {
+  requested: "Ruled on request",
+  sandbox: "Sandbox closed it",
+  deadline: "Deadline passed",
+  seller: "Seller refunded",
+};
+
 const evidenceWords = (summary: string | null) => {
   const m = summary?.match(/as (proof of [a-z ]+?|other|item description|return policy)(?: with| and|$|\))/i);
   if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1);
@@ -61,7 +72,8 @@ function fact(r: DeskRow, sentences: number, struck: number, evidence: string | 
   const outcome = OUTCOME[r.where] ?? "Pending";
   // Days to PayPal's deadline while it's the seller's move. Once it passed with no answer (lapsed) the count
   // goes below zero, at least one day, so the deadline ladder lists the case as missed and the grid says when.
-  const toDue = r.due ? Math.ceil((new Date(r.due).getTime() - Date.now()) / 86_400_000) : null;
+  // The same count the desk prints (lib/format.ts daysToDue), so "missed 11 days ago" reads alike everywhere.
+  const toDue = r.due ? daysToDue(r.due) : null;
   const daysLeft = toDue == null ? null : r.where === "waiting" ? toDue : r.where === "lapsed" ? Math.min(-1, toDue) : null;
   return {
     caseId: r.id,
@@ -71,6 +83,8 @@ function fact(r: DeskRow, sentences: number, struck: number, evidence: string | 
     stage: STAGE[r.where],
     stageKey: r.where,
     outcome,
+    // A missed deadline is decided by the clock even while the sandbox keeps the case open.
+    decided: r.decidedBy ? DECIDED[r.decidedBy] : r.where === "lapsed" ? "Deadline passed" : "Not decided",
     call: r.recommendation === "fight" ? "Fight" : r.recommendation === "accept" ? "Refund" : "Not argued",
     engine: r.engine === "model" ? "Model" : r.engine === "rules" ? "Rules engine" : r.engine === "paypal" || (r.source === "paypal" && r.filed) ? "Read back from PayPal" : "Not argued",
     odds: r.odds,
@@ -84,6 +98,8 @@ function fact(r: DeskRow, sentences: number, struck: number, evidence: string | 
     due: r.due,
     daysLeft,
     kept: outcome === "Won" ? r.amount : 0,
+    keptAsked: outcome === "Won" && r.decidedBy === "requested" ? r.amount : 0,
+    keptByItself: outcome === "Won" && r.decidedBy !== "requested" ? r.amount : 0,
     refunded: outcome === "Refunded" ? r.amount : 0,
     lostAmount: outcome === "Lost" ? r.amount : 0,
     atStake: outcome === "Pending" ? r.amount : 0,
@@ -128,6 +144,6 @@ export const analytics = unstable_cache(
     });
     return { cases, sentences, at: new Date().toISOString() };
   },
-  ["analytics-v1"],
+  ["analytics-v2"],
   { revalidate: 60 },
 );

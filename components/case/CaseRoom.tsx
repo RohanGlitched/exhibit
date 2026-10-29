@@ -9,7 +9,7 @@ import Hearing from "./Hearing";
 import AgentTranscript from "./AgentTranscript";
 import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
-import { STATUSES, dayTime, daysUntil, reasonLabel, usd } from "@/lib/format";
+import { STATUSES, dayTime, daysToDue, reasonLabel, usd } from "@/lib/format";
 import styles from "./case.module.css";
 
 const STAMP: Partial<Record<CaseView["where"], { word: string; tone: "due" | "won" | "ink" }>> = {
@@ -131,7 +131,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
   }
 
   const amount = usd(view.amount.value);
-  const due = daysUntil(view.due ?? undefined);
+  const due = view.due ? daysToDue(view.due) : null;
   const can = new Set(view.actions);
   // PayPal's record decides: a case is filed when PayPal holds the seller's response, whoever filed it.
   const filed = view.filings.some((f) => f.action === "evidence" || f.action === "accept");
@@ -154,17 +154,19 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                     {f.summary}.{f.source === "paypal" && <em className={styles.source}> From PayPal&apos;s record.</em>}
                   </li>
                 ))}
-                {closed && view.ruledAt && (
+                {closed && view.ruledAt && view.ending && (
                   <li>
                     <span>{dayTime(view.ruledAt)}</span>
-                    PayPal ruled. {view.whereLine}.
+                    {view.ending.what}.
                   </li>
                 )}
               </ol>
               <p className={styles.after}>
                 {closed ? (
                   <>
-                    PayPal shows this case as <strong>resolved</strong>. {view.whereLine}.
+                    PayPal shows this case as <strong>resolved</strong>.
+                    {view.decidedBy === "sandbox" &&
+                      " The sandbox closes some filed cases by itself, so this outcome says nothing about the filing: no reviewer, real or simulated, decided it."}
                   </>
                 ) : (
                   <>
@@ -264,7 +266,19 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           Analytics
         </Link>
         <span className={styles.status} data-status={view.status}>
-          {closed ? view.whereLine : view.where === "filed" ? "Filed, PayPal reviewing" : view.where === "refunded" ? "Refund accepted" : (STATUSES[view.status] ?? view.status)}
+          {closed
+            ? view.where === "won"
+              ? "Resolved: won"
+              : view.where === "lost"
+                ? "Resolved: lost"
+                : view.where === "refunded"
+                  ? "Resolved: refunded"
+                  : "Resolved"
+            : view.where === "filed"
+              ? "Filed, PayPal reviewing"
+              : view.where === "refunded"
+                ? "Refund accepted"
+                : (STATUSES[view.status] ?? view.status)}
         </span>
         {due !== null && view.status === "WAITING_FOR_SELLER_RESPONSE" && (
           <span className={styles.due} data-soon={due <= 2}>
@@ -300,9 +314,11 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
             <Stamp
               word={STAMP[view.where]?.word ?? "FILED"}
               line={
-                closed && view.ruledAt
-                  ? `PAYPAL RULED ${dayTime(view.ruledAt).split(",")[0].toUpperCase()}`
-                  : `WITH PAYPAL ${dayTime(view.filings[0].at).split(",")[0].toUpperCase()}`
+                closed && view.ending
+                  ? view.ending.stamp
+                  : closed && view.ruledAt
+                    ? `PAYPAL CLOSED ${dayTime(view.ruledAt).split(",")[0].toUpperCase()}`
+                    : `WITH PAYPAL ${dayTime(view.filings[0].at).split(",")[0].toUpperCase()}`
               }
               tone={STAMP[view.where]?.tone ?? "due"}
             />
@@ -337,6 +353,17 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           )
         }
         below={panel}
+        decided={
+          closed
+            ? view.where === "won"
+              ? `won, the seller keeps ${amount}`
+              : view.where === "lost"
+                ? `lost, ${amount} back to the buyer`
+                : view.where === "refunded"
+                  ? `refunded, ${amount} back to the buyer`
+                  : "resolved"
+            : null
+        }
       />
       </div>
 

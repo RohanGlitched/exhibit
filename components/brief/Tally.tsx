@@ -21,8 +21,11 @@ function Weight({ n }: { n: number }) {
   );
 }
 
-/** The two sides of the ledger, then the odds and the call. */
-export default function Tally({ tally, verdict, amount }: { tally: TallyItem[]; verdict: Verdict | null; amount: string }) {
+/**
+ * The two sides of the ledger, then the call and the evidence balance: how much of the tally favours the
+ * seller. It is not a chance of winning, and once PayPal has decided the case the outcome takes its place.
+ */
+export default function Tally({ tally, verdict, amount, decided }: { tally: TallyItem[]; verdict: Verdict | null; amount: string; decided?: string | null }) {
   const seller = tally.filter((t) => t.side === "seller");
   const buyer = tally.filter((t) => t.side === "buyer");
   return (
@@ -57,15 +60,19 @@ export default function Tally({ tally, verdict, amount }: { tally: TallyItem[]; 
       </div>
       {verdict && (
         <div className={styles.verdict} data-rec={verdict.recommendation}>
-          <div className={styles.oddsBar} role="img" aria-label={`Seller's chance ${verdict.odds} percent`}>
-            <span style={{ width: `${verdict.odds}%` }} />
-          </div>
+          {!decided && (
+            <div className={styles.oddsBar} role="img" aria-label={`Evidence balance ${verdict.odds} percent for the seller`}>
+              <span style={{ width: `${verdict.odds}%` }} />
+            </div>
+          )}
           <div className={styles.verdictRow}>
             <p className={styles.call}>
               {verdict.recommendation === "offer" && verdict.offerAmount ? `Offer ${usd(verdict.offerAmount)}` : WORDS[verdict.recommendation]}
-              <span>{verdict.odds}% chance for the seller</span>
+              <span title={decided ? undefined : "How much of the tally above favours the seller. It is not a chance of winning."}>
+                {decided ? `Outcome: ${decided}` : `Evidence balance ${verdict.odds}% for the seller`}
+              </span>
             </p>
-            <p className={styles.stake}>{amount} at stake</p>
+            {!decided && <p className={styles.stake}>{amount} at stake</p>}
           </div>
           <p className={styles.headline}>{verdict.headline}</p>
           <p className={styles.engine}>

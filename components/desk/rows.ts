@@ -1,10 +1,9 @@
 import type { DeskRow } from "@/lib/desk";
+import { daysToDue } from "../../lib/format";
 
 /** How the desk words a row, apart from the grid so it can be tested. No I/O, no React. */
 
 type Clocked = Pick<DeskRow, "where" | "status" | "due">;
-
-const DAY_MS = 86_400_000;
 
 /**
  * Whether PayPal's deadline passed with no answer. The desk's "lapsed" stage says so directly; a case the
@@ -19,15 +18,8 @@ export function isMissed(r: Clocked, now = Date.now()): boolean {
 /** The seller's live moves: waiting on the seller with the deadline still ahead. */
 export const isLive = (r: Clocked, now = Date.now()) => r.where === "waiting" && !isMissed(r, now);
 
-/**
- * Days to the deadline, counted up as the rest of Exhibit counts them (0 when under a day is left), or
- * days since it passed, as a negative number (-1 within a day of passing).
- */
-export function daysToDue(due: string, now = Date.now()): number {
-  const ms = new Date(due).getTime() - now;
-  if (ms < 0) return -Math.ceil(-ms / DAY_MS);
-  return ms < DAY_MS ? 0 : Math.ceil(ms / DAY_MS);
-}
+/** Days to the deadline, or minus the days since it passed: the one count every page uses (lib/format.ts). */
+export { daysToDue };
 
 /** "Today", "3 d", or "Missed 9 d ago": never "today" for a deadline that has already gone. */
 export function dueWords(due: string, now = Date.now()): { text: string; days: number; missed: boolean } {
@@ -52,4 +44,43 @@ export function shortFiled(r: Pick<DeskRow, "filed" | "source" | "where" | "stat
     return pdf ? "Evidence + PDF" : "Evidence";
   }
   return f.length > 28 ? `${f.slice(0, 26)}…` : f;
+}
+
+const CALL: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
+
+/** Who decided a case that is over, in two or three words for a desk cell. */
+export const DECIDED_SHORT: Record<string, string> = {
+  requested: "ruled at Exhibit's request",
+  sandbox: "sandbox closed it on its own",
+  deadline: "closed after the deadline",
+  seller: "seller refunded",
+};
+
+/** The same, shorter, for the grid's call column. */
+export const DECIDED_TINY: Record<string, string> = {
+  requested: "ruled on request",
+  sandbox: "sandbox closed it",
+  deadline: "deadline passed",
+  seller: "seller refunded",
+};
+
+const decided = (r: Pick<DeskRow, "where">) => r.where === "won" || r.where === "lost" || r.where === "refunded";
+
+/**
+ * Exhibit's call on a row. While a case is open the brief's evidence balance (how much of its tally favours the
+ * seller) sits beside the call; once PayPal has decided, the figure goes and the row says who decided instead,
+ * so a balance is never read as the odds of an outcome that is already known.
+ */
+export function callCell(r: Pick<DeskRow, "where" | "recommendation" | "odds" | "decidedBy">): { call: string | null; balance: number | null; note: string | null } {
+  const call = r.recommendation ? (CALL[r.recommendation] ?? r.recommendation) : null;
+  if (decided(r)) return { call, balance: null, note: r.decidedBy && r.where !== "refunded" ? DECIDED_SHORT[r.decidedBy] : null };
+  return { call, balance: r.odds, note: null };
+}
+
+/** The same, in words for a phone card: "Fight, evidence balance 90%" or "Fight; sandbox closed it on its own". */
+export function callWords(r: Pick<DeskRow, "where" | "recommendation" | "odds" | "decidedBy">): string | null {
+  const c = callCell(r);
+  if (!c.call) return c.note ? c.note.charAt(0).toUpperCase() + c.note.slice(1) : null;
+  if (c.balance != null) return `${c.call}, evidence balance ${c.balance}%`;
+  return c.note ? `${c.call}; ${c.note}` : c.call;
 }

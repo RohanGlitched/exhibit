@@ -59,7 +59,8 @@ const strikeRate: AgExpressionFieldDefinition = {
 const winRate: AgExpressionFieldDefinition = {
   id: "keptShare",
   name: "Kept share of decided money",
-  description: "Money kept by fighting, as a share of every dollar PayPal has decided (kept, refunded or lost).",
+  description:
+    "Money kept by fighting, as a share of every dollar PayPal has decided (kept, refunded or lost). Counts wins the sandbox closed on its own as well as rulings at Exhibit's request; the Who decided field splits them.",
   format: "percentageFormat",
   isMeasure: true,
   expression: {
@@ -99,6 +100,12 @@ const CASE_FIELDS: Spec[] = [
     "Where the case stands, prefixed with its queue order so a sort puts live work first (\"0 Your move\", \"1 Missed\", \"2 Filed\", \"3 Won\"). Grids print it without the number.",
   ],
   ["outcome", "Outcome", "textFormat", "Won, Lost, Refunded, or Pending while PayPal hasn't decided."],
+  [
+    "decided",
+    "Who decided",
+    "textFormat",
+    "Who decided a case that is over: Ruled on request (PayPal's sandbox ruled when Exhibit asked it to), Sandbox closed it (the sandbox closed the case on its own; nobody asked it to rule, so the outcome says nothing about the filing), Deadline passed, Seller refunded, or Not decided.",
+  ],
   ["call", "Exhibit's call", "textFormat", "Fight (file evidence), Refund (accept the claim), or Not argued yet."],
   ["engine", "Argued by", "textFormat", "Who wrote the brief: the model, the rules engine, or read back from what PayPal holds as filed."],
   ["odds", "Odds", "integerFormat", "Evidence balance: how much of the brief's tally favours the seller, in percent. Not a promise of winning.", { formatOptions: { format: pct } }],
@@ -111,7 +118,9 @@ const CASE_FIELDS: Spec[] = [
   ["filed", "Filed", "dateFormat", "When the seller's response reached PayPal.", day],
   ["due", "Due", "dateFormat", "PayPal's deadline for the seller's answer.", day],
   ["daysLeft", "Days left", "integerFormat", "Days to PayPal's deadline while it's the seller's move; blank otherwise. Two or fewer is urgent; below zero the deadline passed with no answer (missed)."],
-  ["kept", "Kept", "currencyFormat", "Money the seller kept by fighting and winning.", money],
+  ["kept", "Kept", "currencyFormat", "Money the seller kept by fighting and winning, whoever decided.", money],
+  ["keptAsked", "Kept on request", "currencyFormat", "Money kept where PayPal's sandbox ruled for the seller at Exhibit's request.", money],
+  ["keptByItself", "Kept, sandbox closed it", "currencyFormat", "Money kept where the sandbox closed the case for the seller on its own; nobody asked it to rule.", money],
   ["refunded", "Refunded", "currencyFormat", "Money returned to the buyer by accepting the claim.", money],
   ["lostAmount", "Lost", "currencyFormat", "Money lost after fighting, or by not answering in time.", money],
   ["atStake", "At stake", "currencyFormat", "Money still undecided.", money],

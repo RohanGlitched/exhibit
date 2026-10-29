@@ -57,8 +57,11 @@ test("resolved with a payout but no settlement debit is a win (PayPal paid the b
   });
   assert.equal(resolvedFor(d), "won");
   assert.equal(stageOf(d, [{ action: "evidence" }]), "won");
-  assert.equal(stageLine("won", d, [{ action: "evidence" }, { action: "ruling" }]), "Won: the seller keeps $104.00");
-  assert.equal(stageLine("won", d, [{ action: "evidence" }]), "Won: the seller keeps $104.00 (the sandbox closed it by itself; nobody asked it to rule)");
+  assert.equal(stageLine("won", d, [{ action: "evidence" }, { action: "ruling" }]), "Won: PayPal ruled for the seller at Exhibit's request; the seller keeps $104.00");
+  assert.equal(
+    stageLine("won", d, [{ action: "evidence" }]),
+    "Won: the sandbox closed it for the seller on its own, nobody asked it to rule; the seller keeps $104.00",
+  );
 });
 
 test("a settlement debit from the seller is a loss; an acceptance is a refund, not a loss", () => {

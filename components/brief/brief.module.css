@@ -476,6 +476,20 @@
   color: var(--ink-faint);
 }
 
+/* A phone: the stamp drops below the case line and the buyer's line instead of lying over them. */
+@media (max-width: 430px) {
+  .paperHead {
+    display: flex;
+    flex-direction: column;
+  }
+  .paperHead .stampSlot {
+    position: static;
+    order: 3;
+    align-self: flex-end;
+    margin: 4px -4px -6px 0;
+  }
+}
+
 /* Narrow: no rail, no threads; exhibits open in place. */
 @media (max-width: 1060px) {
   .board {

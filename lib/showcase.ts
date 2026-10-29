@@ -6,7 +6,9 @@ import { caseContext } from "./cases/service";
 import { checkSentence } from "./cases/verify";
 import { exhibitText } from "./cases/exhibits";
 import { reasonLabel, usd } from "./format";
-import { ruledAt } from "./cases/derive";
+import { followedReviewer, ruledAt, rulingRequestOf, type DecidedBy } from "./cases/derive";
+import { showcaseRank } from "./showcase-rank";
+import { untouched } from "./cases/pool";
 import type { Brief, BriefSentence, Exhibit } from "./cases/types";
 
 export interface Showcase {
@@ -15,7 +17,8 @@ export interface Showcase {
   brief: Brief;
   filed: string | null;
   status: string;
-  ruling: { where: "won" | "lost"; at: string | null } | null;
+  /** How PayPal decided the shown case, and who decided it: ruled at Exhibit's request, or closed by the sandbox on its own. */
+  ruling: { where: "won" | "lost"; at: string | null; by: DecidedBy | null; reviewer: boolean } | null;
   strikeDemo: { original: BriefSentence; altered: BriefSentence } | null;
 }
 
@@ -38,22 +41,30 @@ export const showcase = unstable_cache(
   async (): Promise<Showcase | null> => {
     // Where each case stands, as the desk reads it from PayPal: the hero never shows a case PayPal ruled
     // against the seller, or one whose deadline lapsed, and prefers one PayPal ruled for them.
-    const where = new Map((await deskRows(null).catch(() => [])).map((r) => [r.id, r.where]));
+    const rows = await deskRows(null).catch(() => []);
+    const where = new Map(rows.map((r) => [r.id, r.where]));
+    const decided = new Map(rows.map((r) => [r.id, r.decidedBy]));
     const cases = (await listCases()).filter(
       (c) =>
         c.brief &&
         c.scenarioId &&
-        !c.retired &&
-        !(c.autopilot && !c.claimedBy) && // pool stock the webhook argued, not yet anyone's case
+        // Pool stock nobody has touched (waiting for a visitor, or retired unused) isn't on the desk; a case
+        // someone filed is, whoever argued it.
+        !untouched(c) &&
         !["lost", "lapsed"].includes(where.get(c.disputeId) ?? ""),
     );
-    // A won case first, then the "delivered" story, filed, argued by the model, newest first; the checker demo
-    // needs a dated sentence.
+    // A win PayPal ruled at Exhibit's request after a contested hearing first, then any requested win, then a
+    // win the sandbox closed itself, then the "delivered" story, filed, argued by the model (lib/showcase-rank.ts).
+    // The checker demo needs a dated sentence.
     const rank = (c: (typeof cases)[number]) =>
-      (where.get(c.disputeId) === "won" ? 8 : 0) +
-      (c.scenarioId === "delivered" ? 4 : 0) +
-      (c.filings.some((f) => f.action === "evidence") ? 2 : 0) +
-      (c.brief?.engine === "model" ? 1 : 0);
+      showcaseRank({
+        where: where.get(c.disputeId),
+        decidedBy: decided.get(c.disputeId),
+        scenarioId: c.scenarioId,
+        filings: c.filings,
+        engine: c.brief?.engine,
+        hearing: c.hearing,
+      });
     const pick = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt))[0];
     if (!pick?.brief) return null;
     const ctx = await caseContext(pick.disputeId);
@@ -81,11 +92,19 @@ export const showcase = unstable_cache(
       brief,
       filed: ctx.filings.filter((f) => f.action === "evidence").at(-1)?.at ?? null,
       status: ctx.dispute.status,
-      ruling: where.get(pick.disputeId) === "won" ? { where: "won", at: ruledAt(ctx.dispute) } : null,
+      ruling:
+        where.get(pick.disputeId) === "won"
+          ? {
+              where: "won",
+              at: ruledAt(ctx.dispute),
+              by: decided.get(pick.disputeId) ?? null,
+              reviewer: followedReviewer(rulingRequestOf(ctx.filings, ruledAt(ctx.dispute))),
+            }
+          : null,
       strikeDemo,
     };
   },
-  ["showcase-v4"],
+  ["showcase-v5"],
   { revalidate: 300 },
 );
 
@@ -95,18 +114,23 @@ export const showcase = unstable_cache(
  */
 export const deskStats = unstable_cache(
   async () => {
+    // One base for every figure: the shop's cases Exhibit argued (a brief on record). Filings PayPal holds from
+    // before Exhibit kept briefs, and cases nobody argued, are on the desk but not in these numbers.
     const rows = (await deskRows(null)).filter((r) => !r.pooled && !r.retired && r.source !== "probe");
     const argued = rows.filter((r) => r.sentences !== null);
-    const c = deskCounts(rows);
+    const c = deskCounts(argued);
     return {
       argued: argued.length,
       sentences: argued.reduce((n, r) => n + (r.sentences ?? 0), 0),
       struck: argued.reduce((n, r) => n + (r.struck ?? 0), 0),
-      filed: rows.filter((r) => r.filed).length,
+      filed: argued.filter((r) => r.filed && !/^Accepted/.test(r.filed)).length,
+      refunded: argued.filter((r) => r.filed && /^Accepted/.test(r.filed)).length,
       won: c.won,
-      atStake: rows.filter((r) => r.where === "waiting" || r.where === "filed" || r.where === "open").reduce((n, r) => n + r.amount, 0),
+      wonAsked: c.wonAsked,
+      wonByItself: c.wonByItself,
+      atStake: argued.filter((r) => r.where === "waiting" || r.where === "filed" || r.where === "open").reduce((n, r) => n + r.amount, 0),
     };
   },
-  ["desk-stats-v3"],
+  ["desk-stats-v4"],
   { revalidate: 120 },
 );

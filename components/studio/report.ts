@@ -77,7 +77,7 @@ function deadlines(payload: AnalyticsPayload | null): Page {
             field("cases.caseId"),
             field("cases.queue"),
             field("cases.daysLeft"),
-            sum("cases.amount"),
+            field("cases.amount"),
             field("cases.call"),
             field("cases.buyer"),
             field("cases.story"),
@@ -85,7 +85,11 @@ function deadlines(payload: AnalyticsPayload | null): Page {
         },
         // Live moves first, then missed deadlines, then PayPal's queue, then decided cases.
         sort: [{ field: field("cases.queue"), direction: "asc" }],
-        format: titled("Every case on the desk", "Live work first. Click a rung, a stamp or a bar to narrow it; double-click a case to open it"),
+        // One row per case, so the amount is the case's own (no "(sum)" in the header); columns sized to what they hold.
+        format: {
+          ...titled("Every case on the desk", "Live work first. Click a rung, a stamp or a bar to narrow it; double-click a case to open it"),
+          style: { columnAutoSize: true, headerRow: { wrapText: true } },
+        },
       },
     },
     widgetLayout: tall
@@ -111,7 +115,7 @@ function money(): Page {
   const page: Page = {
     id: "money",
     widgets: {
-      "kpi-kept": kpi("Kept by fighting", sum("cases.kept"), "Won with evidence"),
+      "kpi-kept": kpi("Kept by fighting", sum("cases.kept"), "Won, whoever decided: see below"),
       "kpi-refunded": kpi("Refunded", sum("cases.refunded"), "Claims accepted"),
       "kpi-lost": kpi("Lost", sum("cases.lostAmount"), "Fought and lost, or late"),
       "kpi-stake": kpi("Still at stake", sum("cases.atStake"), "Not decided yet"),
@@ -147,23 +151,37 @@ function money(): Page {
         dataMapping: { categoryKey: [field("cases.call")], valueKey: [sum("cases.amount")] },
         format: { ...titled("Money by Exhibit's call"), crossFilter: "highlight", style: roomForLabels },
       },
+      "who-decided": {
+        type: "exhibit-stamps",
+        dataMapping: { category: [field("cases.decided")], value: [sum("cases.n")] },
+        format: {
+          ...titled("Who decided", "Ruled at Exhibit's request, or closed by the sandbox on its own"),
+          style: { unit: "cases", tilt: true },
+        },
+      },
       "filed-evidence": {
         type: "bar-chart-grouped",
         dataMapping: { categoryKey: [field("cases.evidenceType")], valueKey: [sum("cases.n")] },
         format: { ...titled("What the seller filed with PayPal", "Cases by the evidence on file"), crossFilter: "highlight", style: roomForLabels },
       },
     },
-    // Four money figures at six tracks each, so no figure is cut to "…"; the call filter heads the ledger column.
+    // Four money figures at six tracks each, so no figure is cut to "…"; the call filter heads the ledger column,
+    // with room for its buttons on one line and no scrollbar.
     widgetLayout: {
       "kpi-kept": at(0, 0, 6, 7),
       "kpi-refunded": at(6, 0, 6, 7),
       "kpi-lost": at(12, 0, 6, 7),
       "kpi-stake": at(18, 0, 6, 7),
-      "call-filter": at(0, 7, 9, 8),
-      ledger: at(0, 15, 9, 21),
+      "call-filter": at(0, 7, 9, 10),
+      ledger: at(0, 17, 9, 19),
       "outcome-by-reason": at(9, 7, 15, 29),
-      "money-by-call": at(0, 36, 12, 16),
-      "filed-evidence": at(12, 36, 12, 16),
+      "who-decided": at(0, 36, 9, 16),
+      "money-by-call": at(9, 36, 15, 16),
+      "filed-evidence": at(0, 52, 24, 15),
+    },
+    // Who decided counts only the cases that are over.
+    filter: {
+      widget: { "who-decided": [{ field: field("cases.decided"), model: { operator: "notEqual", value: "Not decided" } }] },
     },
   };
   // The widget the analyst built in the saved conversation (./saved.ts) sits where it put it.
@@ -200,7 +218,7 @@ const checker = (): Page => ({
       dataMapping: {
         cols: [field("sentences.caseId"), field("sentences.kept"), field("sentences.why"), sum("sentences.cites"), field("sentences.engine"), field("cases.story")],
       },
-      format: titled("Briefs, sentence by sentence", "Double-click a case to open it"),
+      format: { ...titled("Briefs, sentence by sentence", "Double-click a case to open it"), style: { columnAutoSize: true, headerRow: { wrapText: true } } },
     },
   },
   widgetLayout: {
@@ -242,7 +260,7 @@ function stacked(page: Page): Page {
     // The ladder keeps the height it was sized to; anything else is capped so one widget isn't a whole screen.
     // On a phone the ladder's lines wrap, so it gets a few rows more than on a desktop.
     // A short strip (the call filter) stays short, with a row for its buttons to wrap.
-    const h = id === "ladder" ? Math.max(16, l.ySpan + 5) : l.ySpan <= 9 ? l.ySpan + 1 : Math.max(16, Math.min(l.ySpan, 26));
+    const h = id === "ladder" ? Math.max(16, l.ySpan + 5) : l.ySpan <= 10 ? l.ySpan + 1 : Math.max(16, Math.min(l.ySpan, 26));
     next[id] = at(0, y, 24, h);
     y += h;
   }

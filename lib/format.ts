@@ -78,3 +78,30 @@ export const STATUSES: Record<string, string> = {
 
 /** Whole days (can be negative) until an ISO time. */
 export const daysUntil = (iso?: string, now = Date.now()) => (iso ? Math.ceil((new Date(iso).getTime() - now) / 86_400_000) : null);
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Whole days since PayPal's deadline passed, null while it hasn't. One rounding for every page that says
+ * "missed N days ago" (the desk, its cards, the case line, the analytics ladder and grid): complete days
+ * since the deadline, and at least 1, so a deadline that passed an hour ago is "a day ago", never "today".
+ */
+export function daysMissed(due: string | null | undefined, now = Date.now()): number | null {
+  if (!due) return null;
+  const late = now - new Date(due).getTime();
+  return late > 0 ? Math.max(1, Math.floor(late / DAY_MS)) : null;
+}
+
+/**
+ * Days on PayPal's clock as one signed number: days left while the deadline is ahead (0 when under a day is
+ * left, otherwise counted up), and minus daysMissed once it has passed.
+ */
+export function daysToDue(due: string, now = Date.now()): number {
+  const missed = daysMissed(due, now);
+  if (missed !== null) return -missed;
+  const ms = new Date(due).getTime() - now;
+  return ms < DAY_MS ? 0 : Math.ceil(ms / DAY_MS);
+}
+
+/** "today" is never said of a passed deadline: "a day ago", "11 days ago". */
+export const missedWords = (n: number) => (n <= 1 ? "a day ago" : `${n} days ago`);

@@ -1,6 +1,6 @@
 import "server-only";
 import { allowed } from "../paypal/disputes";
-import { filedDocument, ruledAt, stageLine, stageOf, type Stage } from "./derive";
+import { decidedBy, filedDocument, followedReviewer, outcomeWords, ruledAt, rulingRequestOf, stageLine, stageOf, type DecidedBy, type Stage } from "./derive";
 import { caseContext, type CaseContext } from "./service";
 import { storyClock } from "./exhibits";
 import { oddsFor } from "./verify";
@@ -61,6 +61,12 @@ export interface CaseView {
   /** Where the case stands, read from PayPal: open, waiting, filed, refunded, won, lost. */
   where: Stage;
   whereLine: string;
+  /** Who decided a case that is over: PayPal at Exhibit's request, the sandbox on its own, the deadline, or the seller. */
+  decidedBy: DecidedBy | null;
+  /** A ruling Exhibit asked for followed the simulated reviewer's verdict. */
+  followedReviewer: boolean;
+  /** How a won or lost case ended and who decided it, as a line and as the stamp's date line. */
+  ending: { line: string; what: string; stamp: string } | null;
   channel: string | null;
   due: string | null;
   created: string;
@@ -92,6 +98,7 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
   const s = ctx.scenario;
   const where = stageOf(d, ctx.filings);
   const doc = filedDocument(d);
+  const resolvedAt = d.status === "RESOLVED" ? (ruledAt(d) ?? d.update_time ?? null) : null;
   return {
     id: d.dispute_id,
     reason: d.reason,
@@ -100,7 +107,10 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     state: d.dispute_state ?? null,
     stage: d.dispute_life_cycle_stage ?? null,
     where,
-    whereLine: stageLine(where, d, ctx.filings),
+    whereLine: stageLine(where, d, ctx.filings, resolvedAt),
+    decidedBy: decidedBy(where, ctx.filings, resolvedAt),
+    followedReviewer: followedReviewer(rulingRequestOf(ctx.filings, resolvedAt)),
+    ending: outcomeWords(where, decidedBy(where, ctx.filings, resolvedAt), ruledAt(d) ?? resolvedAt),
     channel: d.dispute_channel ?? null,
     due: d.seller_response_due_date ?? null,
     created: d.create_time,
