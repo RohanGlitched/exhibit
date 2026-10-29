@@ -523,3 +523,9 @@
   white-space: normal;
   text-align: center;
 }
+
+.calls li > span {
+  white-space: normal;
+  text-align: right;
+  max-width: 45%;
+}
