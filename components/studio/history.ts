@@ -1,7 +1,7 @@
 import type { AgAiHistoryStore, AgAiThread, AgAiHistoryStoreEventListener } from "ag-studio";
 import { SAVED_THREAD } from "./saved";
 
-export const SAVED_THREAD_ID = "saved-kept-vs-refunded";
+export const SAVED_THREAD_ID = "saved-money-by-who-decided";
 
 /**
  * The analyst's conversations for this visit, kept in memory, opening with the one saved exchange
