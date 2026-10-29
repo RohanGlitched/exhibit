@@ -1,0 +1,167 @@
+/* The requirements card and the money on a case: two sheets under the hearing. */
+.ledger {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.card {
+  padding: 26px 28px 22px;
+  min-width: 0;
+}
+.cardHead {
+  position: relative;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+.cardHead h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+.standing {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  padding: 3px 9px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  color: var(--ink-soft);
+}
+.standing[data-standing="met"] {
+  color: var(--won);
+}
+.standing[data-standing="not met"] {
+  color: var(--due);
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.items li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--rule-soft);
+}
+.mark {
+  align-self: start;
+  justify-self: start;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mark[data-status="on file"] {
+  color: var(--won);
+}
+.mark[data-status="weak"] {
+  color: var(--claimant-ink);
+}
+.mark[data-status="missing"] {
+  color: var(--due);
+}
+.need {
+  margin: 0;
+  font-weight: 650;
+  font-size: 15px;
+}
+.need small {
+  margin-left: 6px;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.detail {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.cite {
+  font-weight: 650;
+  color: var(--respondent-ink);
+  white-space: nowrap;
+}
+.foot {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.money {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.money th,
+.money td {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--rule-soft);
+  font-size: 15px;
+  text-align: left;
+  vertical-align: top;
+}
+.money th {
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding-right: 12px;
+}
+.money td {
+  text-align: right;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.money tr[data-call] th,
+.money tr[data-call] td {
+  color: var(--ink);
+  background: var(--respondent-wash);
+}
+.money tr[data-call] th {
+  padding-left: 8px;
+}
+.money tr[data-call] td {
+  padding-right: 8px;
+}
+
+@media (max-width: 1060px) {
+  .ledger {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .card {
+    padding: 20px 16px 18px;
+  }
+  .items li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .standing {
+    position: static;
+    display: inline-block;
+    margin-top: 10px;
+  }
+}

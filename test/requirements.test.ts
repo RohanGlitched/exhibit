@@ -88,3 +88,13 @@ test("a fight with nothing weak and no objection is put to proof on the item it 
   assert.equal(pressed[0].requirement, "tracking");
   assert.match(pressed[0].text, /^Show on the pages carrier and tracking number/);
 });
+
+test("a second order in the store's records is weak, not missing; a cardholder's written admission is listed", () => {
+  const history: Exhibit = { id: "I", kind: "history", title: "History", source: "Store", facts: [], lines: ["#1146, 11 days ago: Slate speckle mug, 12 oz, $46.00. Shipped in the same box as this order, delivered."] };
+  const dup = requirementsFor({ reason: "DUPLICATE_TRANSACTION", amount: "46.00" }, [order("MASTERCARD ending 0011"), history]);
+  assert.equal(status(dup, "credit"), "weak");
+  const inbox: Exhibit = { id: "F", kind: "inbox", title: "Emails", source: "Store", facts: [], lines: ["12 Oct 2026, 11:00, Daniel Brooks: I reported it before I realised it was my order from you. I'm keeping them."] };
+  const fraud = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), inbox]);
+  assert.equal(status(fraud, "admission"), "weak");
+  assert.equal(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011")]), "admission"), undefined);
+});

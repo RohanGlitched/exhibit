@@ -126,6 +126,7 @@ function delivery(exhibits: Exhibit[], amount: number): Requirement[] {
 
 /* ───────────── Not as described: the listing, a disclosure, a return ───────────── */
 
+const ADMITS = /\b(?:I|we) (?:do )?recogni[sz]e\b|\brealised it was my order\b|\brealized it was my order\b|\bit was my (?:order|purchase)\b|\bI'?m keeping (?:it|them)\b|\bI (?:have|got|received) (?:the|them|it|my)\b|\bI (?:did )?(?:make|made|placed?) (?:this|the|that) (?:order|purchase)\b|\b(?:cancel|drop) the (?:dispute|chargeback)\b/i;
 const OFFERS_RETURN =
   /\breturns? (?:are|is) accepted\b|\bwe (?:can|will|would) (?:take|accept) (?:it|them|the \w+) back\b|\bsend (?:it|them) back\b|\breturn label\b|\bhappy to (?:take|accept) (?:it|them) back\b|\boffer(?:ed)? (?:a |you a )?return\b/i;
 const DISCLOSES = /\bvar(?:y|ies|iation)\b|\bdiffer|\beach piece\b|\bno two\b|\bshifts?\b|\bmay (?:look|appear|show|differ)\b|\bunique\b/i;
@@ -214,6 +215,11 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
         ? item("ship-billing", "Shipped to the cardholder's billing address", "on file", "Delivered and signed for at the order's address, which is the billing address", letters(scans, order), false, "")
         : item("ship-billing", "Shipped to the cardholder's billing address", home ? "weak" : "missing", home ? "Delivered at the order's address, unsigned" : "No delivery to the cardholder's address on file", letters(scans, order), false, "Who received the parcel at the cardholder's address?"),
   );
+  // The cardholder's own words that they made the purchase or have the goods: read from the inbox by pattern.
+  const inbox = exhibits.find((e) => e.kind === "inbox");
+  const admits = inbox?.lines?.find((l) => ADMITS.test(l));
+  if (admits)
+    out.push(item("admission", "The cardholder acknowledging the purchase in writing", "weak", "An email in the cardholder's name says they recognise the order or have it; read by pattern, so read it yourself", letters(inbox), false, "Does the cardholder's email admit this purchase, and is it from the cardholder's own address?"));
   if (check) {
     const party = fact(check, "Responsible");
     const withdrawn = (check.lines ?? []).some((l) => /withdrew consent/.test(l));

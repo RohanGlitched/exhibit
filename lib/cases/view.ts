@@ -9,6 +9,7 @@ import type { AgentView } from "../agentic/view";
 import type { Brief, Exhibit, Filing } from "./types";
 import { webhookView, type WebhookView } from "../webhooks/paypal";
 import type { Hearing } from "./hearing";
+import { requirementsFor, type RequirementsCard } from "./requirements";
 
 /** What the buyer's agent did on an agent story, and who the mandate check holds responsible. */
 function agentView(ctx: CaseContext): AgentView | null {
@@ -84,6 +85,8 @@ export interface CaseView {
   hearing: Hearing | null;
   /** Agent stories: what the buyer's agent did, and who the mandate check holds responsible. */
   agent: AgentView | null;
+  /** What the card network asks for on this reason code, and whether the exhibits hold it (lib/cases/requirements.ts). */
+  requirements: RequirementsCard | null;
 }
 
 export async function caseView(id: string, visitor: string | null): Promise<CaseView> {
@@ -122,5 +125,6 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     webhook: webhookView(ctx.record),
     hearing: ctx.record?.hearing ?? null,
     agent: agentView(ctx),
+    requirements: requirementsFor({ reason: d.reason, amount: d.dispute_amount.value, brand: s?.cardBrand, sandboxCode: s?.reasonCode }, ctx.exhibits),
   };
 }
