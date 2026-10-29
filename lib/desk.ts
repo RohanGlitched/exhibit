@@ -25,6 +25,8 @@ export interface DeskRow {
   buyer: string | null;
   story: string | null;
   storyId: string | null;
+  /** A short tag: the seller's own lane the autopilot works, or how an agent story's purchase was made. */
+  tag: string | null;
   recommendation: Recommendation | null;
   odds: number | null;
   engine: string | null;
@@ -105,6 +107,7 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       buyer: r?.scenarioId ? (s?.buyer.name ?? null) : exhibitCase ? (buyerName ?? null) : null,
       story: s?.title ?? null,
       storyId: s?.id ?? null,
+      tag: r?.lane === "autopilot" ? "Seller's lane, autopilot" : s?.agent ? (r?.agent ? (r.agent.engine === "model" ? "Live buyer agent" : "Scripted agent, published keys") : "Script, stand-in key") : null,
       recommendation: r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null),
       odds: r?.brief ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
       engine: r?.brief?.engine ?? null,

@@ -87,6 +87,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.reason {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  line-height: 1.25;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.tag[data-tag="live"] {
+  color: var(--respondent-ink);
+}
 .decided {
   color: var(--ink-faint);
   font-size: 13px;

@@ -1,6 +1,7 @@
 /** Shared shapes for cases, exhibits and briefs. Safe to import from client components. */
 import type { Hearing } from "./hearing";
 import type { AgentRun } from "../agentic/types";
+import type { HousePlan } from "./autopilot";
 
 export interface Fact {
   label: string;
@@ -88,6 +89,12 @@ export interface CaseRecord {
   autopilot?: { eventId: string; receivedAt: string; arguedAt: string; briefAt: string; engine: Brief["engine"] };
   /** The latest dispute event PayPal delivered for this case, and the state Exhibit read back after it. */
   lastEvent?: { id: string; type: string; receivedAt: string; status: string; outcome?: string };
+  /** Every dispute event PayPal delivered for this case after it was created, oldest first (at most 12). */
+  events?: { id: string; type: string; receivedAt: string; status: string; outcome?: string }[];
+  /** The seller's own lane: a case opened as the shop's traffic, which the autopilot works under the house rules. */
+  lane?: "autopilot";
+  /** What the autopilot decided under the house rules, and what it did (lib/cases/autopilot.ts). */
+  house?: HousePlan;
   hearing?: Hearing; // the latest cross-examination by the simulated reviewer
   agent?: AgentRun; // an agent story: the signed mandates and the buyer agent's tool calls, kept from the purchase
 }

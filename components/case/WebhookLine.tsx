@@ -21,7 +21,7 @@ export default function WebhookLine({ webhook }: { webhook: WebhookView | null |
       )}
       {last && last.type !== "CUSTOMER.DISPUTE.CREATED" && (
         <span className={styles.last}>
-          Latest update from PayPal at {utcStamp(last.receivedAt)}: {statusWords(last.status)}
+          {last.type === "CUSTOMER.DISPUTE.RESOLVED" ? `PayPal sent RESOLVED at ${utcStamp(last.receivedAt)}` : `Latest update from PayPal at ${utcStamp(last.receivedAt)}`}: {statusWords(last.status)}
           {last.outcome ? `, ${outcomeWords(last.outcome)}` : ""}.
         </span>
       )}

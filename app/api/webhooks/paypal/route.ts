@@ -3,6 +3,7 @@ import { handleEvent, verifyDelivery } from "@/lib/webhooks/handle";
 import { appendWebhookLog, handledEvent } from "@/lib/webhooks/log";
 import type { WebhookEvent } from "@/lib/webhooks/paypal";
 import { clientIp } from "@/lib/visitor";
+import { storage } from "@/lib/storage";
 import { MINUTE, allow } from "@/lib/limits";
 
 export const dynamic = "force-dynamic";
@@ -41,8 +42,30 @@ export async function POST(req: Request) {
   if (await handledEvent(ev.id)) return NextResponse.json({ ok: true, duplicate: true });
 
   after(async () => {
+    await captureDelivery(ev.event_type, req.headers, raw).catch(() => {});
     const r = await handleEvent(ev, receivedAt);
     await appendWebhookLog({ id: ev.id, type: ev.event_type, receivedAt, disputeId: r.disputeId, did: r.did, ok: r.ok, ms: Date.now() - t0 });
   });
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * The first verified delivery of each event type, kept byte for byte with its transmission headers (signatures,
+ * not secrets), so the test suite can replay a real signed RESOLVED delivery. Read with the cron secret.
+ */
+const CAPTURE = (type: string) => `webhooks/captured/${type.replace(/[^A-Z._]/g, "")}.json`;
+const SIGNED = ["paypal-auth-algo", "paypal-cert-url", "paypal-transmission-id", "paypal-transmission-sig", "paypal-transmission-time"];
+
+async function captureDelivery(type: string, headers: Headers, raw: string): Promise<void> {
+  const s = storage();
+  if (!s || (await s.read(CAPTURE(type)).catch(() => null))) return;
+  await s.write(CAPTURE(type), JSON.stringify({ type, headers: Object.fromEntries(SIGNED.map((h) => [h, headers.get(h) ?? ""])), raw }));
+}
+
+export async function GET(req: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Not allowed." }, { status: 401 });
+  const type = new URL(req.url).searchParams.get("captured") ?? "CUSTOMER.DISPUTE.RESOLVED";
+  const r = await storage()?.read(CAPTURE(type)).catch(() => null);
+  return r ? new NextResponse(r.text, { headers: { "content-type": "application/json" } }) : NextResponse.json({ error: "Nothing captured yet." }, { status: 404 });
 }

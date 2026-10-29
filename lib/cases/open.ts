@@ -87,7 +87,7 @@ async function agentPurchase(s: Scenario, invoiceId: string, openedAt: Date, vis
   return { order: placed.order!, agent, invoiceId: invoice };
 }
 
-export async function openCase(story: Scenario, opts: { visitor?: string } = {}): Promise<CaseRecord> {
+export async function openCase(story: Scenario, opts: { visitor?: string; lane?: "autopilot" } = {}): Promise<CaseRecord> {
   let invoiceId = invoiceNumber();
   // The story's clock starts here: the store's order time, and so the mandates' times, count back from it.
   const openedAt = new Date();
@@ -145,6 +145,7 @@ export async function openCase(story: Scenario, opts: { visitor?: string } = {})
     ...(agent ? { agent } : {}),
     refundId,
     filings: [],
+    ...(opts.lane ? { lane: opts.lane } : {}),
   };
   await saveCase(rec);
   await waitForDispute(disputeId);

@@ -7,6 +7,7 @@ import type { CaseRecord } from "./types";
  * webhook autopilot wrote the moment PayPal sent the case.
  */
 export const untouched = (c: CaseRecord) =>
+  !c.lane &&
   !c.claimedBy && !isFiled(c.filings) && (!c.brief || Boolean(c.autopilot && c.brief.createdAt === c.autopilot.briefAt));
 
 /** Stock a visitor can be handed. */

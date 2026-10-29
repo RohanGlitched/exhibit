@@ -8,6 +8,7 @@ import { inPool, untouched } from "@/lib/cases/pool";
 import { SCENARIOS } from "@/lib/shop/scenarios";
 import { deadlineProblems, hoursSince, hoursUntil, readyForVisitor, refillProblem, splitDeadlines, READY_HOURS, RECENT_MISS_HOURS } from "@/lib/health";
 import { readWebhookLog, webhookSummary } from "@/lib/webhooks/log";
+import { lastTick, type TickReport } from "@/lib/cases/autopilot-run";
 import type { CaseRecord } from "@/lib/cases/types";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export const maxDuration = 30;
  */
 export async function GET() {
   const t0 = Date.now();
-  const [records, disputes, storeOk, refill, ping, hooks] = await Promise.all([
+  const [records, disputes, storeOk, refill, ping, hooks, tick] = await Promise.all([
     listCases(true).catch(() => null as CaseRecord[] | null),
     listDisputes({ pageSize: 50, pages: 6 }).catch(() => null as DisputeSummary[] | null),
     storage()
@@ -33,6 +34,7 @@ export async function GET() {
     lastRefill().catch(() => null),
     llmPing().catch(() => null),
     readWebhookLog(),
+    lastTick().catch(() => null),
   ]);
   const now = Date.now();
   const byId = new Map((disputes ?? []).map((d) => [d.dispute_id, d]));
@@ -101,9 +103,27 @@ export async function GET() {
       missedOverHoursAgo: { hours: RECENT_MISS_HOURS, count: deadlines.missedLongAgo },
       paypal: { reachable: Boolean(disputes), disputes: disputes?.length ?? null },
       webhooks: webhookSummary(hooks, now),
+      autopilot: autopilotSummary(records ?? [], tick),
       store: { kind: storage() ? (process.env.GCS_BUCKET ? "gcs" : "blob") : "local", reachable: storeOk, records: records?.length ?? null },
       model: { configured: llmReady(), name: llmReady() ? llmModel() : null, ping },
     },
     { headers: { "cache-control": "no-store" } },
   );
+}
+
+/** The seller's lane and the autopilot's own steps: what it decided, sent and asked rulings for. */
+function autopilotSummary(records: CaseRecord[], tick: TickReport | null) {
+  const lane = records.filter((r) => r.lane === "autopilot");
+  const plans = lane.map((r) => r.house).filter((p) => p !== undefined);
+  return {
+    laneCases: lane.length,
+    newestLaneCase: lane.map((r) => ({ id: r.disputeId, openedAt: r.openedAt })).sort((a, b) => b.openedAt.localeCompare(a.openedAt))[0] ?? null,
+    decided: plans.length,
+    filedByAutopilot: plans.filter((p) => p.done && p.action === "evidence").length,
+    refundedByAutopilot: plans.filter((p) => p.done && p.action === "accept").length,
+    leftForSeller: plans.filter((p) => p.action === "queue").length,
+    stopped: plans.filter((p) => p.undone).length,
+    rulingsAsked: records.filter((r) => r.filings.some((f) => f.action === "ruling" && /by the autopilot/.test(f.detail ?? ""))).length,
+    lastTurn: tick ? { at: tick.startedAt, steps: tick.steps.slice(0, 8), errors: tick.errors.length } : null,
+  };
 }

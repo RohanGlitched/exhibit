@@ -7,7 +7,7 @@ import { argue } from "../cases/service";
 import { isFiled } from "../cases/guard";
 import { inPool } from "../cases/pool";
 import type { Brief, CaseRecord } from "../cases/types";
-import { disputeIdOf, isDisputeEvent, outcomeWords, statusWords, verificationBody, type WebhookEvent } from "./paypal";
+import { disputeIdOf, isDisputeEvent, outcomeWords, routeFor, statusWords, verificationBody, type WebhookEvent } from "./paypal";
 
 export type Verdict = "verified" | "unconfigured" | "invalid";
 
@@ -67,7 +67,7 @@ async function autoArgue(id: string, ev: WebhookEvent, receivedAt: string): Prom
   const saved = await loadCase(id).catch(() => null);
   if (saved?.autopilot?.briefAt !== brief.createdAt) return { disputeId: id, did: "Argued, but a visitor's brief was saved first and kept", ok: true };
   const call = brief.recommendation === "accept" ? "refund" : brief.recommendation === "offer" ? "offer" : "fight";
-  return { disputeId: id, did: `Argued with the ${brief.engine === "model" ? "model" : "rules engine"}: ${call}, ${brief.odds}%`, ok: true };
+  return { disputeId: id, did: `Argued with the ${brief.engine === "model" ? "model" : "rules engine"}: ${call}, evidence balance ${brief.odds}% for the seller`, ok: true };
 }
 
 /** Reads the case back from PayPal after an update, stamps what it shows, and retires resolved pool stock. */
@@ -81,6 +81,7 @@ async function refresh(id: string, ev: WebhookEvent, receivedAt: string): Promis
   await updateCase(id, (r) => ({
     ...r,
     lastEvent: stamp,
+    events: [...(r.events ?? []).filter((e) => e.id !== stamp.id), stamp].slice(-12),
     ...(d.status === "RESOLVED" && inPool(r) ? { retired: "PayPal resolved it" } : {}),
   }));
   // A case that reached the seller with no brief yet (its CREATED delivery was missed): argue it now.
@@ -97,7 +98,7 @@ export async function handleEvent(ev: WebhookEvent, receivedAt: string): Promise
   if (!isDisputeEvent(ev.event_type)) return { disputeId: id, did: `Ignored: ${ev.event_type} isn't a dispute event`, ok: true };
   if (!id || !CASE_ID.test(id)) return { disputeId: id, did: "Ignored: the event names no dispute", ok: true };
   try {
-    return ev.event_type === "CUSTOMER.DISPUTE.CREATED" ? await autoArgue(id, ev, receivedAt) : await refresh(id, ev, receivedAt);
+    return routeFor(ev.event_type) === "argue" ? await autoArgue(id, ev, receivedAt) : await refresh(id, ev, receivedAt);
   } catch (e) {
     return { disputeId: id, did: `Failed: ${(e as Error).message}`, ok: false };
   }

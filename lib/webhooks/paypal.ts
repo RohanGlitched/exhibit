@@ -65,6 +65,10 @@ export function verificationBody(headers: HeaderSource, webhookId: string, rawBo
   return `${head.slice(0, -1)},"webhook_event":${raw}}`;
 }
 
+/** What a verified dispute event leads to: a new case is argued at once; any later event reads the case back. */
+export const routeFor = (type: string): "argue" | "refresh" | "ignore" =>
+  !isDisputeEvent(type) ? "ignore" : type === "CUSTOMER.DISPUTE.CREATED" ? "argue" : "refresh";
+
 /** The dispute id an event is about, if it names one. */
 export function disputeIdOf(ev: WebhookEvent): string | null {
   const r = ev.resource;

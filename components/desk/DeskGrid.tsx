@@ -76,6 +76,16 @@ function CaseId({ value }: ICellRendererParams<DeskRow, string>) {
   );
 }
 
+/** The reason, with a small tag for the seller's own lane and for how an agent story's purchase was made. */
+function Reason({ value, data }: ICellRendererParams<DeskRow, string>) {
+  return (
+    <span className={styles.reason}>
+      {reasonLabel(value ?? "")}
+      {data?.tag && <span className={styles.tag} data-tag={data.tag.startsWith("Script,") ? "script" : "live"}>{data.tag}</span>}
+    </span>
+  );
+}
+
 function Due({ value, data }: ICellRendererParams<DeskRow, string | null>) {
   if (!value || !data || (data.status !== "WAITING_FOR_SELLER_RESPONSE" && !isMissed(data))) return <span className={styles.muted}>—</span>;
   const due = dueWords(value);
@@ -154,7 +164,7 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   const cols = useMemo<ColDef<DeskRow>[]>(
     () => [
       { field: "id", headerName: "Case", width: 204, cellRenderer: CaseId, pinned: "left" },
-      { field: "reason", headerName: "Reason", flex: 1, minWidth: 128, valueFormatter: (p) => reasonLabel(p.value ?? "") },
+      { field: "reason", headerName: "Reason", flex: 1, minWidth: 128, valueFormatter: (p) => reasonLabel(p.value ?? ""), cellRenderer: Reason },
       { field: "amount", headerName: "Amount", width: 86, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
       { field: "buyer", headerName: "Buyer", flex: 1, minWidth: 118, valueFormatter: (p) => p.value ?? "—" },
       { field: "where", headerName: "Where it stands", width: 134, cellRenderer: Status },
@@ -254,6 +264,7 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
                   {reasonLabel(r.reason)}
                   {r.buyer ? `, ${r.buyer}` : ""}
                 </strong>
+                {r.tag && <span className={styles.tag} data-tag={r.tag.startsWith("Script,") ? "script" : "live"}>{r.tag}</span>}
                 <span className={styles.cardMeta}>
                   <span className={styles.status} data-where={isMissed(r) ? "lapsed" : r.where}>
                     {label(r)}
