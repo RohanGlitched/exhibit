@@ -126,7 +126,10 @@ async function askRuling(rec: CaseRecord): Promise<string> {
 async function sweep(cases: CaseRecord[]): Promise<string> {
   const listed = await toolkitCall<{ items?: { dispute_id: string; status: string }[] }>("list_disputes", { page_size: 20 });
   const byId = new Map(cases.map((c) => [c.disputeId, c]));
-  const missed = (listed.items ?? []).filter((x) => x.status === "WAITING_FOR_SELLER_RESPONSE" && byId.get(x.dispute_id) && !byId.get(x.dispute_id)!.brief && !byId.get(x.dispute_id)!.retired);
+  // Only cases opened in the last two days: a CREATED webhook that should have argued them was missed. Older stock
+  // predates the webhook and is argued when a visitor opens it.
+  const recent = (id: string) => Date.now() - new Date(byId.get(id)!.openedAt).getTime() < 48 * 3_600_000;
+  const missed = (listed.items ?? []).filter((x) => x.status === "WAITING_FOR_SELLER_RESPONSE" && byId.get(x.dispute_id) && !byId.get(x.dispute_id)!.brief && !byId.get(x.dispute_id)!.retired && recent(x.dispute_id));
   if (!missed.length) return `list_disputes sweep (PayPal Agent Toolkit): ${listed.items?.length ?? 0} read, none missed`;
   const rec = byId.get(missed[0].dispute_id)!;
   return `list_disputes sweep found ${rec.disputeId} with the seller and unargued: ${await argueLane(rec)}`;
