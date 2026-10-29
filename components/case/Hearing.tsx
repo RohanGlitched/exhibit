@@ -61,7 +61,8 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
       const h = list.find((x) => hearingAnchor(x) === id);
       if (!h) return;
       setSelected(h.at);
-      requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+      // With several hearings, bring the tabs into view with the transcript under them.
+      requestAnimationFrame(() => (document.getElementById(`${id}-tab`)?.parentElement ?? document.getElementById(id))?.scrollIntoView({ block: "start", behavior: "smooth" }));
     };
     open();
     window.addEventListener("hashchange", open);

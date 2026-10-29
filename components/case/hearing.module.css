@@ -378,6 +378,7 @@
 
 /* Every hearing the case kept, as binder tabs over the transcript: newest first. */
 .tabs {
+  scroll-margin-top: 84px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
