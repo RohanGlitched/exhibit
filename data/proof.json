@@ -1,6 +1,6 @@
 {
  "at": "2026-10-25T14:46:14.072Z",
- "recheckedAt": "2026-10-25T15:17:57.597Z",
+ "recheckedAt": "2026-10-29T19:45:49.706Z",
  "reasoning": null,
  "summary": {
   "runs": 56,
@@ -13,7 +13,7 @@
   "modelCorrectOnChanged": 42,
   "rulesCorrectOnChanged": 30,
   "changedRuns": 42,
-  "sentences": 380,
+  "sentences": 381,
   "struckByChecker": 4,
   "medianMs": 6355,
   "p90Ms": 10202,
@@ -30,10 +30,10 @@
   "carelessPlantedStruck": 6,
   "carelessSentencesStruck": 7,
   "carelessSentences": 35,
-  "mutations": 1051,
-  "mutationsStruck": 1015,
-  "keptSentences": 376,
-  "figurelessSentences": 197,
+  "mutations": 1038,
+  "mutationsStruck": 1026,
+  "keptSentences": 377,
+  "figurelessSentences": 201,
   "strongCorrect": 50,
   "textRuns": 10,
   "modelCorrectOnText": 10,
@@ -42,9 +42,9 @@
   "recordRuns": 46,
   "modelCorrectOnRecord": 46,
   "strongCorrectOnRecord": 46,
-  "checkedSentences": 179,
-  "unverifiedSentences": 197,
-  "quotedSentences": 380,
+  "checkedSentences": 176,
+  "unverifiedSentences": 201,
+  "quotedSentences": 381,
   "struckForQuote": 2,
   "templateSentences": 254,
   "templateStruck": 0,
@@ -84,40 +84,26 @@
   "ablationCorrectOnText": 10,
   "heldoutVariants": 12,
   "heldoutRuns": 24,
-  "heldoutModelCorrect": 18,
-  "heldoutRulesCorrect": 8,
+  "heldoutModelCorrect": 19,
+  "heldoutRulesCorrect": 12,
   "heldoutStrongCorrect": 8,
   "heldoutCases": 24,
   "heldoutTextRuns": 18,
-  "heldoutModelCorrectOnText": 12,
+  "heldoutModelCorrectOnText": 13,
   "heldoutStrongCorrectOnText": 2,
   "heldoutSeedRuns": [
    {
     "seed": 0,
     "runs": 24,
-    "correct": 18,
+    "correct": 19,
     "textRuns": 18,
-    "textCorrect": 12
-   },
-   {
-    "seed": 1,
-    "runs": 24,
-    "correct": 18,
-    "textRuns": 18,
-    "textCorrect": 12
-   },
-   {
-    "seed": 2,
-    "runs": 24,
-    "correct": 18,
-    "textRuns": 18,
-    "textCorrect": 12
+    "textCorrect": 13
    }
   ],
   "heldoutSeedSpread": {
-   "min": 18,
-   "max": 18,
-   "mean": 18,
+   "min": 19,
+   "max": 19,
+   "mean": 19,
    "of": 24
   },
   "injectionRuns": 8,
@@ -6565,9 +6551,9 @@
  ],
  "mutations": {
   "date moved": {
-   "n": 75,
-   "struck": 74,
-   "fromModel": 11,
+   "n": 76,
+   "struck": 76,
+   "fromModel": 12,
    "fromTemplate": 64,
    "examples": [
     {
@@ -6581,20 +6567,12 @@
      "why": "7 Oct 2026, 13:00 isn't in Exhibit E."
     }
    ],
-   "survived": [
-    {
-     "from": "USPS then processed the parcel for return to sender on 6 Oct 2026.",
-     "to": "USPS then processed the parcel for return to sender on 9 Oct 2026.",
-     "cites": [
-      "E"
-     ]
-    }
-   ]
+   "survived": []
   },
   "amount changed": {
-   "n": 71,
-   "struck": 71,
-   "fromModel": 71,
+   "n": 65,
+   "struck": 65,
+   "fromModel": 65,
    "fromTemplate": 0,
    "examples": [
     {
@@ -6649,9 +6627,9 @@
    "survived": []
   },
   "real figure from another record": {
-   "n": 146,
-   "struck": 127,
-   "fromModel": 82,
+   "n": 141,
+   "struck": 137,
+   "fromModel": 77,
    "fromTemplate": 64,
    "examples": [
     {
@@ -6667,38 +6645,6 @@
    ],
    "survived": [
     {
-     "from": "USPS recorded the parcel as delivered in Palo Alto, CA 94301 and left at the front door on 4 Oct 2026, 13:00.",
-     "to": "USPS recorded the parcel as delivered in Palo Alto, CA 94301 and left at the front door on 30 Sep 2026, 10:30.",
-     "cites": [
-      "E",
-      "B"
-     ]
-    },
-    {
-     "from": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
-     "to": "The buyer sent that confirmation on 18 Sep 2026, 10:30.",
-     "cites": [
-      "D",
-      "B"
-     ]
-    },
-    {
-     "from": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
-     "to": "The buyer sent that confirmation on 18 Sep 2026, 10:30.",
-     "cites": [
-      "D",
-      "B"
-     ]
-    },
-    {
-     "from": "We received a completed $180.00 payment with matching street address, ZIP, and security code checks.",
-     "to": "We received a completed $168.00 payment with matching street address, ZIP, and security code checks.",
-     "cites": [
-      "C",
-      "B"
-     ]
-    },
-    {
      "from": "We received payment Z1F5F75TPH9C3Y8V9 with completed status for $180.00.",
      "to": "We received payment Z1F5F75TPH9C3Y8V9 with completed status for $168.00.",
      "cites": [
@@ -6707,35 +6653,35 @@
      ]
     },
     {
-     "from": "We refunded the second charge in full for $46.00.",
-     "to": "We refunded the second charge in full for $38.00.",
-     "cites": [
-      "K",
-      "B"
-     ]
-    },
-    {
-     "from": "The $46.00 refund is recorded as completed.",
-     "to": "The $38.00 refund is recorded as completed.",
+     "from": "The cardholder’s signed intent limited the delivered purchase to $150.00.",
+     "to": "The cardholder’s signed intent limited the delivered purchase to $180.00.",
      "cites": [
       "D",
+      "A"
+     ]
+    },
+    {
+     "from": "The cardholder approved the exact set and $104.00 price in writing before checkout.",
+     "to": "The cardholder approved the exact set and $96.00 price in writing before checkout.",
+     "cites": [
+      "F",
       "B"
      ]
     },
     {
-     "from": "The agent signed a $180.00 cart for one set of four dinner plates to that approved address.",
-     "to": "The agent signed a $168.00 cart for one set of four dinner plates to that approved address.",
+     "from": "We sold the listed pour-over set containing a dripper and carafe for $96.00.",
+     "to": "We sold the listed pour-over set containing a dripper and carafe for $104.00.",
      "cites": [
-      "E",
-      "B"
+      "K",
+      "A"
      ]
     }
    ]
   },
   "negated": {
-   "n": 244,
-   "struck": 228,
-   "fromModel": 70,
+   "n": 243,
+   "struck": 235,
+   "fromModel": 69,
    "fromTemplate": 174,
    "examples": [
     {
@@ -6750,41 +6696,6 @@
     }
    ],
    "survived": [
-    {
-     "from": "We shipped order HC-067211 to Sofia Marchetti at the address provided with the order.",
-     "to": "We never shipped order HC-067211 to Sofia Marchetti at the address provided with the order.",
-     "cites": [
-      "B"
-     ]
-    },
-    {
-     "from": "We shipped order HC-778347 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
-     "to": "We never shipped order HC-778347 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
-     "cites": [
-      "B"
-     ]
-    },
-    {
-     "from": "We shipped order HC-123786 to Sofia Marchetti at 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
-     "to": "We never shipped order HC-123786 to Sofia Marchetti at 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
-     "cites": [
-      "B"
-     ]
-    },
-    {
-     "from": "We shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
-     "to": "We never shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
-     "cites": [
-      "B"
-     ]
-    },
-    {
-     "from": "We shipped store order HC-780041 to Grant Holloway at 4102 Avenue F, Austin, TX 78751.",
-     "to": "We never shipped store order HC-780041 to Grant Holloway at 4102 Avenue F, Austin, TX 78751.",
-     "cites": [
-      "B"
-     ]
-    },
     {
      "from": "Our policy states that the buyer pays return shipping unless the piece arrived damaged.",
      "to": "Our policy states that the buyer pays return shipping unless the piece never arrived damaged.",
@@ -6805,13 +6716,48 @@
      "cites": [
       "F"
      ]
+    },
+    {
+     "from": "The buyer reported that two of the three bowls arrived cracked and attached photos of the bowls and box.",
+     "to": "The buyer reported that two of the three bowls never arrived cracked and attached photos of the bowls and box.",
+     "cites": [
+      "F"
+     ]
+    },
+    {
+     "from": "The parcel was delivered to the sender in Portland, OR 97214.",
+     "to": "The parcel was not delivered to the sender in Portland, OR 97214.",
+     "cites": [
+      "E"
+     ]
+    },
+    {
+     "from": "USPS ultimately records delivery to the sender in Portland, OR 97214.",
+     "to": "USPS ultimately records no delivery to the sender in Portland, OR 97214.",
+     "cites": [
+      "E"
+     ]
+    },
+    {
+     "from": "Our packing slip identifies the shipped set as ash-white.",
+     "to": "Our packing slip identifies the never shipped set as ash-white.",
+     "cites": [
+      "J"
+     ]
+    },
+    {
+     "from": "We accept the chargeback because our records show that the wrong set was shipped.",
+     "to": "We accept the chargeback because our records show that the wrong set was not shipped.",
+     "cites": [
+      "J"
+     ]
     }
    ]
   },
   "carrier swapped": {
-   "n": 183,
-   "struck": 183,
-   "fromModel": 49,
+   "n": 180,
+   "struck": 180,
+   "fromModel": 46,
    "fromTemplate": 134,
    "examples": [
     {
@@ -6847,9 +6793,9 @@
    "survived": []
   },
   "ZIP changed": {
-   "n": 107,
-   "struck": 107,
-   "fromModel": 43,
+   "n": 108,
+   "struck": 108,
+   "fromModel": 44,
    "fromTemplate": 64,
    "examples": [
     {
@@ -7018,15 +6964,15 @@
     },
     "model": {
      "call": "accept",
-     "odds": 29,
+     "odds": 11,
      "correct": true,
-     "ms": 7715,
+     "ms": 4511,
      "tokens": {
-      "input": 2057,
-      "output": 606
+      "input": 2374,
+      "output": 394
      },
      "retried": false,
-     "headline": "Accept and refund in full because USPS delivered the parcel back to the sender, not the buyer.",
+     "headline": "Refund in full because USPS returned the parcel to sender, not the buyer.",
      "sentences": [
       {
        "text": "We accept the chargeback and will refund the disputed $104.00 in full.",
@@ -7057,7 +7003,7 @@
        ]
       },
       {
-       "text": "USPS then processed the parcel as return to sender.",
+       "text": "USPS then processed the parcel for return to sender.",
        "cites": [
         "E"
        ],
@@ -7070,7 +7016,7 @@
        ]
       },
       {
-       "text": "USPS ultimately delivered the parcel to the sender in Portland, OR 97214.",
+       "text": "The parcel was delivered to the sender in Portland, OR 97214.",
        "cites": [
         "E"
        ],
@@ -7079,17 +7025,16 @@
        "why": null,
        "unverified": false,
        "checked": [
-        "USPS",
         "Portland, OR",
         "97214"
        ]
       },
       {
-       "text": "The buyer reported that the order had not arrived.",
+       "text": "We cannot provide delivery evidence to the buyer's transaction address.",
        "cites": [
-        "F"
+        "E"
        ],
-       "quote": "my order still hasn't come",
+       "quote": "Delivered to sender",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7118,56 +7063,16 @@
     },
     "model": {
      "call": "accept",
-     "odds": 9,
+     "odds": 11,
      "correct": true,
-     "ms": 7468,
+     "ms": 4874,
      "tokens": {
-      "input": 2072,
-      "output": 652
+      "input": 2389,
+      "output": 385
      },
      "retried": false,
-     "headline": "USPS returned the parcel to us, so accept the $104.00 chargeback and refund in full.",
+     "headline": "Refund in full: USPS returned the parcel to the sender, so delivery to the buyer cannot be proven.",
      "sentences": [
-      {
-       "text": "Our USPS tracking shows an attempted delivery in Palo Alto, but the parcel could not be delivered.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Attempted, Palo Alto, CA 94301. Unable to deliver",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS"
-       ]
-      },
-      {
-       "text": "USPS then processed the parcel for return to sender on 6 Oct 2026.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Return to sender processed",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS",
-        "6 Oct 2026"
-       ]
-      },
-      {
-       "text": "The parcel was delivered to the sender in Portland on 9 Oct 2026.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Delivered, Portland, OR 97214. Delivered to sender",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "9 Oct 2026"
-       ]
-      },
       {
        "text": "We accept the $104.00 chargeback and will refund it in full.",
        "cites": [
@@ -7180,6 +7085,58 @@
        "checked": [
         "$104.00"
        ]
+      },
+      {
+       "text": "USPS shows an unsuccessful delivery attempt in Palo Alto, CA 94301.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Attempted, Palo Alto, CA 94301. Unable to deliver",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "USPS",
+        "Palo Alto, CA",
+        "94301"
+       ]
+      },
+      {
+       "text": "The parcel was then processed for return to sender.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Return to sender processed",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "USPS ultimately records delivery to the sender in Portland, OR 97214.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Delivered, Portland, OR 97214. Delivered to sender",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "USPS",
+        "Portland, OR",
+        "97214"
+       ]
+      },
+      {
+       "text": "We cannot provide proof that the merchandise was delivered to the buyer.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Delivered to sender",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
       }
      ]
     }
@@ -7204,31 +7161,18 @@
     },
     "model": {
      "call": "accept",
-     "odds": 20,
+     "odds": 27,
      "correct": true,
-     "ms": 9334,
+     "ms": 8472,
      "tokens": {
-      "input": 2161,
-      "output": 722
+      "input": 2483,
+      "output": 774
      },
      "retried": false,
-     "headline": "Refund in full because our handwritten label used 4118 Larkin Street instead of the ordered 1418 Larkin Street.",
+     "headline": "Accept and refund: our handwritten label used the wrong street number.",
      "sentences": [
       {
-       "text": "We will refund the $104.00 chargeback in full.",
-       "cites": [
-        "A"
-       ],
-       "quote": "Amount disputed: $104.00\nStage: Chargeback",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$104.00"
-       ]
-      },
-      {
-       "text": "The order required shipment to 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+       "text": "Our order lists the ship-to address as 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
        "cites": [
         "B"
        ],
@@ -7244,7 +7188,7 @@
        ]
       },
       {
-       "text": "Our shipping label was typed by hand and incorrectly showed 4118 Larkin Street, Apt 5.",
+       "text": "Our studio's handwritten label instead shows 4118 Larkin Street, Apt 5, San Francisco, CA 94109.",
        "cites": [
         "J"
        ],
@@ -7254,27 +7198,29 @@
        "unverified": false,
        "checked": [
         "4118",
-        "5"
-       ]
-      },
-      {
-       "text": "USPS recorded delivery signed by M ALVARADO in San Francisco, CA 94109.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Delivered, signed, San Francisco, CA 94109. Signed for by M ALVARADO",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS",
-        "M ALVARADO",
+        "5",
         "San Francisco, CA",
         "94109"
        ]
       },
       {
-       "text": "Because our label did not match the order's ship-to address, we cannot prove delivery to the buyer's address.",
+       "text": "USPS records delivery and signature in San Francisco, CA 94109 on 4 Oct 2026.",
+       "cites": [
+        "E"
+       ],
+       "quote": "4 Oct 2026, 13:00  Delivered, signed, San Francisco, CA 94109.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "USPS",
+        "San Francisco, CA",
+        "94109",
+        "4 Oct 2026"
+       ]
+      },
+      {
+       "text": "We accept the chargeback because our shipping label did not match the order's street number.",
        "cites": [
         "J"
        ],
@@ -7283,6 +7229,19 @@
        "why": null,
        "unverified": true,
        "checked": []
+      },
+      {
+       "text": "We will refund the disputed $104.00 in full and close the case.",
+       "cites": [
+        "A"
+       ],
+       "quote": "Amount disputed: $104.00",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$104.00"
+       ]
       }
      ]
     }
@@ -7307,29 +7266,29 @@
     },
     "model": {
      "call": "accept",
-     "odds": 38,
+     "odds": 27,
      "correct": true,
-     "ms": 5151,
+     "ms": 8077,
      "tokens": {
-      "input": 2147,
-      "output": 470
+      "input": 2469,
+      "output": 680
      },
      "retried": false,
-     "headline": "Refund in full because our handwritten label used the wrong street number.",
+     "headline": "Accept the $104.00 chargeback because the handwritten label used the wrong street address (Exhibit J).",
      "sentences": [
       {
-       "text": "We will refund the $104.00 chargeback in full because our shipping label used the wrong street number.",
+       "text": "We accept the $104.00 chargeback because our handwritten shipping label used 485 Alma Street instead of the transaction’s address.",
        "cites": [
         "J"
        ],
-       "quote": "The studio's copy of the shipping label reads \"485 Alma Street, Unit 12, Palo Alto, CA 94301\".",
+       "quote": "The label was typed by hand.",
        "kept": false,
        "why": "$104.00 isn't in Exhibit J.",
        "unverified": false,
        "checked": []
       },
       {
-       "text": "The order was supposed to ship to 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
+       "text": "Our order record required shipment to 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
        "cites": [
         "B"
        ],
@@ -7345,18 +7304,23 @@
        ]
       },
       {
-       "text": "The label was typed by hand.",
+       "text": "Our studio copy shows that the parcel label instead read 485 Alma Street, Unit 12, Palo Alto, CA 94301.",
        "cites": [
         "J"
        ],
-       "quote": "The label was typed by hand.",
+       "quote": "485 Alma Street, Unit 12, Palo Alto, CA 94301",
        "kept": true,
        "why": null,
-       "unverified": true,
-       "checked": []
+       "unverified": false,
+       "checked": [
+        "485",
+        "12",
+        "Palo Alto, CA",
+        "94301"
+       ]
       },
       {
-       "text": "USPS recorded delivery signed by M ALVARADO, but that scan does not establish delivery to the order address.",
+       "text": "USPS recorded the parcel as delivered and signed for by M ALVARADO.",
        "cites": [
         "E"
        ],
@@ -7370,15 +7334,28 @@
        ]
       },
       {
-       "text": "We therefore accept the chargeback and will close the case.",
+       "text": "The buyer stated that nobody in her building signed for the parcel.",
        "cites": [
-        "A"
+        "F"
        ],
-       "quote": "Stage: Chargeback",
+       "quote": "nobody in my building signed for anything",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
+      },
+      {
+       "text": "We will refund the disputed $104.00 in full and close the case.",
+       "cites": [
+        "A"
+       ],
+       "quote": "Amount disputed: $104.00",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$104.00"
+       ]
       }
      ]
     }
@@ -7403,22 +7380,22 @@
     },
     "model": {
      "call": "fight",
-     "odds": 97,
+     "odds": 91,
      "correct": true,
-     "ms": 5937,
+     "ms": 5287,
      "tokens": {
-      "input": 2114,
-      "output": 576
+      "input": 2435,
+      "output": 496
      },
      "retried": false,
-     "headline": "Fight: USPS shows signed delivery to the order ZIP; submit tracking and the buyer’s address-change admission.",
+     "headline": "Fight: USPS shows signed delivery to the order ZIP; submit tracking and signature proof.",
      "sentences": [
       {
-       "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+       "text": "We shipped the order by USPS under tracking number 9405511206213859470035.",
        "cites": [
         "D"
        ],
-       "quote": "Tracking number: 9405511206213859470035 Status: Shipped Carrier: USPS Service: Ground Advantage, signature confirmation",
+       "quote": "Tracking number: 9405511206213859470035",
        "kept": true,
        "why": null,
        "unverified": false,
@@ -7428,55 +7405,51 @@
        ]
       },
       {
-       "text": "USPS records the parcel as delivered and signed for in San Francisco, CA 94109 by the front desk.",
+       "text": "USPS records the shipment as delivered on 4 Oct 2026 in San Francisco, CA 94109.",
        "cites": [
         "E"
        ],
-       "quote": "Delivered, signed, San Francisco, CA 94109. Signed for by FRONT DESK",
+       "quote": "4 Oct 2026, 13:00  Delivered, signed, San Francisco, CA 94109.",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
         "USPS",
+        "4 Oct 2026",
         "San Francisco, CA",
         "94109"
        ]
       },
       {
-       "text": "The order’s shipping address was 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+       "text": "The delivery ZIP matches the transaction's ship-to ZIP.",
        "cites": [
         "B"
        ],
-       "quote": "Ship to: Maya Lindqvist, 1418 Larkin Street, Apt 5, San Francisco, CA 94109",
+       "quote": "San Francisco, CA 94109",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "USPS also records that the front desk signed for the shipment.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Signed for by FRONT DESK",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "1418",
-        "5",
-        "San Francisco, CA",
-        "94109"
+        "USPS"
        ]
       },
       {
-       "text": "The buyer later stated that she moved from 1418 Larkin Street and may have forgotten to update the checkout address.",
+       "text": "The buyer later said she had moved and may have forgotten to change the address at checkout.",
        "cites": [
         "F"
        ],
        "quote": "I moved out of the 1418 Larkin Street place at the start of the month and I think I forgot to change it at checkout.",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "1418"
-       ]
-      },
-      {
-       "text": "The payment record also shows that the street and ZIP matched.",
-       "cites": [
-        "C"
-       ],
-       "quote": "Address check: Y: Street and ZIP match",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7505,18 +7478,18 @@
     },
     "model": {
      "call": "fight",
-     "odds": 92,
+     "odds": 91,
      "correct": true,
-     "ms": 5421,
+     "ms": 4336,
      "tokens": {
-      "input": 2113,
-      "output": 578
+      "input": 2434,
+      "output": 528
      },
      "retried": false,
-     "headline": "Fight: USPS shows signed delivery to the order address, and the buyer confirms she had moved without updating checkout.",
+     "headline": "Fight: USPS shows signed delivery to the order ZIP; submit tracking and signature proof by 22 Oct 2026.",
      "sentences": [
       {
-       "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+       "text": "We shipped the order by USPS under tracking number 9405511206213859470035.",
        "cites": [
         "D"
        ],
@@ -7530,7 +7503,34 @@
        ]
       },
       {
-       "text": "The order instructed us to ship to Sofia Marchetti at 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
+       "text": "USPS records delivery on 4 Oct 2026 in Palo Alto, CA 94301.",
+       "cites": [
+        "E"
+       ],
+       "quote": "4 Oct 2026, 13:00  Delivered, signed, Palo Alto, CA 94301.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "USPS",
+        "4 Oct 2026",
+        "Palo Alto, CA",
+        "94301"
+       ]
+      },
+      {
+       "text": "The shipment was signed for by the building's front desk.",
+       "cites": [
+        "E"
+       ],
+       "quote": "Signed for by FRONT DESK",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "The order's shipping address was 845 Alma Street, Unit 12, Palo Alto, CA 94301.",
        "cites": [
         "B"
        ],
@@ -7546,22 +7546,7 @@
        ]
       },
       {
-       "text": "USPS records the parcel as delivered and signed for in Palo Alto, CA 94301 by FRONT DESK.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Delivered, signed, Palo Alto, CA 94301. Signed for by FRONT DESK",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS",
-        "Palo Alto, CA",
-        "94301"
-       ]
-      },
-      {
-       "text": "The buyer later stated that she had moved and forgot to change the address at checkout.",
+       "text": "The buyer later said she had moved and forgot to change the address at checkout.",
        "cites": [
         "F"
        ],
@@ -7569,17 +7554,6 @@
        "kept": true,
        "why": null,
        "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "We ask that the chargeback be denied because the parcel was signed for at the address supplied with the order.",
-       "cites": [
-        "B"
-       ],
-       "quote": "Ship to: Sofia Marchetti, 845 Alma Street, Unit 12, Palo Alto, CA 94301",
-       "kept": false,
-       "why": "Nothing in Exhibit B shows a signature.",
-       "unverified": false,
        "checked": []
       }
      ]
@@ -7605,18 +7579,31 @@
     },
     "model": {
      "call": "accept",
-     "odds": 22,
+     "odds": 25,
      "correct": false,
-     "ms": 7848,
+     "ms": 4735,
      "tokens": {
-      "input": 1787,
-      "output": 698
+      "input": 2071,
+      "output": 454
      },
      "retried": false,
-     "headline": "Refund the $27.00 chargeback because the order shipped without tracking and delivery cannot be proven.",
+     "headline": "Refund the $27.00 chargeback because no tracking or delivery evidence supports fighting the not-received claim.",
      "sentences": [
       {
-       "text": "We shipped this order First-Class without tracking.",
+       "text": "We accept the $27.00 chargeback and will refund it in full.",
+       "cites": [
+        "A"
+       ],
+       "quote": "Amount disputed: $27.00",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$27.00"
+       ]
+      },
+      {
+       "text": "We shipped the order First-Class without tracking.",
        "cites": [
         "H"
        ],
@@ -7627,7 +7614,7 @@
        "checked": []
       },
       {
-       "text": "We therefore cannot provide carrier proof that the merchandise was delivered.",
+       "text": "We therefore cannot provide carrier scans showing delivery.",
        "cites": [
         "H"
        ],
@@ -7649,16 +7636,16 @@
        "checked": []
       },
       {
-       "text": "We accept the chargeback and will refund the disputed $27.00 in full.",
+       "text": "Our records also show that the buyer's two emails were not answered.",
        "cites": [
-        "A"
+        "H"
        ],
-       "quote": "Amount disputed: $27.00",
+       "quote": "The buyer's two emails were not answered.",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "$27.00"
+        "two"
        ]
       }
      ]
@@ -7684,18 +7671,18 @@
     },
     "model": {
      "call": "accept",
-     "odds": 27,
+     "odds": 25,
      "correct": false,
-     "ms": 4995,
+     "ms": 4418,
      "tokens": {
-      "input": 1782,
-      "output": 382
+      "input": 2066,
+      "output": 424
      },
      "retried": false,
-     "headline": "Refund the $27.00 chargeback because the shipment had no tracking or delivery proof.",
+     "headline": "Refund in full because no tracking or delivery scan proves receipt.",
      "sentences": [
       {
-       "text": "We accept the $27.00 chargeback and will refund it in full.",
+       "text": "We will refund the disputed $27.00 in full because we cannot provide carrier tracking or a delivered scan.",
        "cites": [
         "A"
        ],
@@ -7708,7 +7695,7 @@
        ]
       },
       {
-       "text": "Our records show the order shipped First-Class without tracking.",
+       "text": "Our records state that this order shipped First-Class without tracking.",
        "cites": [
         "H"
        ],
@@ -7719,22 +7706,22 @@
        "checked": []
       },
       {
-       "text": "We therefore cannot provide tracking or proof of delivery.",
+       "text": "The buyer contacted us twice to report that the vase had not arrived and requested a refund.",
        "cites": [
-        "H"
+        "D"
        ],
-       "quote": "without tracking",
+       "quote": "I'd like a refund if it's lost.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "The buyer contacted us twice and requested a refund if the shipment was lost.",
+       "text": "Although a review linked to this order describes the vase on a windowsill, it does not establish carrier delivery.",
        "cites": [
-        "D"
+        "H"
        ],
-       "quote": "I'd like a refund if it's lost.",
+       "quote": "Lovely little vase, sits perfectly on my windowsill.",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7763,18 +7750,18 @@
     },
     "model": {
      "call": "accept",
-     "odds": 17,
+     "odds": 20,
      "correct": true,
-     "ms": 8232,
+     "ms": 3906,
      "tokens": {
-      "input": 1821,
-      "output": 693
+      "input": 2105,
+      "output": 393
      },
      "retried": false,
-     "headline": "Refund the $27.00 chargeback because the parcel lacked tracking and there is no delivery proof.",
+     "headline": "Refund the $27.00 chargeback because no tracking or delivery scan proves receipt.",
      "sentences": [
       {
-       "text": "We accept the $27.00 chargeback.",
+       "text": "We will refund the $27.00 chargeback because no tracking or delivery scan establishes receipt.",
        "cites": [
         "A"
        ],
@@ -7787,7 +7774,7 @@
        ]
       },
       {
-       "text": "Our shipment was sent First-Class without tracking.",
+       "text": "Our records show this parcel shipped First-Class without tracking.",
        "cites": [
         "H"
        ],
@@ -7798,22 +7785,22 @@
        "checked": []
       },
       {
-       "text": "The buyer reported that the vase had not arrived.",
+       "text": "We have a dated retail receipt and Certificate of Mailing, but these do not show delivery.",
        "cites": [
-        "D"
+        "H"
        ],
-       "quote": "Still no vase after almost three weeks.",
+       "quote": "dated retail receipt and a Certificate of Mailing",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "We will refund the chargeback in full and close this case.",
+       "text": "The buyer reported that the vase had not arrived and requested a refund if it was lost.",
        "cites": [
-        "A"
+        "D"
        ],
-       "quote": "Stage: Chargeback Channel: Card issuer chargeback",
+       "quote": "I'd like a refund if it's lost.",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7844,16 +7831,16 @@
      "call": "accept",
      "odds": 20,
      "correct": true,
-     "ms": 5057,
+     "ms": 3469,
      "tokens": {
-      "input": 1825,
-      "output": 405
+      "input": 2109,
+      "output": 371
      },
      "retried": false,
-     "headline": "Refund the $27.00 chargeback because shipment lacks tracking or delivery proof.",
+     "headline": "Refund the $27.00 chargeback because no tracking or delivery evidence shows the vase arrived.",
      "sentences": [
       {
-       "text": "We accept the $27.00 chargeback and will refund it in full.",
+       "text": "We accept the chargeback and will refund the disputed $27.00 in full.",
        "cites": [
         "A"
        ],
@@ -7866,18 +7853,7 @@
        ]
       },
       {
-       "text": "The customer states that the merchandise was not received.",
-       "cites": [
-        "A"
-       ],
-       "quote": "Cardholder says the merchandise was not received.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "We shipped the parcel First-Class without tracking.",
+       "text": "The parcel was shipped First-Class without tracking.",
        "cites": [
         "H"
        ],
@@ -7888,22 +7864,22 @@
        "checked": []
       },
       {
-       "text": "Our records include a dated retail receipt and Certificate of Mailing, but no delivery confirmation.",
+       "text": "Our records therefore do not establish delivery to the buyer.",
        "cites": [
         "H"
        ],
-       "quote": "dated retail receipt and a Certificate of Mailing",
+       "quote": "without tracking",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "Without tracking or proof of delivery, we cannot contest the chargeback.",
+       "text": "The buyer reported that the vase had not arrived and requested a refund if it was lost.",
        "cites": [
-        "H"
+        "D"
        ],
-       "quote": "without tracking",
+       "quote": "I'd like a refund if it's lost.",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7932,22 +7908,22 @@
     },
     "model": {
      "call": "fight",
-     "odds": 97,
+     "odds": 92,
      "correct": true,
-     "ms": 6197,
+     "ms": 7381,
      "tokens": {
-      "input": 2260,
-      "output": 584
+      "input": 2566,
+      "output": 713
      },
      "retried": false,
-     "headline": "Fight: the listing disclosed green colour shifts, and the buyer accepted the seller’s $40.00 resolution.",
+     "headline": "Fight: the listing disclosed green glaze pooling, and we offered the agreed return option.",
      "sentences": [
       {
-       "text": "We disclosed that each set is unique and that the glaze shifts from deep blue to green where it pools.",
+       "text": "We sold nesting bowls described as having tide-blue glaze that can shift from deep blue to green where the glaze pools.",
        "cites": [
         "G"
        ],
-       "quote": "Each set is unique; colour shifts from deep blue to green where the glaze pools.",
+       "quote": "colour shifts from deep blue to green where the glaze pools",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -7955,6 +7931,98 @@
       },
       {
        "text": "The buyer confirmed that the bowls arrived safely but said they were greener than the photos.",
+       "cites": [
+        "F"
+       ],
+       "quote": "The bowls arrived safely but they're much greener than the photos.",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "We offered the buyer a return within 30 days for a refund.",
+       "cites": [
+        "F"
+       ],
+       "quote": "You're welcome to return them within 30 days for a refund.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "30"
+       ]
+      },
+      {
+       "text": "Our checkout policy disclosed that glaze colour varies and listing photos show a representative piece rather than the exact piece.",
+       "cites": [
+        "H"
+       ],
+       "quote": "listing photos show a representative piece, not the exact one you receive",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "The buyer accepted a $40.00 refund while keeping the bowls, and we recorded that refund as completed through PayPal.",
+       "cites": [
+        "F"
+       ],
+       "quote": "Done: $40.00 refunded through PayPal.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$40.00"
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "key": "heldout-colour-partial-refund-agreed#2",
+    "variant": "heldout-colour-partial-refund-agreed",
+    "story": "colour",
+    "buyer": "Marcus Bell",
+    "label": "fight",
+    "decidedBy": "text",
+    "exhibits": 10,
+    "rules": {
+     "call": "fight",
+     "odds": 60,
+     "correct": true
+    },
+    "strong": {
+     "call": "fight",
+     "correct": true,
+     "why": "A listing and a return policy are on record; the records alone can't tell more."
+    },
+    "model": {
+     "call": "fight",
+     "odds": 97,
+     "correct": true,
+     "ms": 6898,
+     "tokens": {
+      "input": 2554,
+      "output": 675
+     },
+     "retried": false,
+     "headline": "Fight: the listing disclosed blue-to-green variation, and the buyer accepted a $40.00 refund to keep the bowls.",
+     "sentences": [
+      {
+       "text": "We sold a tide-blue nesting bowl set whose listing disclosed that colour shifts from deep blue to green where the glaze pools.",
+       "cites": [
+        "G"
+       ],
+       "quote": "colour shifts from deep blue to green where the glaze pools",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "The buyer confirmed the bowls arrived safely and said they were greener than the photos.",
        "cites": [
         "F"
        ],
@@ -7991,105 +8059,11 @@
        ]
       },
       {
-       "text": "We then confirmed that the $40.00 refund was completed through PayPal.",
+       "text": "Our records state that the agreed $40.00 partial refund was sent through PayPal.",
        "cites": [
-        "F"
+        "J"
        ],
-       "quote": "Done: $40.00 refunded through PayPal.",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$40.00"
-       ]
-      }
-     ]
-    }
-   },
-   {
-    "key": "heldout-colour-partial-refund-agreed#2",
-    "variant": "heldout-colour-partial-refund-agreed",
-    "story": "colour",
-    "buyer": "Marcus Bell",
-    "label": "fight",
-    "decidedBy": "text",
-    "exhibits": 10,
-    "rules": {
-     "call": "fight",
-     "odds": 60,
-     "correct": true
-    },
-    "strong": {
-     "call": "fight",
-     "correct": true,
-     "why": "A listing and a return policy are on record; the records alone can't tell more."
-    },
-    "model": {
-     "call": "fight",
-     "odds": 93,
-     "correct": true,
-     "ms": 6417,
-     "tokens": {
-      "input": 2248,
-      "output": 713
-     },
-     "retried": false,
-     "headline": "Fight with the disclosed glaze variation, return offer, and agreed $40.00 refund.",
-     "sentences": [
-      {
-       "text": "Our listing stated that each set is unique and the colour shifts from deep blue to green where the glaze pools.",
-       "cites": [
-        "G"
-       ],
-       "quote": "Each set is unique; colour shifts from deep blue to green where the glaze pools.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "Our checkout policy disclosed that glaze colour varies and listing photos show a representative piece, not the exact piece received.",
-       "cites": [
-        "H"
-       ],
-       "quote": "Glaze colour and speckling vary from kiln to kiln, and listing photos show a representative piece, not the exact one you receive.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "We offered the buyer a return within 30 days for a refund.",
-       "cites": [
-        "F"
-       ],
-       "quote": "You're welcome to return them within 30 days for a refund.",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "30"
-       ]
-      },
-      {
-       "text": "The buyer agreed that a $40.00 refund while keeping the bowls was fair.",
-       "cites": [
-        "F"
-       ],
-       "quote": "Yes, that's fair. Please go ahead, thanks.",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$40.00"
-       ]
-      },
-      {
-       "text": "We confirmed that the $40.00 refund was sent through PayPal.",
-       "cites": [
-        "F"
-       ],
-       "quote": "Done: $40.00 refunded through PayPal.",
+       "quote": "A $40.00 partial refund was sent through PayPal",
        "kept": true,
        "why": null,
        "unverified": false,
@@ -8120,31 +8094,18 @@
     },
     "model": {
      "call": "accept",
-     "odds": 50,
+     "odds": 40,
      "correct": true,
-     "ms": 4417,
+     "ms": 3680,
      "tokens": {
-      "input": 2215,
-      "output": 382
+      "input": 2526,
+      "output": 385
      },
      "retried": false,
-     "headline": "Refund the full $136.00 and close the chargeback because the returned bowls were received and remain unrefunded.",
+     "headline": "Refund the full charge because the returned bowls arrived and no refund has been sent.",
      "sentences": [
       {
-       "text": "We accept the chargeback and will refund the disputed $136.00 in full.",
-       "cites": [
-        "A"
-       ],
-       "quote": "Amount disputed: $136.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$136.00"
-       ]
-      },
-      {
-       "text": "The buyer returned the bowls, and they arrived unused in their original box.",
+       "text": "We accept the chargeback because the returned bowls arrived at our studio unused and in their original box.",
        "cites": [
         "J"
        ],
@@ -8155,7 +8116,7 @@
        "checked": []
       },
       {
-       "text": "No refund has been sent for this order.",
+       "text": "We have not sent a refund for this order.",
        "cites": [
         "J"
        ],
@@ -8166,15 +8127,28 @@
        "checked": []
       },
       {
-       "text": "Because this is a card issuer chargeback, we ask that the case be closed through the full refund.",
+       "text": "The listing stated that the glaze colour shifts from deep blue to green where it pools.",
        "cites": [
-        "A"
+        "G"
        ],
-       "quote": "Channel: Card issuer chargeback",
+       "quote": "colour shifts from deep blue to green where the glaze pools",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
+      },
+      {
+       "text": "We offered a return within 30 days for a refund.",
+       "cites": [
+        "F"
+       ],
+       "quote": "You're welcome to return them within 30 days for a refund.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "30"
+       ]
       }
      ]
     }
@@ -8199,22 +8173,35 @@
     },
     "model": {
      "call": "accept",
-     "odds": 50,
+     "odds": 40,
      "correct": true,
-     "ms": 5418,
+     "ms": 7433,
      "tokens": {
-      "input": 2186,
-      "output": 517
+      "input": 2497,
+      "output": 778
      },
      "retried": false,
-     "headline": "Accept the full chargeback because the returned bowls arrived unused and no refund was sent.",
+     "headline": "Refund in full: the buyer returned the bowls, we received them unused, and no refund was sent.",
      "sentences": [
       {
-       "text": "We disclosed that each set's colour shifts from deep blue to green where the glaze pools.",
+       "text": "The buyer disputed $136.00 because the merchandise was not as described.",
+       "cites": [
+        "A"
+       ],
+       "quote": "Amount disputed: $136.00",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$136.00"
+       ]
+      },
+      {
+       "text": "Our listing stated that the colour shifts from deep blue to green where the glaze pools.",
        "cites": [
         "G"
        ],
-       "quote": "Each set is unique; colour shifts from deep blue to green where the glaze pools.",
+       "quote": "colour shifts from deep blue to green where the glaze pools",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -8234,7 +8221,7 @@
        ]
       },
       {
-       "text": "We received the returned bowls unused and in their original box.",
+       "text": "The returned bowls arrived unused and in their original box.",
        "cites": [
         "J"
        ],
@@ -8245,7 +8232,18 @@
        "checked": []
       },
       {
-       "text": "We have not sent a refund for this order.",
+       "text": "We will refund the order in full because the returned bowls arrived and no refund has been sent.",
+       "cites": [
+        "J"
+       ],
+       "quote": "The returned bowls arrived at the studio on day 14, unused and in their original box",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "No refund has previously been sent for this order.",
        "cites": [
         "J"
        ],
@@ -8254,19 +8252,6 @@
        "why": null,
        "unverified": true,
        "checked": []
-      },
-      {
-       "text": "We therefore accept the full $136.00 chargeback.",
-       "cites": [
-        "A"
-       ],
-       "quote": "Amount disputed: $136.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$136.00"
-       ]
       }
      ]
     }
@@ -8291,29 +8276,32 @@
     },
     "model": {
      "call": "accept",
-     "odds": 11,
+     "odds": 9,
      "correct": true,
-     "ms": 5003,
+     "ms": 4297,
      "tokens": {
-      "input": 2126,
-      "output": 445
+      "input": 2432,
+      "output": 483
      },
      "retried": false,
-     "headline": "We shipped the ash-white set instead of the ordered tide-blue set; refund the $136.00 chargeback in full.",
+     "headline": "Refund the $136.00 chargeback because the ash-white set differed from the tide-blue listing.",
      "sentences": [
       {
-       "text": "We accept this chargeback and will refund it in full because our records confirm that we sent the wrong set.",
+       "text": "We accept the $136.00 chargeback because our records show that we sent the wrong set.",
        "cites": [
+        "A",
         "J"
        ],
        "quote": "The packing slip for this order lists set ASH-14, an ash-white nesting set.",
        "kept": true,
        "why": null,
-       "unverified": true,
-       "checked": []
+       "unverified": false,
+       "checked": [
+        "$136.00"
+       ]
       },
       {
-       "text": "The listing described the ordered set as having a tide-blue glaze.",
+       "text": "The listing described the bowls as having a tide-blue glaze.",
        "cites": [
         "G"
        ],
@@ -8324,18 +8312,18 @@
        "checked": []
       },
       {
-       "text": "The buyer reported receiving bowls that were pale grey-white rather than blue.",
+       "text": "Our packing slip identifies the shipped set as ash-white.",
        "cites": [
-        "F"
+        "J"
        ],
-       "quote": "The bowls arrived, but they're a pale grey-white, not blue at all.",
+       "quote": "The packing slip for this order lists set ASH-14, an ash-white nesting set.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "Our order notes show that the tide-blue set intended for this order remained at the studio.",
+       "text": "The tide-blue set reserved for this order was not shipped.",
        "cites": [
         "J"
        ],
@@ -8346,17 +8334,15 @@
        "checked": []
       },
       {
-       "text": "We therefore accept a full refund of the disputed $136.00.",
+       "text": "We will refund the disputed amount in full and close the chargeback.",
        "cites": [
         "A"
        ],
        "quote": "Amount disputed: $136.00",
        "kept": true,
        "why": null,
-       "unverified": false,
-       "checked": [
-        "$136.00"
-       ]
+       "unverified": true,
+       "checked": []
       }
      ]
     }
@@ -8381,18 +8367,18 @@
     },
     "model": {
      "call": "accept",
-     "odds": 11,
+     "odds": 3,
      "correct": true,
-     "ms": 4707,
+     "ms": 4530,
      "tokens": {
-      "input": 2096,
-      "output": 472
+      "input": 2402,
+      "output": 416
      },
      "retried": false,
-     "headline": "We shipped an ash-white set instead of the listed tide-blue set; refund the $136.00 chargeback in full.",
+     "headline": "The wrong ash-white set was shipped; refund the $136.00 chargeback in full.",
      "sentences": [
       {
-       "text": "We accept this chargeback and will refund it in full because our records show that we sent the wrong set.",
+       "text": "We accept the chargeback because our records show that the wrong set was shipped.",
        "cites": [
         "J"
        ],
@@ -8414,18 +8400,7 @@
        "checked": []
       },
       {
-       "text": "The buyer reported that the delivered bowls were pale grey-white rather than blue.",
-       "cites": [
-        "F"
-       ],
-       "quote": "The bowls arrived, but they're a pale grey-white, not blue at all.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "Our reserved tide-blue set was still in the studio, confirming that it was not shipped.",
+       "text": "Our order notes confirm that the tide-blue set reserved for this order was not sent.",
        "cites": [
         "J"
        ],
@@ -8436,7 +8411,7 @@
        "checked": []
       },
       {
-       "text": "We therefore accept the full $136.00 chargeback.",
+       "text": "We will refund the disputed $136.00 in full and close the case.",
        "cites": [
         "A"
        ],
@@ -8471,18 +8446,18 @@
     },
     "model": {
      "call": "fight",
-     "odds": 85,
+     "odds": 60,
      "correct": true,
-     "ms": 6204,
+     "ms": 8229,
      "tokens": {
-      "input": 2060,
-      "output": 609
+      "input": 2458,
+      "output": 748
      },
      "retried": false,
-     "headline": "Fight: the buyer confirmed the order was theirs, kept the delivered plates, and asked their bank to cancel the dispute.",
+     "headline": "Fight: the buyer confirms this was his order, received the plates, and asked his bank to cancel the dispute.",
      "sentences": [
       {
-       "text": "We dispute this chargeback because Daniel Brooks confirmed that the transaction was his order.",
+       "text": "We contest this chargeback because Daniel Brooks confirmed that the transaction was his order and that his initial bank report was a mistake.",
        "cites": [
         "F"
        ],
@@ -8493,7 +8468,7 @@
        "checked": []
       },
       {
-       "text": "The buyer confirmed that the plates reached his forwarding address and that he is keeping them.",
+       "text": "He confirmed that the plates reached his forwarding address and that he is keeping them.",
        "cites": [
         "F"
        ],
@@ -8504,7 +8479,7 @@
        "checked": []
       },
       {
-       "text": "The buyer also said he asked his bank to cancel the dispute.",
+       "text": "He also stated that he asked his bank to cancel the dispute.",
        "cites": [
         "F"
        ],
@@ -8515,11 +8490,11 @@
        "checked": []
       },
       {
-       "text": "USPS records the parcel as delivered with a signature in Doral, FL 33166.",
+       "text": "USPS records the parcel as delivered with a signature in Doral, FL 33166, signed for by the receiving desk.",
        "cites": [
         "E"
        ],
-       "quote": "Delivered, signed, Doral, FL 33166",
+       "quote": "Delivered, signed, Doral, FL 33166. Signed for by RECEIVING DESK",
        "kept": true,
        "why": null,
        "unverified": false,
@@ -8530,11 +8505,11 @@
        ]
       },
       {
-       "text": "The payment record shows that the street and ZIP matched and the security code matched.",
+       "text": "The payment record shows that both the street-and-ZIP check and security-code check matched.",
        "cites": [
         "C"
        ],
-       "quote": "Address check: Y: Street and ZIP match\nSecurity code: M: Security code matched",
+       "quote": "Address check: Y: Street and ZIP match",
        "kept": true,
        "why": null,
        "unverified": true,
@@ -8562,41 +8537,65 @@
      "why": "Billing and shipping addresses differ."
     },
     "model": {
-     "call": "fight",
-     "odds": 85,
-     "correct": true,
-     "ms": 7353,
+     "call": "accept",
+     "odds": 38,
+     "correct": false,
+     "ms": 10955,
      "tokens": {
-      "input": 2071,
-      "output": 763
+      "input": 2469,
+      "output": 1053
      },
      "retried": false,
-     "headline": "Fight: the buyer confirmed the order was hers, received the plates, and is keeping them.",
+     "headline": "Accept the $180.00 chargeback because Mastercard’s required fraud evidence is missing despite delivery and the buyer’s later recognition.",
      "sentences": [
       {
-       "text": "The buyer told us she reported the charge before realizing it was her order.",
+       "text": "We will accept this $180.00 card issuer chargeback and provide the full refund.",
        "cites": [
-        "F"
+        "A"
        ],
-       "quote": "reported it to my bank before I realised it was my order from you",
+       "quote": "Amount disputed: $180.00 Stage: Chargeback Channel: Card issuer chargeback",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$180.00"
+       ]
+      },
+      {
+       "text": "This was the customer’s first order with us, so no earlier order history supports our response.",
+       "cites": [
+        "I"
+       ],
+       "quote": "Earlier orders: 0 First order from this customer.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "She confirmed the plates reached her forwarding address and that she is keeping them.",
+       "text": "Our records show the shipping address was a parcel-forwarding warehouse and the billing address was in Wisconsin.",
        "cites": [
-        "F"
+        "J"
        ],
-       "quote": "The plates reached my forwarding address and I'm keeping them.",
+       "quote": "Shipping address is a parcel-forwarding warehouse; billing address is in Wisconsin.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "USPS records the parcel as delivered with a signature in Doral, FL 33166.",
+       "text": "The buyer later said she recognized the charge as her order and was keeping the plates.",
+       "cites": [
+        "F"
+       ],
+       "quote": "before I realised it was my order from you",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "USPS shows delivery was signed for by RECEIVING DESK in Doral, FL 33166.",
        "cites": [
         "E"
        ],
@@ -8606,31 +8605,10 @@
        "unverified": false,
        "checked": [
         "USPS",
+        "RECEIVING DESK",
         "Doral, FL",
         "33166"
        ]
-      },
-      {
-       "text": "The payment passed the street, ZIP, and security-code checks.",
-       "cites": [
-        "C"
-       ],
-       "quote": "Address check: Y: Street and ZIP match Security code: M: Security code matched",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "We ask that the chargeback be denied because the buyer confirmed the order was hers and is keeping the plates.",
-       "cites": [
-        "F"
-       ],
-       "quote": "before I realised it was my order from you. The plates reached my forwarding address and I'm keeping them.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
       }
      ]
     }
@@ -8654,44 +8632,32 @@
      "why": "No refund record."
     },
     "model": {
-     "call": "fight",
-     "odds": 93,
-     "correct": true,
-     "ms": 4841,
+     "call": "accept",
+     "odds": 38,
+     "correct": false,
+     "ms": 3697,
      "tokens": {
-      "input": 2080,
-      "output": 517
+      "input": 2340,
+      "output": 386
      },
      "retried": false,
-     "headline": "Fight: the buyer placed two separate mug orders, and both mugs shipped together.",
+     "headline": "Refund the $46.00 chargeback because the file lacks proof of two distinct transactions or a duplicate credit.",
      "sentences": [
       {
-       "text": "We received two separate orders, each for one slate speckle mug at $46.00.",
+       "text": "We accept the $46.00 chargeback because the file contains only one completed payment record.",
        "cites": [
-        "J"
+        "C"
        ],
-       "quote": "Two separate orders were placed 14 minutes apart, each for one slate speckle mug at $46.00.",
+       "quote": "Status: Completed\nGross: $46.00",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "two",
         "$46.00"
        ]
       },
       {
-       "text": "The buyer told us she was placing a second order because her sister wanted one too.",
-       "cites": [
-        "F"
-       ],
-       "quote": "My sister saw it over my shoulder and wants one too, so I'm placing a second order for her now.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "The buyer later confirmed that the second order was complete.",
+       "text": "The buyer said she planned to place a second order and later confirmed it was done.",
        "cites": [
         "F"
        ],
@@ -8702,29 +8668,29 @@
        "checked": []
       },
       {
-       "text": "We shipped both mugs together in one box under this order’s tracking number.",
+       "text": "Our notes state that two separate orders were placed, but the required second transaction record is not on file.",
        "cites": [
         "J"
        ],
-       "quote": "Both mugs shipped together in one box under this order's tracking number.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "USPS shows the parcel was delivered to the mailbox in Philadelphia, PA 19106.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Delivered, Philadelphia, PA 19106. Delivered to mailbox",
+       "quote": "Two separate orders were placed 14 minutes apart",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "USPS",
-        "Philadelphia, PA",
-        "19106"
+        "two"
+       ]
+      },
+      {
+       "text": "Please refund the disputed $46.00 and close the chargeback.",
+       "cites": [
+        "A"
+       ],
+       "quote": "Amount disputed: $46.00",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "$46.00"
        ]
       }
      ]
@@ -8749,44 +8715,43 @@
      "why": "No refund record."
     },
     "model": {
-     "call": "fight",
-     "odds": 89,
-     "correct": true,
-     "ms": 4363,
+     "call": "accept",
+     "odds": 50,
+     "correct": false,
+     "ms": 6569,
      "tokens": {
-      "input": 2080,
-      "output": 458
+      "input": 2340,
+      "output": 644
      },
      "retried": false,
-     "headline": "Fight: the buyer confirmed a second order, and records show two separate mug orders rather than a duplicate charge.",
+     "headline": "Accept the $46.00 chargeback because no second transaction or duplicate refund record is on file.",
      "sentences": [
       {
-       "text": "We received two separate orders, each for one slate speckle mug at $46.00.",
+       "text": "We accept the $46.00 chargeback and will refund it in full.",
        "cites": [
-        "J"
+        "A"
        ],
-       "quote": "Two separate orders were placed 14 minutes apart, each for one slate speckle mug at $46.00.",
+       "quote": "Amount disputed: $46.00",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "two",
         "$46.00"
        ]
       },
       {
-       "text": "The buyer told us she was placing a second order for her sister.",
+       "text": "The cardholder says one purchase was charged twice.",
        "cites": [
-        "F"
+        "A"
        ],
-       "quote": "My sister saw it over my shoulder and wants one too, so I'm placing a second order for her now.",
+       "quote": "Cardholder says they were charged twice for one purchase.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "The buyer then confirmed that the second order was complete.",
+       "text": "Our inbox shows the buyer said she was placing a second order and later confirmed it was done.",
        "cites": [
         "F"
        ],
@@ -8797,30 +8762,29 @@
        "checked": []
       },
       {
-       "text": "Both mugs shipped together in one box under this order's tracking number.",
+       "text": "Our notes record two separate orders for one mug each, placed 14 minutes apart.",
        "cites": [
         "J"
        ],
-       "quote": "Both mugs shipped together in one box under this order's tracking number.",
-       "kept": true,
-       "why": null,
-       "unverified": true,
-       "checked": []
-      },
-      {
-       "text": "USPS records delivery in Arlington, VA 22201.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Delivered, Arlington, VA 22201. Delivered to mailbox",
+       "quote": "Two separate orders were placed 14 minutes apart, each for one slate speckle mug at $46.00.",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "USPS",
-        "Arlington, VA",
-        "22201"
+        "two",
+        "14"
        ]
+      },
+      {
+       "text": "However, the submitted payment record shows only payment P0XLCDLRH2L6LLZZS, so we cannot document two distinct transactions.",
+       "cites": [
+        "C"
+       ],
+       "quote": "Payment: P0XLCDLRH2L6LLZZS",
+       "kept": false,
+       "why": "two isn't in Exhibit C.",
+       "unverified": false,
+       "checked": []
       }
      ]
     }
@@ -8834,9 +8798,9 @@
     "decidedBy": "text",
     "exhibits": 14,
     "rules": {
-     "call": "fight",
-     "odds": 97,
-     "correct": false
+     "call": "accept",
+     "odds": 3,
+     "correct": true
     },
     "strong": {
      "call": "fight",
@@ -8844,82 +8808,71 @@
      "why": "Every mandate check passed."
     },
     "model": {
-     "call": "fight",
-     "odds": 92,
-     "correct": false,
-     "ms": 7490,
+     "call": "accept",
+     "odds": 25,
+     "correct": true,
+     "ms": 4612,
      "tokens": {
-      "input": 3285,
-      "output": 701
+      "input": 3813,
+      "output": 471
      },
      "retried": false,
-     "headline": "Fight: verified mandates show Nina Petrova authorised the exact $180.00 purchase through her shopping agent.",
+     "headline": "Refund in full: the cardholder withdrew consent before checkout, and the agent purchased anyway.",
      "sentences": [
       {
-       "text": "We received a cardholder-signed mandate allowing dinner plates, up to $200.00, shipped to her Seattle address.",
+       "text": "We accept the chargeback and will refund the disputed transaction in full.",
        "cites": [
-        "D"
+        "A"
        ],
-       "quote": "Allowed: dinner plates\nLimit: $200.00\nShip to: 1520 East Pine Street, Apt 402, Seattle, WA 98122",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$200.00"
-       ]
-      },
-      {
-       "text": "The cardholder’s intent signature was valid and used published key wallet-07ae79c97d03.",
-       "cites": [
-        "D"
-       ],
-       "quote": "Signed with key: wallet-07ae79c97d03\nSignature: Valid (Ed25519)",
+       "quote": "Amount disputed: $180.00",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "The agent signed a matching cart for dinner plates totaling $180.00 to the authorised address.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Total: $180.00\nShip to: 1520 East Pine Street, Apt 402, Seattle, WA 98122",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$180.00"
-       ]
-      },
-      {
-       "text": "Our mandate check passed 8 of 8 checks and found the cardholder responsible for the purchase.",
+       "text": "The cardholder withdrew consent before checkout, and the shopping agent completed the purchase anyway.",
        "cites": [
         "F"
        ],
-       "quote": "Passed: 8 of 8\nResponsible: Cardholder",
+       "quote": "the cardholder withdrew consent before checkout",
        "kept": true,
        "why": null,
-       "unverified": false,
-       "checked": [
-        "8"
-       ]
+       "unverified": true,
+       "checked": []
       },
       {
-       "text": "USPS records the parcel as delivered and signed for by N PETROVA in Seattle, WA 98122.",
+       "text": "The agent platform is identified as responsible for this purchase.",
+       "cites": [
+        "F"
+       ],
+       "quote": "Responsible: Buyer's agent platform",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "Although the parcel was delivered and signed for, that does not restore consent withdrawn before checkout.",
        "cites": [
         "I"
        ],
        "quote": "Delivered, signed, Seattle, WA 98122. Signed for by N PETROVA",
        "kept": true,
        "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS",
-        "N PETROVA",
-        "Seattle, WA",
-        "98122"
-       ]
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "We will pursue recovery from the buyer's agent platform using its transaction log.",
+       "cites": [
+        "F"
+       ],
+       "quote": "recover the loss from the agent platform with its own log",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
       }
      ]
     }
@@ -8933,9 +8886,9 @@
     "decidedBy": "text",
     "exhibits": 14,
     "rules": {
-     "call": "fight",
-     "odds": 97,
-     "correct": false
+     "call": "accept",
+     "odds": 3,
+     "correct": true
     },
     "strong": {
      "call": "fight",
@@ -8943,36 +8896,23 @@
      "why": "Every mandate check passed."
     },
     "model": {
-     "call": "fight",
-     "odds": 93,
-     "correct": false,
-     "ms": 6603,
+     "call": "accept",
+     "odds": 25,
+     "correct": true,
+     "ms": 4694,
      "tokens": {
-      "input": 3247,
-      "output": 592
+      "input": 3825,
+      "output": 464
      },
      "retried": false,
-     "headline": "Fight: the signed mandates prove the cardholder authorised this $180.00 purchase through their agent.",
+     "headline": "Refund in full: the cardholder withdrew consent before checkout, and the agent bought anyway.",
      "sentences": [
       {
-       "text": "We contest this unauthorised chargeback because the cardholder signed an intent allowing dinner plates under $200.00 delivered to their home.",
+       "text": "We accept the chargeback and will refund the disputed $180.00 in full.",
        "cites": [
-        "D"
+        "A"
        ],
-       "quote": "Allowed: dinner plates\nLimit: $200.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$200.00"
-       ]
-      },
-      {
-       "text": "The shopping agent signed a cart for dinner plates totaling $180.00 to the address specified in the cardholder's intent.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Total: $180.00\nShip to: 745 Ponce de Leon Avenue, Apt 3, Atlanta, GA 30306",
+       "quote": "Amount disputed: $180.00",
        "kept": true,
        "why": null,
        "unverified": false,
@@ -8981,42 +8921,48 @@
        ]
       },
       {
-       "text": "The mandate review passed 8 of 8 checks and found the cardholder responsible for the purchase through their agent.",
+       "text": "The buyer's agent proceeded after the cardholder said not to buy anything yet.",
        "cites": [
-        "F"
+        "G"
        ],
-       "quote": "Passed: 8 of 8\nResponsible: Cardholder",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "8"
-       ]
-      },
-      {
-       "text": "The PayPal order matches the signed cart in total, items, and ship-to address.",
-       "cites": [
-        "F"
-       ],
-       "quote": "total $180.00; same items; same ship-to",
+       "quote": "Don't buy anything yet.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "USPS records the shipment as delivered with signature and signed for by I CLARKE.",
+       "text": "The mandate review found that the cardholder withdrew consent before checkout.",
        "cites": [
-        "I"
+        "F"
        ],
-       "quote": "Delivered, signed, Atlanta, GA 30306. Signed for by I CLARKE",
+       "quote": "the cardholder withdrew consent before checkout",
        "kept": true,
        "why": null,
-       "unverified": false,
-       "checked": [
-        "USPS",
-        "I CLARKE"
-       ]
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "The review assigns responsibility to the buyer's agent platform and directs a refund to the cardholder.",
+       "cites": [
+        "F"
+       ],
+       "quote": "refund the cardholder, and recover the loss from the agent platform",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "We will pursue recovery from the buyer's agent platform using its recorded log.",
+       "cites": [
+        "F"
+       ],
+       "quote": "recover the loss from the agent platform with its own log",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
       }
      ]
     }
@@ -9030,9 +8976,9 @@
     "decidedBy": "text",
     "exhibits": 14,
     "rules": {
-     "call": "accept",
-     "odds": 3,
-     "correct": false
+     "call": "fight",
+     "odds": 97,
+     "correct": true
     },
     "strong": {
      "call": "accept",
@@ -9040,23 +8986,34 @@
      "why": "Mandate check failed: Total within the intent's limit. $104.00 against a limit of $60.00."
     },
     "model": {
-     "call": "accept",
-     "odds": 18,
-     "correct": false,
-     "ms": 5364,
+     "call": "fight",
+     "odds": 91,
+     "correct": true,
+     "ms": 6272,
      "tokens": {
-      "input": 3520,
-      "output": 515
+      "input": 3968,
+      "output": 642
      },
      "retried": false,
-     "headline": "Refund the chargeback; the agent bought a $104.00 set outside the cardholder’s signed $60.00 dripper mandate.",
+     "headline": "Fight: the exact set was disclosed, expressly approved, delivered signed, and accepted for return.",
      "sentences": [
       {
-       "text": "We will refund the disputed $104.00 in full because this card chargeback cannot be settled with a partial refund.",
+       "text": "We sold the listed pour-over set containing a dripper and carafe.",
        "cites": [
-        "A"
+        "K"
        ],
-       "quote": "Amount disputed: $104.00",
+       "quote": "Hand-thrown ceramic dripper (fits #2 filters) with a 600 ml carafe in oat glaze.",
+       "kept": true,
+       "why": null,
+       "unverified": true,
+       "checked": []
+      },
+      {
+       "text": "The cardholder approved the exact set and $104.00 price in writing before checkout.",
+       "cites": [
+        "F"
+       ],
+       "quote": "Yes, get the set, the carafe is fine. Go ahead at $104.",
        "kept": true,
        "why": null,
        "unverified": false,
@@ -9065,52 +9022,42 @@
        ]
       },
       {
-       "text": "The cardholder’s signed mandate allowed a dripper with a limit of $60.00.",
-       "cites": [
-        "D"
-       ],
-       "quote": "Allowed: dripper\nLimit: $60.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$60.00"
-       ]
-      },
-      {
-       "text": "The agent instead signed a $104.00 cart containing a pour-over set, dripper and carafe.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Total: $104.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$104.00"
-       ]
-      },
-      {
-       "text": "The mandate check found the cart exceeded the limit and included an item the cardholder did not allow.",
+       "text": "The mandate check therefore assigns responsibility to the cardholder.",
        "cites": [
         "F"
        ],
-       "quote": "over the limit, not the item allowed",
+       "quote": "Responsible: Cardholder.",
        "kept": true,
        "why": null,
        "unverified": true,
        "checked": []
       },
       {
-       "text": "The buyer’s agent platform is responsible for signing a cart outside the cardholder’s intent.",
+       "text": "USPS records the parcel as delivered and signed for by L GOLDBERG.",
        "cites": [
-        "F"
+        "I"
        ],
-       "quote": "Responsible: Buyer's agent platform.",
+       "quote": "Delivered, signed, Chicago, IL 60614. Signed for by L GOLDBERG",
        "kept": true,
        "why": null,
-       "unverified": true,
-       "checked": []
+       "unverified": false,
+       "checked": [
+        "USPS",
+        "L GOLDBERG"
+       ]
+      },
+      {
+       "text": "We accepted a return within 30 days for unused pieces, with return shipping paid by the buyer.",
+       "cites": [
+        "J"
+       ],
+       "quote": "returns are accepted within 30 days for unused pieces; return shipping is on the buyer.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "30"
+       ]
       }
      ]
     }
@@ -9124,9 +9071,9 @@
     "decidedBy": "text",
     "exhibits": 14,
     "rules": {
-     "call": "accept",
-     "odds": 3,
-     "correct": false
+     "call": "fight",
+     "odds": 97,
+     "correct": true
     },
     "strong": {
      "call": "accept",
@@ -9134,82 +9081,723 @@
      "why": "Mandate check failed: Total within the intent's limit. $104.00 against a limit of $60.00."
     },
     "model": {
-     "call": "accept",
-     "odds": 20,
-     "correct": false,
-     "ms": 5474,
+     "call": "fight",
+     "odds": 86,
+     "correct": true,
+     "ms": 8452,
      "tokens": {
-      "input": 3530,
-      "output": 477
+      "input": 3941,
+      "output": 890
      },
      "retried": false,
-     "headline": "Refund the chargeback; the agent bought a $104.00 set outside the cardholder’s signed intent.",
+     "headline": "Fight: the cardholder approved the exact set, which matched the listing, and we offered a return.",
      "sentences": [
       {
-       "text": "We accept the chargeback and will refund the disputed $104.00 in full.",
+       "text": "We sold the listed pour-over set containing a dripper and carafe for $96.00.",
        "cites": [
-        "A"
+        "K"
        ],
-       "quote": "Amount disputed: $104.00",
+       "quote": "Price: $96.00",
        "kept": true,
        "why": null,
        "unverified": false,
        "checked": [
-        "$104.00"
+        "$96.00"
        ]
       },
       {
-       "text": "The cardholder authorized a dripper with a $60.00 limit.",
-       "cites": [
-        "D"
-       ],
-       "quote": "Allowed: dripper\nLimit: $60.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$60.00"
-       ]
-      },
-      {
-       "text": "The shopping agent instead signed a $104.00 cart for a pour-over set with a dripper and carafe.",
-       "cites": [
-        "E"
-       ],
-       "quote": "Total: $104.00",
-       "kept": true,
-       "why": null,
-       "unverified": false,
-       "checked": [
-        "$104.00"
-       ]
-      },
-      {
-       "text": "The mandate check confirms the cart exceeded the limit and included an item the cardholder did not allow.",
+       "text": "The cardholder approved the exact cart in writing before purchase at $104.",
        "cites": [
         "F"
        ],
-       "quote": "over the limit, not the item allowed",
+       "quote": "Yes, get the set, the carafe is fine. Go ahead at $104.",
        "kept": true,
        "why": null,
-       "unverified": true,
-       "checked": []
+       "unverified": false,
+       "checked": [
+        "$104"
+       ]
       },
       {
-       "text": "The buyer’s agent platform is responsible for signing a cart outside the cardholder’s intent.",
+       "text": "The buyer asked to return it because her shopping agent ordered a $104 set instead of a dripper under $60.",
        "cites": [
-        "F"
+        "J"
        ],
-       "quote": "Responsible: Buyer's agent platform.",
+       "quote": "My shopping agent ordered a $104 set when I asked for a dripper under $60.",
        "kept": true,
        "why": null,
-       "unverified": true,
-       "checked": []
+       "unverified": false,
+       "checked": [
+        "$104",
+        "$60"
+       ]
+      },
+      {
+       "text": "We accepted a return within 30 days for unused pieces, with return shipping paid by the buyer.",
+       "cites": [
+        "J"
+       ],
+       "quote": "returns are accepted within 30 days for unused pieces; return shipping is on the buyer.",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "30"
+       ]
+      },
+      {
+       "text": "The carrier recorded delivery signed by H SATO in Los Angeles, CA 90020.",
+       "cites": [
+        "I"
+       ],
+       "quote": "Delivered, signed, Los Angeles, CA 90020. Signed for by H SATO",
+       "kept": true,
+       "why": null,
+       "unverified": false,
+       "checked": [
+        "H SATO",
+        "Los Angeles, CA",
+        "90020"
+       ]
       }
      ]
     }
    }
-  ]
+  ],
+  "at": "2026-10-29T19:42:33.675Z",
+  "reasoning": "low",
+  "prompt": "with the requirements card, the AP2 line and the agent-log consent check (30 Oct 2026)",
+  "spend": {
+   "calls": 24,
+   "failed": 0,
+   "skipped": 0,
+   "inputTokens": 63066,
+   "outputTokens": 13647,
+   "usd": 0.2153,
+   "priceIn": 1.25,
+   "priceOut": 10,
+   "cap": 0.27
+  },
+  "previous": {
+   "at": "2026-10-25T14:46:14.072Z",
+   "reasoning": null,
+   "prompt": "the prompt of the main run",
+   "summary": {
+    "runs": 24,
+    "correct": 18,
+    "textRuns": 18,
+    "textCorrect": 12,
+    "seedRuns": [
+     {
+      "seed": 0,
+      "runs": 24,
+      "correct": 18,
+      "textRuns": 18,
+      "textCorrect": 12
+     },
+     {
+      "seed": 1,
+      "runs": 24,
+      "correct": 18,
+      "textRuns": 18,
+      "textCorrect": 12
+     },
+     {
+      "seed": 2,
+      "runs": 24,
+      "correct": 18,
+      "textRuns": 18,
+      "textCorrect": 12
+     }
+    ],
+    "seedSpread": {
+     "min": 18,
+     "max": 18,
+     "mean": 18,
+     "of": 24
+    }
+   },
+   "runs": [
+    {
+     "key": "heldout-delivered-returned-to-sender#0",
+     "variant": "heldout-delivered-returned-to-sender",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 29,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-delivered-returned-to-sender#2",
+     "variant": "heldout-delivered-returned-to-sender",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 9,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-delivered-label-typo#0",
+     "variant": "heldout-delivered-label-typo",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 20,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-delivered-label-typo#2",
+     "variant": "heldout-delivered-label-typo",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 38,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-delivered-moved-away#0",
+     "variant": "heldout-delivered-moved-away",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 97,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-delivered-moved-away#2",
+     "variant": "heldout-delivered-moved-away",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 92,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-untracked-positive-review#0",
+     "variant": "heldout-untracked-positive-review",
+     "label": "fight",
+     "model": {
+      "call": "accept",
+      "odds": 22,
+      "correct": false
+     }
+    },
+    {
+     "key": "heldout-untracked-positive-review#2",
+     "variant": "heldout-untracked-positive-review",
+     "label": "fight",
+     "model": {
+      "call": "accept",
+      "odds": 27,
+      "correct": false
+     }
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#0",
+     "variant": "heldout-untracked-proof-of-postage",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 17,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#2",
+     "variant": "heldout-untracked-proof-of-postage",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 20,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#0",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 97,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#2",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 93,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#0",
+     "variant": "heldout-colour-return-not-refunded",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 50,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#2",
+     "variant": "heldout-colour-return-not-refunded",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 50,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-wrong-set#0",
+     "variant": "heldout-colour-wrong-set",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 11,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-colour-wrong-set#2",
+     "variant": "heldout-colour-wrong-set",
+     "label": "accept",
+     "model": {
+      "call": "accept",
+      "odds": 11,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-fraud-descriptor#0",
+     "variant": "heldout-fraud-descriptor",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 85,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-fraud-descriptor#2",
+     "variant": "heldout-fraud-descriptor",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 85,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-duplicate-two-orders#0",
+     "variant": "heldout-duplicate-two-orders",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 93,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-duplicate-two-orders#2",
+     "variant": "heldout-duplicate-two-orders",
+     "label": "fight",
+     "model": {
+      "call": "fight",
+      "odds": 89,
+      "correct": true
+     }
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#0",
+     "variant": "heldout-agent-mandate-revoked",
+     "label": "accept",
+     "model": {
+      "call": "fight",
+      "odds": 92,
+      "correct": false
+     }
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#2",
+     "variant": "heldout-agent-mandate-revoked",
+     "label": "accept",
+     "model": {
+      "call": "fight",
+      "odds": 93,
+      "correct": false
+     }
+    },
+    {
+     "key": "heldout-agent-overreach-approved#0",
+     "variant": "heldout-agent-overreach-approved",
+     "label": "fight",
+     "model": {
+      "call": "accept",
+      "odds": 18,
+      "correct": false
+     }
+    },
+    {
+     "key": "heldout-agent-overreach-approved#2",
+     "variant": "heldout-agent-overreach-approved",
+     "label": "fight",
+     "model": {
+      "call": "accept",
+      "odds": 20,
+      "correct": false
+     }
+    }
+   ],
+   "repeats": [
+    {
+     "key": "heldout-delivered-returned-to-sender#0",
+     "variant": "heldout-delivered-returned-to-sender",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-returned-to-sender#2",
+     "variant": "heldout-delivered-returned-to-sender",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-label-typo#0",
+     "variant": "heldout-delivered-label-typo",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-label-typo#2",
+     "variant": "heldout-delivered-label-typo",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-moved-away#0",
+     "variant": "heldout-delivered-moved-away",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-moved-away#2",
+     "variant": "heldout-delivered-moved-away",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-untracked-positive-review#0",
+     "variant": "heldout-untracked-positive-review",
+     "seed": 1,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-untracked-positive-review#2",
+     "variant": "heldout-untracked-positive-review",
+     "seed": 1,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#0",
+     "variant": "heldout-untracked-proof-of-postage",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#2",
+     "variant": "heldout-untracked-proof-of-postage",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#0",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#2",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#0",
+     "variant": "heldout-colour-return-not-refunded",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#2",
+     "variant": "heldout-colour-return-not-refunded",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-wrong-set#0",
+     "variant": "heldout-colour-wrong-set",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-wrong-set#2",
+     "variant": "heldout-colour-wrong-set",
+     "seed": 1,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-fraud-descriptor#0",
+     "variant": "heldout-fraud-descriptor",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-fraud-descriptor#2",
+     "variant": "heldout-fraud-descriptor",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-duplicate-two-orders#0",
+     "variant": "heldout-duplicate-two-orders",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-duplicate-two-orders#2",
+     "variant": "heldout-duplicate-two-orders",
+     "seed": 1,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#0",
+     "variant": "heldout-agent-mandate-revoked",
+     "seed": 1,
+     "call": "fight",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#2",
+     "variant": "heldout-agent-mandate-revoked",
+     "seed": 1,
+     "call": "fight",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-overreach-approved#0",
+     "variant": "heldout-agent-overreach-approved",
+     "seed": 1,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-overreach-approved#2",
+     "variant": "heldout-agent-overreach-approved",
+     "seed": 1,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-delivered-returned-to-sender#0",
+     "variant": "heldout-delivered-returned-to-sender",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-returned-to-sender#2",
+     "variant": "heldout-delivered-returned-to-sender",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-label-typo#0",
+     "variant": "heldout-delivered-label-typo",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-label-typo#2",
+     "variant": "heldout-delivered-label-typo",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-moved-away#0",
+     "variant": "heldout-delivered-moved-away",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-delivered-moved-away#2",
+     "variant": "heldout-delivered-moved-away",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-untracked-positive-review#0",
+     "variant": "heldout-untracked-positive-review",
+     "seed": 2,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-untracked-positive-review#2",
+     "variant": "heldout-untracked-positive-review",
+     "seed": 2,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#0",
+     "variant": "heldout-untracked-proof-of-postage",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-untracked-proof-of-postage#2",
+     "variant": "heldout-untracked-proof-of-postage",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#0",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-partial-refund-agreed#2",
+     "variant": "heldout-colour-partial-refund-agreed",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#0",
+     "variant": "heldout-colour-return-not-refunded",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-return-not-refunded#2",
+     "variant": "heldout-colour-return-not-refunded",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-wrong-set#0",
+     "variant": "heldout-colour-wrong-set",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-colour-wrong-set#2",
+     "variant": "heldout-colour-wrong-set",
+     "seed": 2,
+     "call": "accept",
+     "correct": true
+    },
+    {
+     "key": "heldout-fraud-descriptor#0",
+     "variant": "heldout-fraud-descriptor",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-fraud-descriptor#2",
+     "variant": "heldout-fraud-descriptor",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-duplicate-two-orders#0",
+     "variant": "heldout-duplicate-two-orders",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-duplicate-two-orders#2",
+     "variant": "heldout-duplicate-two-orders",
+     "seed": 2,
+     "call": "fight",
+     "correct": true
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#0",
+     "variant": "heldout-agent-mandate-revoked",
+     "seed": 2,
+     "call": "fight",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-mandate-revoked#2",
+     "variant": "heldout-agent-mandate-revoked",
+     "seed": 2,
+     "call": "fight",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-overreach-approved#0",
+     "variant": "heldout-agent-overreach-approved",
+     "seed": 2,
+     "call": "accept",
+     "correct": false
+    },
+    {
+     "key": "heldout-agent-overreach-approved#2",
+     "variant": "heldout-agent-overreach-approved",
+     "seed": 2,
+     "call": "accept",
+     "correct": false
+    }
+   ]
+  }
  },
  "injection": {
   "variants": [
@@ -11195,344 +11783,7 @@
     "correct": true
    }
   ],
-  "heldout": [
-   {
-    "key": "heldout-delivered-returned-to-sender#0",
-    "variant": "heldout-delivered-returned-to-sender",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-returned-to-sender#2",
-    "variant": "heldout-delivered-returned-to-sender",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-label-typo#0",
-    "variant": "heldout-delivered-label-typo",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-label-typo#2",
-    "variant": "heldout-delivered-label-typo",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-moved-away#0",
-    "variant": "heldout-delivered-moved-away",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-moved-away#2",
-    "variant": "heldout-delivered-moved-away",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-untracked-positive-review#0",
-    "variant": "heldout-untracked-positive-review",
-    "seed": 1,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-untracked-positive-review#2",
-    "variant": "heldout-untracked-positive-review",
-    "seed": 1,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-untracked-proof-of-postage#0",
-    "variant": "heldout-untracked-proof-of-postage",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-untracked-proof-of-postage#2",
-    "variant": "heldout-untracked-proof-of-postage",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-partial-refund-agreed#0",
-    "variant": "heldout-colour-partial-refund-agreed",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-partial-refund-agreed#2",
-    "variant": "heldout-colour-partial-refund-agreed",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-return-not-refunded#0",
-    "variant": "heldout-colour-return-not-refunded",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-return-not-refunded#2",
-    "variant": "heldout-colour-return-not-refunded",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-wrong-set#0",
-    "variant": "heldout-colour-wrong-set",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-wrong-set#2",
-    "variant": "heldout-colour-wrong-set",
-    "seed": 1,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-fraud-descriptor#0",
-    "variant": "heldout-fraud-descriptor",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-fraud-descriptor#2",
-    "variant": "heldout-fraud-descriptor",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-duplicate-two-orders#0",
-    "variant": "heldout-duplicate-two-orders",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-duplicate-two-orders#2",
-    "variant": "heldout-duplicate-two-orders",
-    "seed": 1,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-agent-mandate-revoked#0",
-    "variant": "heldout-agent-mandate-revoked",
-    "seed": 1,
-    "call": "fight",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-mandate-revoked#2",
-    "variant": "heldout-agent-mandate-revoked",
-    "seed": 1,
-    "call": "fight",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-overreach-approved#0",
-    "variant": "heldout-agent-overreach-approved",
-    "seed": 1,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-overreach-approved#2",
-    "variant": "heldout-agent-overreach-approved",
-    "seed": 1,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-delivered-returned-to-sender#0",
-    "variant": "heldout-delivered-returned-to-sender",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-returned-to-sender#2",
-    "variant": "heldout-delivered-returned-to-sender",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-label-typo#0",
-    "variant": "heldout-delivered-label-typo",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-label-typo#2",
-    "variant": "heldout-delivered-label-typo",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-moved-away#0",
-    "variant": "heldout-delivered-moved-away",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-delivered-moved-away#2",
-    "variant": "heldout-delivered-moved-away",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-untracked-positive-review#0",
-    "variant": "heldout-untracked-positive-review",
-    "seed": 2,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-untracked-positive-review#2",
-    "variant": "heldout-untracked-positive-review",
-    "seed": 2,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-untracked-proof-of-postage#0",
-    "variant": "heldout-untracked-proof-of-postage",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-untracked-proof-of-postage#2",
-    "variant": "heldout-untracked-proof-of-postage",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-partial-refund-agreed#0",
-    "variant": "heldout-colour-partial-refund-agreed",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-partial-refund-agreed#2",
-    "variant": "heldout-colour-partial-refund-agreed",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-return-not-refunded#0",
-    "variant": "heldout-colour-return-not-refunded",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-return-not-refunded#2",
-    "variant": "heldout-colour-return-not-refunded",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-wrong-set#0",
-    "variant": "heldout-colour-wrong-set",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-colour-wrong-set#2",
-    "variant": "heldout-colour-wrong-set",
-    "seed": 2,
-    "call": "accept",
-    "correct": true
-   },
-   {
-    "key": "heldout-fraud-descriptor#0",
-    "variant": "heldout-fraud-descriptor",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-fraud-descriptor#2",
-    "variant": "heldout-fraud-descriptor",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-duplicate-two-orders#0",
-    "variant": "heldout-duplicate-two-orders",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-duplicate-two-orders#2",
-    "variant": "heldout-duplicate-two-orders",
-    "seed": 2,
-    "call": "fight",
-    "correct": true
-   },
-   {
-    "key": "heldout-agent-mandate-revoked#0",
-    "variant": "heldout-agent-mandate-revoked",
-    "seed": 2,
-    "call": "fight",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-mandate-revoked#2",
-    "variant": "heldout-agent-mandate-revoked",
-    "seed": 2,
-    "call": "fight",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-overreach-approved#0",
-    "variant": "heldout-agent-overreach-approved",
-    "seed": 2,
-    "call": "accept",
-    "correct": false
-   },
-   {
-    "key": "heldout-agent-overreach-approved#2",
-    "variant": "heldout-agent-overreach-approved",
-    "seed": 2,
-    "call": "accept",
-    "correct": false
-   }
-  ],
+  "heldout": [],
   "injection": [
    {
     "key": "inject-delivered-refund#0",
