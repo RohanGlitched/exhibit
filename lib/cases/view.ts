@@ -48,6 +48,7 @@ function agentView(ctx: CaseContext): AgentView | null {
           ms: run.ms,
           intentKid: run.intent.kid,
           cartKid: run.cart.kid,
+          tokens: run.tokens,
         }
       : undefined,
   };

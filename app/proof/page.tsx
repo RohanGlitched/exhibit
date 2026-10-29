@@ -318,8 +318,8 @@ export default function ProofPage() {
             Each row is one variant, run with two of the story&apos;s customers (different names, addresses and order numbers). Green is the labelled
             call; red is a miss. The fallback rules engine is what argues when the model is out. The stronger rules compare the delivery ZIP with the
             ship-to ZIP, look for a refund record, read the issuer&apos;s address and security-code checks, compare billing with shipping, count earlier
-            orders and read the mandate check; they never read an email or a listing. The model&apos;s number is the seller&apos;s chance from its own
-            tally.
+            orders and read the mandate check; they never read an email or a listing. The model&apos;s number is the evidence balance from its own
+            tally, not a chance of winning.
             {seeds > 1 ? ` Small marks after the model's call are its ${seeds - 1} repeat runs.` : ""}
           </p>
         </div>
@@ -744,6 +744,12 @@ export default function ProofPage() {
             On agent-placed orders the decision is the mandate check, which is code, and since 29 Oct it reads what the cardholder told the agent in its
             log (consent withdrawn, an overage approved in writing). The model writes the response around it. A signed mandate is not authorisation
             evidence the card networks recognise yet, and the briefs now say so.
+          </li>
+          <li>
+            The 56 main runs above are from {day(P.at)}, before the drafter read the reason code&apos;s requirements card (added 29 Oct). Since then it
+            is warier of fraud and agent cases with no 3-D Secure result or compelling evidence: on 29 Oct a live agent case inside the mandate
+            (PP-R-UPI-10195190) was argued as a refund at an evidence balance of 50%, where the main set&apos;s label is fight. The held-out set and the
+            hearings were re-run with the card; the main set was not.
           </li>
           {P.recheckedAt && (
             <li>

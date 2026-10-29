@@ -25,5 +25,7 @@ export interface AgentView {
     ms: number;
     intentKid: string;
     cartKid: string;
+    /** Model tokens the live run used (for the spend figures). */
+    tokens?: { input: number; output: number };
   };
 }

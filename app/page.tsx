@@ -384,7 +384,7 @@ export default async function Home() {
           </li>
           <li>
             <strong>Bought by their own shopping agent, inside the mandate they signed</strong>
-            <span>Fight it</span>
+            <span>Fight it if network evidence backs it</span>
           </li>
           <li>
             <strong>Their agent spent past the limit they signed</strong>

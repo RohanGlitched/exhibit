@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://exhibit-desk.vercel.app"><b>Live demo</b></a> ·
-  <a href="https://youtu.be/TVQXFh42zas"><b>Demo video (2:58)</b></a> ·
+  <a href="https://youtu.be/TVQXFh42zas"><b>Demo video (2:57)</b></a> ·
   <a href="https://exhibit-desk.vercel.app/new">Open a sandbox case</a> ·
   <a href="https://exhibit-desk.vercel.app/desk">The desk</a> ·
   <a href="https://exhibit-desk.vercel.app/desk/analytics">Analytics (AG Studio)</a> ·
@@ -15,8 +15,8 @@
 
 <p align="center">
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20%C2%B7%20Payments%20%C2%B7%20Tracking%20%C2%B7%20Disputes-2b63e8">
-  <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20%7C%20Claude%20on%20Bedrock-13203a">
+  <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20v2%20%C2%B7%20Payments%20v2%20%C2%B7%20Disputes%20%C2%B7%20Webhooks%20%C2%B7%20Agent%20Toolkit-2b63e8">
+  <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20OpenAI-13203a">
   <img alt="Tests" src="https://img.shields.io/badge/tests-98-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
@@ -43,7 +43,7 @@ No sign-up. Everything runs in the PayPal sandbox with test money; the shop, Hal
 | "Not as described": glaze colour | The listing disclosed the colour shift; a return was offered | Fight it |
 | "I didn't make this purchase" | First order, shipped to a parcel forwarder, billing in another state | Refund it |
 | "Charged twice" | The duplicate charge was refunded in full the next day (a real PayPal refund) | Fight it |
-| "I didn't authorise this", but their own shopping agent bought it | The cardholder's signed intent mandate covers the agent's signed cart, and the PayPal order carries the cart | Fight it |
+| "I didn't authorise this", but their own shopping agent bought it | The cardholder's signed intent mandate covers the agent's signed cart, and the PayPal order carries the cart | Fight it if network evidence backs it (a mandate alone isn't authorisation evidence the networks recognise) |
 | "My agent bought the wrong thing" | The agent's $104 cart broke the $60 limit the cardholder signed | Refund it |
 
 Exhibit is never told which story you picked. It only sees the records. Each story has five customers, so the desk reads like a real shop's.
@@ -77,7 +77,7 @@ flowchart LR
 
 1. **Read the case.** `GET /v1/customer/disputes/{id}`: reason, amount, stage, deadline, and the HATEOAS links that say which responses PayPal will take right now. Exhibit only offers an action when PayPal's links allow it.
 2. **Gather the records.** `GET /v2/checkout/orders/{id}` (items, ship-to, trackers), `GET /v2/payments/captures/{id}` (amount, fees, the issuer's address and security-code checks), `GET /v2/payments/refunds/{id}`, plus the store's own records: carrier scans, the inbox, the listing, the policy shown at checkout and the customer's history. Each becomes a lettered exhibit with its source.
-3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced tool call (the same code runs on Claude Haiku 4.5 through Amazon Bedrock's Converse API), `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is closed (every field required, optional ones nullable); Bedrock doesn't enforce a schema, so the server checks the brief's shape, asks once more if it's wrong, and strikes any sentence that arrives in the wrong shape.
+3. **Argue it.** The exhibits go to GPT-5.6 on Azure OpenAI (Responses API) with one forced tool call (the same code is ready to run Claude Haiku 4.5 through Amazon Bedrock's Converse API; not used live, the Bedrock quota is pending), `write_brief`: a recommendation (only the moves PayPal allows for this stage), weighted points for each side, and four to six response sentences, each with the letters of the exhibits that prove it and the words it quotes from them. The tool schema is closed (every field required, optional ones nullable); Bedrock doesn't enforce a schema, so the server checks the brief's shape, asks once more if it's wrong, and strikes any sentence that arrives in the wrong shape.
 4. **Check every sentence.** [`lib/cases/verify.ts`](lib/cases/verify.ts) reads every figure and name in a sentence, however it is written: amounts ("$104.00", "104.00 USD"), dates with or without a year ("3 Oct 2026", "October 3, 2026", "2026-10-03", "Oct 3"), times ("1:02 pm"), ids and tracking numbers, ZIPs, city and state, the carrier, who signed, counts and percentages. Each has to appear in the records the sentence cites, and the words it quotes have to be in a cited exhibit verbatim. One clause has to rest on one record (a date and a place, or a date and a time, from two different scans are struck); a date or amount said to be a refund, a delivery or the disputed amount has to be that in the record; and a sentence can't deny what its record says ("never delivered" against a delivery scan) or claim a signature no record shows. Struck sentences are never filed, and the brief shows why. A sentence with nothing to match is kept but marked unverified. The odds come from the tally's weights, not from the model.
 5. **File it.** `POST /v1/customer/disputes/{id}/provide-evidence` (multipart: the response as notes, tracking or refund details, and a PDF with every exhibit Bates-stamped HC-000001…), or `POST /accept-claim` for a full refund. In the sandbox, `POST /adjudicate` then asks PayPal's simulator for a ruling.
 
@@ -89,11 +89,32 @@ Where a case stands is read from PayPal's own record, not from Exhibit's store: 
 
 ### Purchases made by the buyer's AI shopping agent
 
-Two stories are orders a buyer's agent placed, AP2-style: the cardholder signs an **intent mandate** (what the agent may buy, up to what total, shipped where, until when), the agent signs a **cart mandate** (the exact cart), and the PayPal order carries the cart mandate's id in `custom_id`. When the cardholder later disputes, [`lib/agentic/mandate.ts`](lib/agentic/mandate.ts) verifies both Ed25519 signatures, the cart against the intent (limit, item, ship-to, validity window) and the cart against the PayPal order, in code. The model argues from those checks: inside the mandate, fight; past it, refund. In the sandbox the two keys are stand-ins derived from the order number, so a case can be rebuilt from PayPal alone; each exhibit says so.
+Two stories are orders a buyer's agent placed, AP2-style: the cardholder signs an **intent mandate** (what the agent may buy, up to what total, shipped where, until when), the agent signs a **cart mandate** (the exact cart), and the PayPal order carries the cart mandate's id in `custom_id`. When the cardholder later disputes, [`lib/agentic/mandate.ts`](lib/agentic/mandate.ts) verifies both Ed25519 signatures, the cart against the intent (limit, item, ship-to, validity window) and the cart against the PayPal order, in code. The model argues from those checks and from the reason code's requirements card: past the mandate, refund; inside it, fight only when network-recognised evidence (delivery to the cardholder, earlier undisputed orders, a device or IP match, 3-D Secure) backs it, because a signed mandate is not authorisation evidence the card networks recognise yet. Since 26 Oct a live GPT-5.6 buyer agent makes these purchases with tools and signs with the demo keys published at [`/.well-known/exhibit-keys.json`](https://exhibit-desk.vercel.app/.well-known/exhibit-keys.json); cases opened before that used stand-in keys derived from the order number and are tagged *Script, stand-in key* on the desk and the case.
 
 ### A seller's own agent can run the desk
 
-`/api/mcp` is a Model Context Protocol server (Streamable HTTP) with `list_cases`, `get_case`, `argue_case`, `file_response` (evidence, accept or ruling; it asks for confirmation) and `open_case`. Every tool goes through the same code as the website: PayPal's links gate the filing, the checker strikes what a record doesn't support, and the same per-visitor limits apply.
+`/api/mcp` is a Model Context Protocol server (Streamable HTTP) with `list_cases`, `get_case`, `argue_case`, `file_response` (evidence, accept or ruling; it asks for confirmation), `cross_examine`, `open_case`, and for buyer agents `preflight_cart` and `verify_mandate`. Every tool goes through the same code as the website: PayPal's links gate the filing, the checker strikes what a record doesn't support, and the same per-visitor limits apply.
+
+It sits next to PayPal's own agent stack rather than replacing it. PayPal's [Agent Toolkit](https://www.npmjs.com/package/@paypal/agent-toolkit) reads the disputes, tracking and refunds; Exhibit adds the evidence layer the toolkit doesn't have (lettered exhibits, the checked brief, the hearing, signed mandates). The autopilot reads each lane case through the toolkit's `get_dispute` and `get_shipment_tracking` ([`lib/paypal/toolkit.ts`](lib/paypal/toolkit.ts)), and `/api/mcp` passes `paypal_get_dispute`, `paypal_list_disputes`, `paypal_get_shipment_tracking` and `paypal_get_refund` through. Exhibit doesn't use the toolkit's `create_order` (no card payment source or `custom_id`, so a buyer agent can't pay against its signed cart) or `accept_dispute_claim` (its note can't contain spaces). To give one MCP client both servers:
+
+```json
+{
+  "mcpServers": {
+    "paypal": {
+      "command": "npx",
+      "args": ["-y", "@paypal/mcp@1.8.1", "--tools=all"],
+      "env": { "PAYPAL_ACCESS_TOKEN": "<sandbox access token>", "PAYPAL_ENVIRONMENT": "SANDBOX" }
+    },
+    "exhibit": { "type": "http", "url": "https://exhibit-desk.vercel.app/api/mcp" }
+  }
+}
+```
+
+[`scripts/mcp-session.mjs`](scripts/mcp-session.mjs) is that client as a script: it reads a dispute through PayPal's MCP server, then through Exhibit's, and writes the session to [`docs/mcp-session.txt`](docs/mcp-session.txt).
+
+### The autopilot transacts on the seller's own lane
+
+Once a day the scheduled job opens a case as the shop's own traffic (never handed to a visitor), and the autopilot works it end to end under written house rules ([`lib/cases/autopilot.ts`](lib/cases/autopilot.ts)): PayPal's webhook arrives and the case is argued; the next turn reads it through PayPal's Agent Toolkit and holds a hearing on the draft; then **rule 1** refunds when the brief and the reviewer both say refund and the amount is under $150, **rule 2** files when nothing is struck, the hearing ends for the seller and 48 hours or more remain, and **rule 3** leaves everything else for the seller with the reason. Nothing is sent for ten minutes (**rule 4**: the case page has a *Stop it* button), and **rule 5** asks for the ruling, following the hearing on PayPal's own copy of the filing, once PayPal opens the case for one (on any other filed fight, after two hours, so a visitor can ask first). Every step is an audit line on the case ("Filed by the autopilot 17 min after PayPal's webhook under house rule 2"), and `/api/health` reports the lane.
 
 ### Opening cases without a browser
 
