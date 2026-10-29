@@ -104,6 +104,8 @@
   border-radius: 2px;
   padding: 0 4px;
   white-space: nowrap;
+  letter-spacing: 0.02em;
+  font-size: 10.5px;
 }
 .tag[data-tag="live"] {
   color: var(--respondent-ink);

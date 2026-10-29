@@ -130,7 +130,7 @@ async function readDesk(lenient = false): Promise<{ rows: DeskRow[]; claimed: Re
       buyer: r?.scenarioId ? (s?.buyer.name ?? null) : exhibitCase ? (buyerName ?? null) : null,
       story: s?.title ?? null,
       storyId: s?.id ?? null,
-      tag: r?.lane === "autopilot" ? "Seller's lane, autopilot" : s?.agent ? (r?.agent ? (r.agent.engine === "model" ? "Live buyer agent" : "Scripted agent, published keys") : "Script, stand-in key") : null,
+      tag: r?.lane === "autopilot" ? "Seller's lane" : s?.agent ? (r?.agent ? (r.agent.engine === "model" ? "Live buyer agent" : "Scripted agent") : "Script, stand-in key") : null,
       recommendation: conceded ? "accept" : (r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null)),
       odds: r?.brief && !conceded ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
       engine: r?.brief?.engine ?? null,
