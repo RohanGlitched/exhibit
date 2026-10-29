@@ -1,0 +1,55 @@
+{
+ "at": "2026-10-29T19:48:40.672Z",
+ "from": {
+  "file": "data/proof.json",
+  "measured": "2026-10-25T14:46:14.072Z",
+  "model": "GPT-5.6 on Azure OpenAI",
+  "runs": 56,
+  "fightLabels": 24
+ },
+ "disputedUsdPer100": 11786,
+ "winnableUsdPer100": 4743,
+ "feePerCase": 20,
+ "table": [
+  {
+   "id": "fight",
+   "name": "Always fight",
+   "keptUsd": 4743,
+   "givenUpUsd": 0,
+   "responses": 100,
+   "fightsOnRefundCases": 57,
+   "feesUsd": 2000,
+   "netUsd": 2743
+  },
+  {
+   "id": "refund",
+   "name": "Always refund",
+   "keptUsd": 0,
+   "givenUpUsd": 4743,
+   "responses": 0,
+   "fightsOnRefundCases": 0,
+   "feesUsd": 2000,
+   "netUsd": -2000
+  },
+  {
+   "id": "strong",
+   "name": "Stronger rules",
+   "keptUsd": 4646,
+   "givenUpUsd": 96,
+   "responses": 46,
+   "fightsOnRefundCases": 7,
+   "feesUsd": 2000,
+   "netUsd": 2646
+  },
+  {
+   "id": "exhibit",
+   "name": "Exhibit (GPT-5.6, first run)",
+   "keptUsd": 4743,
+   "givenUpUsd": 0,
+   "responses": 43,
+   "fightsOnRefundCases": 0,
+   "feesUsd": 2000,
+   "netUsd": 2743
+  }
+ ]
+}

@@ -19,3 +19,11 @@
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+.versions {
+  margin-top: 22px;
+}
+.transcripts {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}

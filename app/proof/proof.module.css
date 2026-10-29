@@ -454,3 +454,23 @@
     content: "Model ";
   }
 }
+
+/* Held-out variants that moved between two runs. */
+.moved {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: grid;
+  gap: 10px;
+  max-width: 80ch;
+  font-size: 15.5px;
+}
+.moved strong {
+  display: inline-block;
+  min-width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+.moved small {
+  display: block;
+  margin-top: 2px;
+}

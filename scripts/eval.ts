@@ -5,6 +5,9 @@
 //   npx tsx --conditions=react-server scripts/eval.ts --recheck     no model calls: re-run the checker, the baselines
 //       and the mutations over the answers already saved in data/proof.json
 //   npx tsx --conditions=react-server scripts/eval.ts --rules-only  no model calls: the two rules baselines only
+//   npx tsx --conditions=react-server scripts/eval.ts --update heldout --max-usd 0.25
+//       the held-out set alone through the model, once; every other answer is kept from data/proof.json and
+//       re-checked, and the held-out answers it replaces are kept under heldout.previous
 //
 // Credentials: .env.local in the working directory, or node's --env-file=<path> (npx tsx --env-file=<path> ...).
 //
@@ -45,9 +48,10 @@ const flag = (name: string) => process.argv.includes(`--${name}`);
 const recheck = flag("recheck") || flag("rescore");
 const rulesOnly = flag("rules-only");
 const smoke = flag("smoke");
+const update = arg("update") === "heldout";
 const useModel = !recheck && !rulesOnly;
 const SEEDS = Math.max(1, Number(arg("seeds") ?? 3));
-const ONLY = new Set((arg("only") ?? "main,pressure,heldout,injection,ablation").split(","));
+const ONLY = new Set(update ? ["heldout"] : (arg("only") ?? "main,pressure,heldout,injection,ablation").split(","));
 const PRICE_IN = Number(arg("price-in") ?? process.env.EVAL_PRICE_IN ?? PRICE.input);
 const PRICE_OUT = Number(arg("price-out") ?? process.env.EVAL_PRICE_OUT ?? PRICE.output);
 const CAP = Number(arg("max-usd") ?? 2.5);
@@ -224,8 +228,11 @@ let pressure: {
 }[];
 let modelName: string | null = null;
 let at = new Date().toISOString();
+// The reasoning effort the Azure calls ran at (lib/llm.ts sends AZURE_OPENAI_REASONING, default "low").
+const reasoning = useModel && /Azure/.test(llmModel()) ? process.env.AZURE_OPENAI_REASONING || "low" : null;
+let heldPrevious: unknown = null;
 
-if (recheck) {
+if (recheck || update) {
   if (!saved) throw new Error(`No ${SAVED} to recheck.`);
   at = saved.at;
   modelName = saved.summary.model;
@@ -240,6 +247,25 @@ if (recheck) {
   repeats = saved.repeats ?? { main: [], heldout: [], injection: [] };
   ablation = saved.ablation?.runs ?? [];
   pressure = saved.pressure ?? [];
+  if (update) {
+    // The held-out set again, once, on today's prompt; what it replaces is kept beside it.
+    const s0 = saved.summary;
+    heldPrevious = {
+      at: saved.heldout?.at ?? saved.at,
+      reasoning: saved.heldout?.reasoning ?? saved.reasoning ?? null,
+      prompt: saved.heldout?.prompt ?? "the prompt of the main run",
+      summary: { runs: s0.heldoutRuns, correct: s0.heldoutModelCorrect, textRuns: s0.heldoutTextRuns, textCorrect: s0.heldoutModelCorrectOnText, seedRuns: s0.heldoutSeedRuns, seedSpread: s0.heldoutSeedSpread },
+      runs: (saved.heldout?.runs ?? []).map((r: Row) => ({ key: r.key, variant: r.variant, label: r.label, model: r.model ? { call: r.model.call, odds: r.model.odds, correct: r.model.correct } : null })),
+      repeats: saved.repeats?.heldout ?? [],
+    };
+    console.log(`held-out only: ${heldCases.length} calls planned, about ${(nextCost() * heldCases.length).toFixed(2)}, cap ${CAP}`);
+    heldRuns = await pool(heldCases, PARALLEL, async (c) => {
+      const r: Row = { ...baseRow(c), model: answer(await modelBrief(c), c.variant.label, true) };
+      log("heldout", r);
+      return r;
+    });
+    repeats = { ...repeats, heldout: [] };
+  }
 } else {
   modelName = useModel ? llmModel() : null;
   const planned =
@@ -623,17 +649,18 @@ const summary = {
 console.log(summary);
 if (useModel) console.log("spend", { ...spend, usd: Number(spend.usd.toFixed(4)) });
 
-const previousSpend = recheck ? (saved?.spend ?? null) : null;
+const previousSpend = recheck || update ? (saved?.spend ?? null) : null;
+const runSpend = { ...spend, usd: Number(spend.usd.toFixed(4)), priceIn: PRICE_IN, priceOut: PRICE_OUT, cap: CAP };
 mkdirSync("data", { recursive: true });
 writeFileSync(
   SAVED,
   JSON.stringify(
     {
       at,
-      ...(recheck ? { recheckedAt: new Date().toISOString() } : {}),
-      reasoning: recheck ? saved.reasoning : null,
+      ...(recheck || update ? { recheckedAt: new Date().toISOString() } : {}),
+      reasoning: recheck || update ? saved.reasoning : reasoning,
       summary,
-      spend: useModel ? { ...spend, usd: Number(spend.usd.toFixed(4)), priceIn: PRICE_IN, priceOut: PRICE_OUT, cap: CAP } : previousSpend,
+      spend: useModel && !update ? runSpend : previousSpend,
       variants: VARIANTS.map((v: Variant) => ({ id: v.id, story: v.story, change: v.change, label: v.label, decidedBy: decidedBy(v) })),
       runs,
       pressure,
@@ -642,6 +669,17 @@ writeFileSync(
         note: "Written and labelled by a separate agent that was not shown Exhibit's prompt or rubric, after the prompt was fixed for this run; not labelled by a person.",
         variants: HELDOUT.map((v) => ({ id: v.id, story: v.story, change: v.change, label: v.label, decidedBy: v.decidedBy, source: v.source, why: v.why })),
         runs: heldRuns,
+        ...(update
+          ? {
+              at: new Date().toISOString(),
+              reasoning,
+              prompt: "with the requirements card, the AP2 line and the agent-log consent check",
+              spend: runSpend,
+              previous: heldPrevious,
+            }
+          : saved?.heldout?.previous && recheck
+            ? { at: saved.heldout.at, reasoning: saved.heldout.reasoning, prompt: saved.heldout.prompt, spend: saved.heldout.spend, previous: saved.heldout.previous }
+            : {}),
       },
       injection: { variants: INJECTIONS.map((v) => ({ id: v.id, story: v.story, change: v.change, label: v.label, attack: v.attack })), runs: injRuns },
       ablation: { removed: "How cases are usually decided", runs: ablation },

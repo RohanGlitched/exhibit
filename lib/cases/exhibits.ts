@@ -8,7 +8,7 @@ import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
 const STAGES: Record<string, string> = { INQUIRY: "Inquiry", CHARGEBACK: "Chargeback", PRE_ARBITRATION: "Pre-arbitration", ARBITRATION: "Arbitration" };
 import type { Exhibit, Fact } from "./types";
 import { cartDigest } from "../agentic/mandate";
-import { reviewAgentOrder } from "../agentic/review";
+import { agentLog, reviewAgentOrder } from "../agentic/review";
 import type { AgentRun, AgentStep } from "../agentic/types";
 import { SITE_URL } from "../site";
 
@@ -25,6 +25,14 @@ function stepLine(st: AgentStep): string {
   const lines = st.result.split("\n");
   const result = st.tool === "search_catalog" ? `${lines[0]} ${lines.slice(1).join("; ")}` : lines[0];
   return `${st.n}. ${st.tool}(${args})${st.why ? `, because: ${st.why.replace(/\.$/, "")}` : ""}. Result: ${result}${st.ok || st.tool === "check_intent" ? "" : " (refused)"}`;
+}
+
+/** The tool calls, with the cardholder's messages placed before the agent signed its cart. */
+function withConversation(lines: string[], steps: AgentStep[], said: string[], told: string[]): string[] {
+  if (!said.length) return [...lines, ...told];
+  const at = steps.findIndex((st) => st.tool === "sign_cart" || st.tool === "pay");
+  const k = at < 0 ? lines.length : at;
+  return [...lines.slice(0, k), ...said, ...lines.slice(k), ...told];
 }
 
 /**
@@ -225,7 +233,13 @@ export function buildExhibits(src: Sources): Exhibit[] {
           { label: "Passed", value: `${checks.filter((x) => x.ok).length} of ${checks.length}` },
           { label: "Responsible", value: m.verdict.label },
         ],
-        lines: [...checks.map((x) => `${x.ok ? "Pass" : "Fail"}: ${x.label}. ${x.detail}.`), `Responsible: ${m.verdict.label}. ${m.verdict.line}`],
+        lines: [
+          ...checks.map((x) => `${x.ok ? "Pass" : "Fail"}: ${x.label}. ${x.detail}.`),
+          ...(m.consent
+            ? [`The agent's log overrides the checks: ${m.consent.kind === "withdrawn" ? "the cardholder withdrew consent before checkout" : "the cardholder approved the cart in writing"}. On the checks alone: ${m.consent.checks.label}.`]
+            : []),
+          `Responsible: ${m.verdict.label}. ${m.verdict.line}`,
+        ],
       });
       const run = m.run;
       if (run) {
@@ -239,7 +253,8 @@ export function buildExhibits(src: Sources): Exhibit[] {
             { label: "Agent", value: run.engine === "model" ? `${run.model ?? "Model"} with tools` : "Scripted agent, same tools" },
             ...(run.fallback ? [{ label: "Why scripted", value: run.fallback.charAt(0).toUpperCase() + run.fallback.slice(1) }] : []),
           ],
-          lines: [...run.steps.map(stepLine), ...told],
+          // The tools log only the calls; the agent's messages with the cardholder come before it signed the cart.
+          lines: withConversation(run.steps.map(stepLine), run.steps, agentLog(s, run), told),
           sandbox:
             run.engine === "model"
               ? "A live run of the buyer's agent when the case was opened; the payment it made is real in the sandbox."
