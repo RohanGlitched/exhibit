@@ -377,3 +377,44 @@ test("a sentence that denies a signature isn't read as claiming one", () => {
 test("a rule about signatures isn't a denial that one was given", () => {
   assert.equal(checkSentence({ text: "The $104.00 order did not require a signature, but USPS shows one was obtained.", cites: ["A", "E"] }, EX, text).kept, true);
 });
+
+/* ───────────── Oct 30: the signer's name, figures bound to their role, denials with nothing behind them ───────────── */
+
+test("a signer's name stops at the end of its sentence", () => {
+  // "D BROOKS. The order..." used to be read as the signer "D BROOKS. The" and struck a true answer.
+  const s = check("USPS records it was signed for by M LINDQVIST. The order named Maya Lindqvist.", ["E", "B"]);
+  assert.equal(s.kept, true, s.why);
+  assert.ok(s.checked!.includes("M LINDQVIST"));
+  // Initials with full stops are still one name, and a wrong name is still struck.
+  assert.match(check("The parcel was signed for by J. R. SMITH.", ["E"]).why!, /J\. R\. SMITH as the person who signed/);
+  assert.match(check("The parcel was signed for by K LINDQVIST. It was delivered.", ["E"]).why!, /K LINDQVIST as the person who signed/);
+});
+
+test("a clause joined by 'and' carries the event of the one before it", () => {
+  // 26 Sep 2026, 22:00 is the order time, not a delivery.
+  const s = check("USPS delivered it in San Francisco, CA 94109 and left it at the front desk on 26 Sep 2026, 22:00.", ["E", "B"]);
+  assert.equal(s.kept, false);
+  assert.match(s.why!, /not as the date of a delivery/);
+  assert.equal(check("USPS delivered it in San Francisco, CA 94109 and left it at the front desk on 1 Oct 2026, 11:00.", ["E"]).kept, true);
+});
+
+test("a real amount is held to the role it is given: payment, refund, cart", () => {
+  // $23.00 is a unit price on the order line.
+  assert.match(check("We received a completed $23.00 payment.", ["B"]).why!, /not as the payment/);
+  assert.equal(check("We received a completed $46.00 payment.", ["B"]).kept, true);
+  assert.match(check("The $23.00 refund is recorded as completed.", ["D", "B"]).why!, /not as a refund/);
+  assert.equal(check("The $46.00 refund is recorded as completed.", ["D"]).kept, true);
+  assert.match(check("The agent signed a $23.00 cart.", ["B"]).why!, /not as the cart's total/);
+  // A refund still to be made can be the disputed amount; a refund said to have been made has to be a refund record.
+  assert.match(check("We refunded $46.00 in full.", ["B"]).why!, /not as a refund/);
+  assert.equal(check("We refunded $46.00 in full.", ["D"]).kept, true);
+});
+
+test("a denial that cites only a record silent on it is struck", () => {
+  const s = check("We never shipped order HC-622449 to Maya Lindqvist.", ["B"]);
+  assert.equal(s.kept, false);
+  assert.match(s.why!, /nothing in Exhibit B records the shipping either way/);
+  // A note or an email can deny it in other words; "no delivery confirmation" is about the evidence.
+  assert.equal(check("We never shipped it.", ["F"]).kept, true);
+  assert.equal(check("We have the receipt but no delivery confirmation for order HC-622449.", ["B"]).kept, true);
+});

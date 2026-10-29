@@ -37,7 +37,10 @@ const ZIP = /\b\d{5}(?:-\d{4})?\b/g;
 const STATES =
   "AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY";
 const PLACE = new RegExp(`\\b([A-Z][a-z]+(?:[ -][A-Z][a-z]+){0,2}), (${STATES})\\b`, "g");
-const SIGNER = /\bsign(?:ed|ature)(?: for)? by ((?:[A-Z][A-Za-z.'’-]*)(?: [A-Z][A-Za-z.'’-]*){0,3})/g;
+// A signer is up to four capitalised words or initials ("D BROOKS", "J. R. Smith"). A full stop after a word ends
+// the name: "signed for by D BROOKS. The order..." names D BROOKS, not "D BROOKS. The".
+const NAME_PART = String.raw`(?:(?:Mr|Mrs|Ms|Dr)\.|[A-Z]\.|[A-Z][A-Za-z'’-]*)`;
+const SIGNER = new RegExp(String.raw`\bsign(?:ed|ature)(?: for)? by (${NAME_PART}(?: ${NAME_PART}){0,3})`, "g");
 const CARRIER = /\b(USPS|UPS|FedEx|Fed Ex|DHL|Royal Mail|Canada Post|OnTrac|LaserShip|Amazon Logistics|Purolator|Evri|Parcelforce|DPD|GLS)\b/g;
 const NUMBER = /(?<![\w.$])\d+(?:\.\d+)?(?![\w]|\.\d)/g;
 const WORDS: Record<string, string | null> = {
@@ -235,15 +238,15 @@ function clauses(text: string): { from: number; to: number; text: string }[] {
 const EVENTS: { name: string; says: RegExp; record: RegExp; kinds?: string[] }[] = [
   { name: "a refund", says: /\brefunded\b|\brefund (?:was|of)\b/i, record: /refund/i, kinds: ["refund"] },
   { name: "the refund being issued", says: /\bissued\b/i, record: /refund|issued|created|added/i, kinds: ["refund"] },
-  { name: "a delivery", says: /\bdeliver(?:ed|y)\b|\barrived?\b|\bsigned for\b/i, record: /deliver|arriv|signed|attempt|picked up|found/i },
+  { name: "a delivery", says: /\bdeliver(?:ed|y)\b|\barrived?\b|\bsigned for\b|\bleft (?:at|on|with|by)\b/i, record: /deliver|arriv|signed|attempt|picked up|found|left/i },
   { name: "a delivery attempt", says: /\battempt/i, record: /attempt/i },
-  { name: "shipping", says: /\bshipped\b|\bdispatched\b|\bmailed\b|\baccepted the (?:parcel|package)\b|\bacceptance\b|\bposted\b/i, record: /ship|accepted|dispatch|transit|label|mail|post/i },
+  { name: "shipping", says: /\bshipped\b|\bdispatched\b|\bmailed\b|\bsent (?:the|it|your|their|her|his) (?:parcel|package|order|item|vase|set)\b|\baccepted the (?:parcel|package)\b|\bacceptance\b|\bposted\b/i, record: /ship|accepted|dispatch|transit|label|mail|post/i },
   { name: "the order", says: /\bordered\b|\bplaced\b|\bpurchased\b|\bbought\b/i, record: /order|placed|purchas|bought/i },
   { name: "the expiry", says: /\bexpir/i, record: /expir/i },
   { name: "the signing", says: /\bsigned (?:the|an?|its|their|her|his)\b/i, record: /sign/i },
   {
     name: "a message",
-    says: /\b(?:wrote|written|emailed|email|messaged|message|told|contacted|reported|said|asked|complained|informed|replied|explained|notified|declined|agreed|confirmed|requested)\b/i,
+    says: /\b(?:wrote|written|emailed|email|messaged|message|told|contacted|reported|said|asked|complained|informed|replied|explained|notified|declined|agreed|confirmed|requested|sent (?:that|this|the|an?) (?:confirmation|email|message|note|reply))\b/i,
     record: /wrote|email|message/i,
     kinds: ["inbox", "claim"],
   },
@@ -252,7 +255,9 @@ const EVENTS: { name: string; says: RegExp; record: RegExp; kinds?: string[] }[]
 /** What an amount is said to be, and what the record has to call it. */
 const AMOUNTS: { name: string; says: RegExp; record: RegExp; kinds?: string[] }[] = [
   { name: "the disputed amount", says: /\bchargeback\b|\bdisputed?\b|\bclaim\b/gi, record: /disput|total|gross|amount/i },
-  { name: "a refund", says: /\brefunded\b|\brefund (?:was|of)\b/gi, record: /refund|amount/i, kinds: ["refund"] },
+  { name: "a refund", says: /\brefunded\b|\brefund (?:was|of|is|has)\b|(?<=\d )refund\b/gi, record: /refund/i, kinds: ["refund"] },
+  { name: "the payment", says: /\bpayment\b|\bcharged?\b|\bcaptured?\b/gi, record: /total|gross|amount|payment|charge|captur|disput/i },
+  { name: "the cart's total", says: /\bcart\b/gi, record: /total|limit/i },
   { name: "a fee", says: /\bfees?\b/gi, record: /fee/i },
   { name: "the net amount", says: /\bnet\b|\bproceeds\b/gi, record: /net/i },
   { name: "the limit", says: /\blimit(?:ed)?\b|\bcap(?:ped)?\b|\bup to \$|\bunder \$|\bat most\b/gi, record: /limit|under|up to|max/i },
@@ -300,6 +305,10 @@ const REPORTING = /\b(?:reported|reports|says|said|claims|claimed|told|tells|wro
 const CLAUSE_DENIAL = /\b(?:no|not|never|cannot|can't|without|none|neither|nor|unable|lacks?)\b[^.;]*\bsign(?:ed|ature)\b/i;
 const BACK_TO_SENDER = /\bto (?:the )?sender\b|\breturned to (?:the )?(?:shop|seller|merchant)\b/i;
 const PARCEL_SIGNATURE =/\bsigned for\b|\bsignature\b/gi;
+// A denial of these has to rest on a cited record that mentions them at all.
+const DENIED_NEEDS_RECORD = new Set(["shipped", "delivered"]);
+const FREE_TEXT = new Set(["note", "inbox", "transcript", "scans", "tracking"]);
+const EVIDENCE_NOUNS = "confirmation|proof|record|records|scan|scans|tracking|receipt|evidence|information|update|updates|status|date|signature";
 
 /* ───────────── The check ───────────── */
 
@@ -363,6 +372,7 @@ export function checkSentence(
     return strike(s.text, known, `${what} isn't in ${where}.`, quote);
   }
 
+  let before: { to: number; events: typeof EVENTS } | null = null;
   for (const c of clauses(s.text)) {
     const own = toks.filter((t) => t.at >= c.from && t.at < c.to);
 
@@ -389,7 +399,12 @@ export function checkSentence(
     }
 
     // A date said to be a refund (a delivery, an email...) has to be the date of one in the record.
-    const events = EVENTS.filter((e) => e.says.test(c.text));
+    // "delivered in Palo Alto and left at the front door on 4 Oct": a clause joined by "and" with no event word
+    // of its own carries on the event of the clause before it.
+    const named = EVENTS.filter((e) => e.says.test(c.text));
+    const joined: boolean = before !== null && /^,?\s(?:and|then)\s$/i.test(s.text.slice(before.to, c.from));
+    const events: typeof EVENTS = named.length ? named : joined ? before!.events : [];
+    before = { to: c.to, events };
     if (events.length) {
       for (const t of own.filter((x) => x.kind === "date" || x.kind === "day")) {
         const at = h.units.filter((u) => holds(t, view(u.text)));
@@ -426,6 +441,18 @@ export function checkSentence(
       const yes = found.filter((x) => x.p.includes("yes"));
       if (yes.length && !found.some((x) => x.p.includes("no"))) {
         return strike(s.text, known, `It says the parcel or payment wasn't ${stem.name}, but Exhibit ${yes[0].u.exhibit} says “${clip(yes[0].u.text)}”.`, quote);
+      }
+      // "We never shipped order HC-067211", citing only the order: a record that never mentions shipping or
+      // delivery can't show that it didn't happen, so the denial rests on nothing.
+      // A note or an email can say so in other words ("still on the studio shelf"), so only a denial that cites
+      // nothing but structured records is held to this; "no delivery confirmation" is about the evidence.
+      if (
+        DENIED_NEEDS_RECORD.has(stem.name) &&
+        !cited.some((e) => FREE_TEXT.has(e.kind)) &&
+        !h.units.some((u) => polarity(u.text, stem.re).length) &&
+        !new RegExp(`${stem.re.source}\\s+(?:${EVIDENCE_NOUNS})\\b`, "i").test(c.text)
+      ) {
+        return strike(s.text, known, `It says it wasn't ${stem.name}, but nothing in ${where} records the ${stem.name === "shipped" ? "shipping" : "delivery"} either way.`, quote);
       }
     }
 
