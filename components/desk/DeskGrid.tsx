@@ -31,7 +31,7 @@ const theme = themeQuartz.withParams({
   spacing: 7,
   rowHeight: 50,
   headerHeight: 42,
-  cellHorizontalPadding: 14,
+  cellHorizontalPadding: 10,
 });
 
 // Keyed by string so a stage the desk adds later (such as "lapsed") still reads in words.
@@ -153,15 +153,15 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   // reason and buyer take what is left.
   const cols = useMemo<ColDef<DeskRow>[]>(
     () => [
-      { field: "id", headerName: "Case", width: 186, cellRenderer: CaseId, pinned: "left" },
-      { field: "reason", headerName: "Reason", flex: 1, minWidth: 126, valueFormatter: (p) => reasonLabel(p.value ?? "") },
-      { field: "amount", headerName: "Amount", width: 94, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
-      { field: "buyer", headerName: "Buyer", flex: 1, minWidth: 126, valueFormatter: (p) => p.value ?? "—" },
-      { field: "where", headerName: "Where it stands", width: 146, cellRenderer: Status },
+      { field: "id", headerName: "Case", width: 204, cellRenderer: CaseId, pinned: "left" },
+      { field: "reason", headerName: "Reason", flex: 1, minWidth: 128, valueFormatter: (p) => reasonLabel(p.value ?? "") },
+      { field: "amount", headerName: "Amount", width: 86, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
+      { field: "buyer", headerName: "Buyer", flex: 1, minWidth: 118, valueFormatter: (p) => p.value ?? "—" },
+      { field: "where", headerName: "Where it stands", width: 134, cellRenderer: Status },
       {
         field: "due",
         headerName: "Respond in",
-        width: 110,
+        width: 98,
         cellRenderer: Due,
         sort: "asc",
         // Live deadlines first, soonest at the top; missed ones after them; cases off the clock last.
@@ -174,15 +174,15 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
           return (a ?? "9").localeCompare(b ?? "9");
         },
       },
-      { field: "odds", headerName: "Call · evidence balance", headerTooltip: BALANCE_TIP, width: 198, cellRenderer: Call },
+      { field: "odds", headerName: "Call · evidence balance", headerTooltip: BALANCE_TIP, width: 190, cellRenderer: Call },
       {
         field: "filed",
         headerName: "Filed",
-        width: 138,
+        width: 136,
         tooltipValueGetter: (p) => p.data?.filed ?? null,
         valueGetter: (p) => (p.data ? shortFiled(p.data) : ""),
       },
-      { field: "opened", headerName: "Opened", width: 80, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
+      { field: "opened", headerName: "Opened", width: 70, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
     ],
     [],
   );
