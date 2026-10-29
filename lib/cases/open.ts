@@ -112,6 +112,22 @@ export async function openCase(story: Scenario, opts: { visitor?: string; lane?:
 
   if (s.carrier) await addTracking(order.id, capture.id, s.carrier.code, s.carrier.number, s.items);
 
+  // A returning customer: their earlier orders become real sandbox card payments too (never disputed), so the
+  // order book's compelling evidence points at PayPal's own records. The store dates them on its own day.
+  const priorPayments: NonNullable<CaseRecord["priorPayments"]> = [];
+  for (const [k, h] of s.history.filter((x) => x.payment).entries()) {
+    const value = h.total.replace(/[^0-9.]/g, "");
+    const prior = await cardCheckout({
+      buyer: { name: s.buyer.name, email: s.buyer.email, card: s.buyer.card, address: s.buyer.shipTo },
+      items: [{ name: h.item.slice(0, 120), sku: `HIST-${h.ref.replace(/\W/g, "")}`, price: value, quantity: 1, description: `Store order ${h.ref}` }],
+      shippingCost: "0.00",
+      invoiceId: `${invoiceId}-P${k + 1}`,
+      description: `Halden Ceramics store order ${h.ref} (earlier order, re-created in the sandbox)`,
+    });
+    const pc = prior.purchase_units[0]?.payments?.captures?.[0];
+    if (pc) priorPayments.push({ ref: h.ref, invoiceId: `${invoiceId}-P${k + 1}`, orderId: prior.id, captureId: pc.id, at: new Date().toISOString() });
+  }
+
   // "Charged twice": the double click is real too. A second identical charge, refunded in full the next "day".
   let refundId: string | undefined;
   if (s.reason === "DUPLICATE_TRANSACTION") {
@@ -146,6 +162,7 @@ export async function openCase(story: Scenario, opts: { visitor?: string; lane?:
     refundId,
     filings: [],
     ...(opts.lane ? { lane: opts.lane } : {}),
+    ...(priorPayments.length ? { priorPayments } : {}),
   };
   await saveCase(rec);
   await waitForDispute(disputeId);

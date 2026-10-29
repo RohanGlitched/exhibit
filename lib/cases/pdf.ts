@@ -150,7 +150,8 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
         y -= 5;
       }
     }
-    if (e.sandbox) {
+    // The demo-key note on a mandate is for the person reading the case page; the reviewer reads the record.
+    if (e.sandbox && e.kind !== "mandate") {
       y -= 8;
       for (const l of wrap(`Note: ${e.sandbox}`, sans, 8.5, W - 2 * M)) {
         room(12);

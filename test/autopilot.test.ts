@@ -95,3 +95,12 @@ test("time since the webhook, in words", () => {
   assert.equal(sinceWords(t, "2026-10-30T12:52:00Z"), "52 min");
   assert.equal(sinceWords(t, "2026-10-30T15:05:00Z"), "3 h 5 min");
 });
+
+test("the toolkit's read gates the plan: a different deadline or tracking number sends the case to the seller", async () => {
+  const { toolkitDisagrees } = await import("../lib/cases/autopilot.ts");
+  const due = "2026-11-08T04:59:59.000Z";
+  assert.equal(toolkitDisagrees({ dispute: { due }, tracking: { number: "9405511206213825904898" } }, { due, tracking: "9405511206213825904898" }), null);
+  assert.match(toolkitDisagrees({ dispute: { due: "2026-11-09T04:59:59.000Z" }, tracking: null }, { due, tracking: null })!, /deadline/);
+  assert.match(toolkitDisagrees({ dispute: { due }, tracking: { number: "940551120621380000" } }, { due, tracking: "9405511206213825904898" })!, /tracking/);
+  assert.equal(toolkitDisagrees({ dispute: null, tracking: null }, { due, tracking: "x" }), null, "no read, no gate");
+});

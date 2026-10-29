@@ -36,6 +36,11 @@ export interface PastOrder {
   item: string;
   total: string;
   outcome: string;
+  /** The checkout session the store logged for that order (store records). */
+  device?: string;
+  ip?: string;
+  /** Re-created as a real sandbox card payment when the case is opened, so the order book points at PayPal's record. */
+  payment?: boolean;
 }
 
 export interface Buyer {
@@ -68,6 +73,10 @@ export interface Scenario {
   agent?: AgentPurchase; // the order was placed by the buyer's AI shopping agent under signed mandates
   listing?: string; // the listing text, when it differs from the catalogue's (eval variants only)
   policies?: string[]; // the policy lines shown at checkout, when they differ (eval variants only)
+  /** The checkout session the store logged for this order: device id and IP address (store records). */
+  session?: { device: string; ip: string };
+  /** Opened only on the seller's own lane by the autopilot, never offered to visitors or kept in the pool. */
+  laneOnly?: boolean;
 }
 
 /** An order the buyer's AI shopping agent placed: what the cardholder asked it for, and the limits they signed. */
@@ -349,6 +358,59 @@ const STORIES: Story[] = [
     expected: "fight",
   },
   {
+    // The same purchase by a returning cardholder's agent: two earlier orders through the same agent session,
+    // never disputed, delivered to the same address, from the same device and IP. That is the compelling evidence
+    // (Visa CE 3.0; Mastercard's prior-undisputed-transactions evidence for 4837) a signed mandate alone isn't.
+    id: "agent-returning",
+    title: "“I didn't authorise this”, from a returning customer's own agent",
+    blurb: "Dinner plates, $180. A returning customer's AI agent bought them under a signed mandate, from the same device and IP as two earlier orders that were never disputed.",
+    reason: "UNAUTHORISED",
+    reasonCode: "4837",
+    cardBrand: "MASTERCARD",
+    buyers: [
+      home("Zoe Fischer", addr("1118 Jenifer Street", "Madison", "WI", "53703"), TEST_MC),
+      home("Ryan Choi", addr("3306 Bryant Avenue South", "Minneapolis", "MN", "55408"), TEST_MC),
+      home("Caleb Turner", addr("2817 Lafayette Street", "Denver", "CO", "80205"), TEST_MC),
+    ],
+    items: [item("HC-PLATE-DIN")],
+    shipping: "12.00",
+    orderDaysAgo: 8,
+    carrier: {
+      code: "USPS",
+      name: "USPS",
+      number: "9405511206213859470080",
+      service: "Ground Advantage, signature confirmation",
+      scans: [
+        { day: 1, hour: 15, status: "Accepted", place: "Portland, OR 97214" },
+        { day: 4, hour: 9, status: "Out for delivery", place: "{city}" },
+        { day: 4, hour: 14, status: "Delivered, signed", place: "{city}", detail: "Signed for by {signature}" },
+      ],
+    },
+    inbox: [],
+    history: [
+      { ref: "#1031", daysAgo: 211, item: "Slate speckle mug, 12 oz, two", total: "$84.00", outcome: "Delivered to the same address, never disputed", device: "AGT-7F3A-90C2", ip: "198.51.100.23", payment: true },
+      { ref: "#1077", daysAgo: 146, item: "Nesting bowls, set of three", total: "$136.00", outcome: "Delivered to the same address, never disputed", device: "AGT-7F3A-90C2", ip: "198.51.100.23", payment: true },
+    ],
+    session: { device: "AGT-7F3A-90C2", ip: "198.51.100.23" },
+    laneOnly: true,
+    claim: "Cardholder says they did not authorise this transaction.",
+    notes: ["Ordered through the buyer's shopping agent, the same agent session as this customer's two earlier orders. The PayPal order carries a reference to the cart the agent signed."],
+    agent: {
+      name: "Personal shopping agent",
+      request: "Find me a set of four dinner plates in a grey or speckled glaze, handmade if possible, under $200 delivered to my home.",
+      item: "dinner plates",
+      maxTotal: "200.00",
+      transcript: [
+        "Searched 6 shops for handmade dinner plates, set of four, grey or speckled.",
+        "Shortlisted Halden Ceramics, where this cardholder has ordered twice before: Dinner plates, set of four, slate speckle, $168.00 plus $12.00 shipping.",
+        "Checked the cart against the signed intent: dinner plates, $180.00 total, under the $200.00 limit, shipping to the cardholder's home.",
+        "Signed the cart mandate and paid with the cardholder's card through PayPal.",
+        "Told the cardholder: ordered slate speckle dinner plates from Halden Ceramics, $180.00, arriving in about four days.",
+      ],
+    },
+    expected: "fight",
+  },
+  {
     id: "agent-overreach",
     title: "“My agent bought the wrong thing”",
     blurb: "Pour-over set, $104. The cardholder told their agent to buy a dripper under $60; it bought the $104 set with the carafe.",
@@ -440,7 +502,7 @@ function cast(s: Story, buyerIndex: number, tracking?: string): Scenario {
 }
 
 /** Every story with its first customer, for the pickers. */
-export const SCENARIOS: Scenario[] = STORIES.map((s) => cast(s, 0));
+export const SCENARIOS: Scenario[] = STORIES.filter((s) => !s.laneOnly).map((s) => cast(s, 0));
 
 /** A story for one case: its customer by index or by the name on the card, and the tracking number it shipped under. */
 export function scenario(id: string, opts: { buyer?: number | string; tracking?: string } = {}): Scenario | undefined {

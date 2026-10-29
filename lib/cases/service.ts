@@ -62,6 +62,7 @@ export async function caseContext(id: string): Promise<CaseContext> {
     invoiceId,
     refund,
     refundedCapture,
+    priorPayments: record?.priorPayments,
     agent: record?.agent,
   });
   const filings = mergeFilings(record?.filings ?? [], paypalFilings(dispute));

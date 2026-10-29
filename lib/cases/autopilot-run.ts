@@ -8,8 +8,8 @@ import { argue, fileAction } from "./service";
 import { reviewCase } from "./cross";
 import { openCase } from "./open";
 import { isFiled } from "./guard";
-import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue, type HousePlan } from "./autopilot";
-import { readThroughToolkit } from "../paypal/toolkit";
+import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue, toolkitDisagrees, type HousePlan } from "./autopilot";
+import { readThroughToolkit, toolkitCall } from "../paypal/toolkit";
 import { hearingsOf, latestOn } from "./hearing-log";
 import type { Brief, CaseRecord } from "./types";
 
@@ -73,8 +73,12 @@ async function planLane(rec: CaseRecord): Promise<string> {
       console.error("autopilot hearing", id, (e as Error).message);
     }
   }
+  // The toolkit's read is a gate: if PayPal's Agent Toolkit and Exhibit's own record disagree on the deadline or the
+  // tracking, nothing is sent on its own; the case waits for the seller with the disagreement as the reason.
+  const disagree = toolkitDisagrees(read, { due: d.seller_response_due_date ?? null, tracking: rec.tracking ?? null });
+  const decided = planFor({ brief, hearing, amount: Number(d.dispute_amount.value), due: read.dispute?.due ?? d.seller_response_due_date ?? null, now: Date.now() });
   const plan: HousePlan = {
-    ...planFor({ brief, hearing, amount: Number(d.dispute_amount.value), due: read.dispute?.due ?? d.seller_response_due_date ?? null, now: Date.now() }),
+    ...(disagree ? { ...decided, action: "queue" as const, rule: 3 as const, reason: disagree, sendAfter: decided.decidedAt } : decided),
     read: {
       at: read.at,
       status: read.dispute?.status ?? null,
@@ -113,6 +117,19 @@ async function sendPlan(rec: CaseRecord): Promise<string> {
 async function askRuling(rec: CaseRecord): Promise<string> {
   const f = await fileAction(rec.disputeId, "ruling", "autopilot", { ip: IP });
   return `${rec.disputeId}: ${f.detail ?? "asked for a ruling"} (${f.summary})`;
+}
+
+/**
+ * The backstop for a missed webhook: PayPal's Agent Toolkit lists the newest disputes, and a case Exhibit opened that
+ * PayPal has handed to the seller but nobody has argued is argued now, as the CREATED webhook would have. One a turn.
+ */
+async function sweep(cases: CaseRecord[]): Promise<string> {
+  const listed = await toolkitCall<{ items?: { dispute_id: string; status: string }[] }>("list_disputes", { page_size: 20 });
+  const byId = new Map(cases.map((c) => [c.disputeId, c]));
+  const missed = (listed.items ?? []).filter((x) => x.status === "WAITING_FOR_SELLER_RESPONSE" && byId.get(x.dispute_id) && !byId.get(x.dispute_id)!.brief && !byId.get(x.dispute_id)!.retired);
+  if (!missed.length) return `list_disputes sweep (PayPal Agent Toolkit): ${listed.items?.length ?? 0} read, none missed`;
+  const rec = byId.get(missed[0].dispute_id)!;
+  return `list_disputes sweep found ${rec.disputeId} with the seller and unargued: ${await argueLane(rec)}`;
 }
 
 export async function autopilotTick(deadline: number, opts: { open?: string | null; lane?: boolean } = {}): Promise<TickReport> {
@@ -155,6 +172,9 @@ export async function autopilotTick(deadline: number, opts: { open?: string | nu
     ruled++;
     await step(`ruling ${c.disputeId}`, 45_000, () => askRuling(c));
   }
+
+  // The webhook backstop, through PayPal's Agent Toolkit.
+  await step("sweep", 30_000, () => sweep(cases));
 
   // 4: the next lane case, once a day (or the story asked for).
   const newest = lane.map((c) => c.openedAt).sort().at(-1);

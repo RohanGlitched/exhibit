@@ -128,3 +128,13 @@ export function sinceWords(fromIso: string, toIso: string): string {
 /** The stories the seller's lane opens, one a day in turn. */
 export const LANE_STORIES = ["delivered", "agent-mandate", "untracked", "colour", "agent-overreach", "duplicate", "fraud"] as const;
 export const laneStoryFor = (now: number) => LANE_STORIES[Math.floor(now / 86_400_000) % LANE_STORIES.length];
+
+/** Why the toolkit's read and Exhibit's record disagree, or null when they agree (or the toolkit didn't answer). */
+export function toolkitDisagrees(read: { dispute: { due: string | null } | null; tracking: { number: string } | null }, own: { due: string | null; tracking: string | null }): string | null {
+  if (!read.dispute) return null;
+  if (read.dispute.due && own.due && read.dispute.due.slice(0, 16) !== own.due.slice(0, 16))
+    return `PayPal's Agent Toolkit reads the deadline as ${read.dispute.due}, Exhibit's record as ${own.due}; the seller should look before anything is sent.`;
+  if (read.tracking && own.tracking && !read.tracking.number.includes(own.tracking))
+    return `PayPal's Agent Toolkit reads tracking ${read.tracking.number}, Exhibit's record ${own.tracking}; the seller should look before anything is sent.`;
+  return null;
+}

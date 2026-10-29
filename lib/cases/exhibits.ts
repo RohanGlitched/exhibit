@@ -90,6 +90,8 @@ export interface Sources {
   refund?: Refund | null;
   /** The capture the refund was made against, when it isn't the disputed one (the duplicate charge). */
   refundedCapture?: Capture | null;
+  /** A returning customer's earlier orders, as real sandbox payments (CaseRecord.priorPayments). */
+  priorPayments?: { ref: string; captureId: string }[];
   agent?: AgentRun; // an agent story's purchase, signed and kept on the case record
 }
 
@@ -366,6 +368,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
           ? [`Shipping: ${SHOP.policies.shipping}`]
           : [`Returns: ${SHOP.policies.returns}`];
     out.push({ kind: "policy", title: "Store policy shown at checkout", source: `Store policy · ${SHOP.site}/policies`, facts: [], lines: policyLines });
+    const paid = new Map((src.priorPayments ?? []).map((p) => [p.ref, p.captureId]));
     out.push({
       kind: "history",
       title: "This customer's history",
@@ -373,8 +376,15 @@ export function buildExhibits(src: Sources): Exhibit[] {
       facts: [
         { label: "Customer", value: `${s.buyer.name}, ${s.buyer.email}` },
         { label: "Earlier orders", value: String(s.history.length) },
+        ...(s.session ? [{ label: "This order's device", value: s.session.device }, { label: "This order's IP address", value: s.session.ip }] : []),
+        ...s.history.filter((h) => paid.has(h.ref)).map((h) => ({ label: `PayPal payment for ${h.ref}`, value: paid.get(h.ref)! })),
       ],
-      lines: s.history.length ? s.history.map((h) => `${h.ref}, ${h.daysAgo} days ago: ${h.item}, ${h.total}. ${h.outcome}.`) : ["First order from this customer."],
+      lines: s.history.length
+        ? s.history.map((h) => `${h.ref}, ${h.daysAgo} days ago: ${h.item}, ${h.total}. ${h.outcome}.${h.device ? ` Device ${h.device}, IP address ${h.ip}.` : ""}`)
+        : ["First order from this customer."],
+      sandbox: paid.size
+        ? `The earlier orders' PayPal payments were made in the sandbox when this case was opened, with the same card, and never disputed; the order book dates them on the store's day. Device ids and IP addresses are the store's checkout log.`
+        : undefined,
     });
     const notes = src.agent?.injection ? [...s.notes, INJECTION_NOTE] : s.notes;
     if (notes.length) {

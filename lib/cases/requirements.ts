@@ -235,8 +235,19 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
   const avs = fact(payment, "Address check") ?? "";
   const cvv = fact(payment, "Security code") ?? "";
   const billing = fact(payment, "Billing address");
-  const prior = (history?.lines ?? []).filter((l) => !/^First order/.test(l) && /no issues|delivered/i.test(l) && !/disput|chargeback/i.test(l));
+  const undisputed = (l: string) => /\bnever disputed\b|\bno dispute\b/i.test(l) || !/disput|chargeback/i.test(l);
+  const prior = (history?.lines ?? []).filter((l) => !/^First order/.test(l) && /no issues|delivered/i.test(l) && undisputed(l));
   const device = (notes?.lines ?? []).find((l) => /\bdevice\b|\bIP\b|\bbrowser\b/i.test(l));
+  // Compelling evidence proper: earlier undisputed orders 120 to 365 days old from the same device or IP address as
+  // this order, by the store's checkout log (Visa CE 3.0 asks for two; Mastercard accepts the same kind of history).
+  const thisDevice = fact(history, "This order's device");
+  const thisIp = fact(history, "This order's IP address");
+  const sameSession = prior.filter((l) => {
+    const days = Number(l.match(/, (\d+) days ago:/)?.[1] ?? NaN);
+    const dev = l.match(/\bDevice ([A-Z0-9-]+)/)?.[1];
+    const ip = l.match(/\bIP address ([0-9.]+)/)?.[1];
+    return days >= 120 && days <= 365 && ((thisDevice && dev === thisDevice) || (thisIp && ip === thisIp));
+  });
   const delivered = scans?.lines?.find((l) => /\bDelivered\b/.test(l) && !/to sender/i.test(l));
   const home = delivered && zipOf(delivered) === zipOf(fact(order, "Ship to")) && !billing;
   const out: Requirement[] = [];
@@ -266,14 +277,18 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
     ),
   );
   out.push(
-    prior.length >= 2
+    sameSession.length >= 2
+      ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "on file", `${sameSession.length} earlier orders, 120 to 365 days old, never disputed, from the same device and IP address as this one`, letters(history), true, "")
+      : prior.length >= 2
       ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "weak",`${prior.length} earlier orders delivered without dispute; CE 3.0 also needs them to share the IP or device with this one`, letters(history), true, "Do the earlier orders share an IP address or device id with this one, as compelling evidence requires?")
       : prior.length === 1
         ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "weak", "One earlier order; the standard asks for two", letters(history), true, "One earlier order isn't two. What else ties the cardholder to this order?")
         : item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "missing", "No earlier orders from this customer", letters(history), true, "This is the customer's first order. What ties the cardholder to it?"),
   );
   out.push(
-    device
+    sameSession.length && thisDevice
+      ? item("device", "A matching IP address or device id", "on file", `This order came from device ${thisDevice}${thisIp ? `, IP address ${thisIp}` : ""}, as the earlier orders did`, letters(history), true, "")
+      : device
       ? item("device", "A matching IP address or device id", "weak", "The seller's note names the same device, but no IP or device id is on file", letters(notes), true, "What device id or IP address shows this was the same device?")
       : item("device", "A matching IP address or device id", "missing", "No IP address or device id on file", [], true, "What IP address or device id ties this order to the cardholder?"),
   );

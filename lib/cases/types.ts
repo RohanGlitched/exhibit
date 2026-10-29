@@ -95,6 +95,8 @@ export interface CaseRecord {
   events?: { id: string; type: string; receivedAt: string; status: string; outcome?: string }[];
   /** The seller's own lane: a case opened as the shop's traffic, which the autopilot works under the house rules. */
   lane?: "autopilot";
+  /** A returning customer's earlier orders, re-created as real sandbox card payments when the case was opened. */
+  priorPayments?: { ref: string; invoiceId: string; orderId: string; captureId: string; at: string }[];
   /** What the autopilot decided under the house rules, and what it did (lib/cases/autopilot.ts). */
   house?: HousePlan;
   hearing?: Hearing; // the latest cross-examination by the simulated reviewer (kept for older readers)

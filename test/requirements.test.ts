@@ -164,3 +164,28 @@ test("the inbox is read by who wrote it even when the buyer's name isn't the ord
   assert.equal(status(card, "returned"), "on file");
   assert.equal(status(card, "return"), "on file");
 });
+
+test("Mastercard 4837: two earlier undisputed orders from the same device and IP, 120-365 days old, are on file", () => {
+  const history: Exhibit = {
+    id: "H",
+    kind: "history",
+    title: "History",
+    source: "Store",
+    facts: [
+      { label: "This order's device", value: "AGT-7F3A-90C2" },
+      { label: "This order's IP address", value: "198.51.100.23" },
+    ],
+    lines: [
+      "#1031, 211 days ago: Slate speckle mug, 12 oz, two, $84.00. Delivered to the same address, never disputed. Device AGT-7F3A-90C2, IP address 198.51.100.23.",
+      "#1077, 146 days ago: Nesting bowls, set of three, $136.00. Delivered to the same address, never disputed. Device AGT-7F3A-90C2, IP address 198.51.100.23.",
+    ],
+  };
+  const card = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), history]);
+  assert.equal(status(card, "prior"), "on file");
+  assert.equal(status(card, "device"), "on file");
+  // Too recent, or another device: not compelling evidence.
+  const recent = { ...history, lines: history.lines!.map((l) => l.replace(/\d+ days ago/, "40 days ago")) };
+  assert.notEqual(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), recent]), "prior"), "on file");
+  const other = { ...history, lines: history.lines!.map((l) => l.replace("AGT-7F3A-90C2, IP address 198.51.100.23", "AGT-0000-0000, IP address 203.0.113.9")) };
+  assert.notEqual(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), other]), "prior"), "on file");
+});
