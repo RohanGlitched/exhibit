@@ -104,7 +104,7 @@ export const showcase = unstable_cache(
       strikeDemo,
     };
   },
-  ["showcase-v5"],
+  ["showcase-v6"],
   { revalidate: 300 },
 );
 

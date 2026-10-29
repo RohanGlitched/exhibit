@@ -98,3 +98,9 @@ test("health lists deadlines still ahead or just missed, and only counts the lon
   assert.equal(s.missed, 3);
   assert.equal(s.missedLongAgo, 2);
 });
+
+test("showcase: a win ruled at Exhibit's request after the reviewer's verdict outranks an older requested win of the 'delivered' story", () => {
+  const followed = showcaseRank({ where: "won", decidedBy: "requested", scenarioId: "colour", filings: [{ action: "evidence", at: "2026-10-29T20:57:00Z" }, { action: "ruling", at: "2026-10-29T21:09:00Z", summary: "Ruled by the simulated reviewer: the listing disclosed it" }], engine: "model" });
+  const old = showcaseRank({ where: "won", decidedBy: "requested", scenarioId: "delivered", filings: [{ action: "evidence", at: "2026-10-15T08:00:00Z" }, { action: "ruling", at: "2026-10-15T09:00:00Z", summary: "Asked the sandbox to rule" }], engine: "model" });
+  assert.ok(followed > old);
+});
