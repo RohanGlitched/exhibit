@@ -397,6 +397,8 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
   const [quick, setQuick] = useState("");
   const [filter, setFilter] = useState("all");
   const [probes, setProbes] = useState(false);
+  // Agent cases opened before the live buyer agent (scripted logs, stand-in keys): listed, and can be hidden.
+  const [scripts, setScripts] = useState(true);
   // AG Grid paints only once its script has run; until then the same rows show as plain paper rows.
   const [painted, setPainted] = useState(false);
 
@@ -465,7 +467,8 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
   const pooled = rows.filter((r) => r.pooled).length;
   const retired = rows.filter((r) => r.retired).length;
   const probeCount = rows.filter((r) => r.source === "probe").length;
-  const desk = rows.filter((r) => !r.pooled && !r.retired && (probes || r.source !== "probe"));
+  const desk = rows.filter((r) => !r.pooled && !r.retired && (probes || r.source !== "probe") && (scripts || r.tag !== "Script, stand-in key"));
+  const scriptCount = rows.filter((r) => !r.pooled && !r.retired && r.tag === "Script, stand-in key").length;
   // Cases that missed PayPal's deadline are kept unanswered on purpose and listed apart, folded, below the desk.
   const missed = desk.filter((r) => isMissed(r)).sort((a, b) => (b.due ?? "").localeCompare(a.due ?? ""));
   const live = desk.filter((r) => !isMissed(r));
@@ -504,6 +507,12 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
             <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
             Only cases I opened
           </label>
+          {scriptCount > 0 && (
+            <label className={styles.toggle}>
+              <input type="checkbox" checked={scripts} onChange={(e) => setScripts(e.target.checked)} />
+              Pre-agent scripts, stand-in keys ({scriptCount})
+            </label>
+          )}
           {probeCount > 0 && (
             <label className={styles.toggle}>
               <input type="checkbox" checked={probes} onChange={(e) => setProbes(e.target.checked)} />
