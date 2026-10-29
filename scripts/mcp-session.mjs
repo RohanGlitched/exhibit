@@ -1,8 +1,9 @@
 // One MCP client, two servers: PayPal's own MCP server (@paypal/mcp, over stdio, on the sandbox) and Exhibit's
 // (Streamable HTTP at /api/mcp). Reads a case through PayPal's tools, then through Exhibit's evidence layer, and
-// writes the session to docs/mcp-session.txt. Read-only: no case is argued, filed or changed.
+// writes the session to docs/mcp-session.txt. Nothing is filed. With --argue <id>, Exhibit also argues that case
+// (one model call; the brief is saved on the case, nothing is sent to PayPal).
 //
-//   node scripts/mcp-session.mjs [case id]        (reads .env.local when the variables aren't set)
+//   node scripts/mcp-session.mjs [case id] [--argue <case id>]     (reads .env.local when the variables aren't set)
 //
 // Needs PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET (sandbox) for PayPal's server; the access token it gets is
 // handed to the child process and never printed.
@@ -68,7 +69,10 @@ async function call(client, server, name, args) {
 }
 
 const listed = await call(paypal, "paypal", "list_disputes", { page_size: 5 });
-let caseId = process.argv[2];
+const argv = process.argv.slice(2);
+const ai = argv.indexOf("--argue");
+const argueId = ai >= 0 ? argv[ai + 1] : null;
+let caseId = argv.find((a, i) => !a.startsWith("--") && (ai < 0 || i !== ai + 1));
 if (!caseId) {
   try {
     caseId = JSON.parse(listed).items?.[0]?.dispute_id;
@@ -86,7 +90,8 @@ try {
 }
 await call(exhibit, "exhibit", "get_case", { id: caseId });
 if (tx) await call(exhibit, "exhibit", "paypal_get_shipment_tracking", { transaction_id: tx });
-await call(exhibit, "exhibit", "list_cases", { stage: "all" }).catch(async () => call(exhibit, "exhibit", "list_cases", {}));
+await call(exhibit, "exhibit", "list_cases", { stage: "waiting" });
+if (argueId) await call(exhibit, "exhibit", "argue_case", { id: argueId });
 
 await paypal.close();
 await exhibit.close();

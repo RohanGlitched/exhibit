@@ -303,7 +303,7 @@
   }
   .heroText,
   .split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 22px;
   }
   .section {
@@ -516,4 +516,10 @@
 .mandate .toolTrail li strong {
   text-transform: none;
   letter-spacing: 0;
+}
+
+.readPdf :global(.btn) {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
 }
