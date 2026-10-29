@@ -451,3 +451,15 @@ test("an estimate quoted from the buyer's email is not held to what was paid", (
   assert.equal(c("The bowls cost $124.00.", ["B"]).kept, true);
   assert.match(c("The buyer paid $30 for the bowls.", ["F"]).why!, /not as what was paid/);
 });
+
+test("the date a case opened is held to the claim's Opened line, not its Respond by", () => {
+  const ex: Exhibit[] = [
+    { id: "A", kind: "claim", title: "The buyer's claim: not received", source: "PayPal", facts: [{ label: "Opened", value: "12 Oct 2026" }, { label: "Respond by", value: "22 Oct 2026" }] },
+    { id: "E", kind: "scans", title: "USPS scan history", source: "USPS", facts: [], lines: ["4 Oct 2026, 13:00  Delivered, signed, San Francisco, CA 94109"] },
+  ];
+  const c = (t: string) => checkSentence({ text: t, cites: ["E", "A"] }, ex, text);
+  assert.equal(c("USPS delivered it on 4 Oct 2026, before the case opened on 12 Oct 2026.").kept, true);
+  assert.match(c("USPS delivered it on 4 Oct 2026, before the case opened on 22 Oct 2026.").why!, /not as the date of the case opening/);
+  assert.equal(c("Our response is due by 22 Oct 2026.").kept, true);
+  assert.match(c("Our response is due by 12 Oct 2026.").why!, /not as the date of the response deadline/);
+});

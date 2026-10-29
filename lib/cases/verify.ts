@@ -246,6 +246,9 @@ const EVENTS: { name: string; says: RegExp; record: RegExp; kinds?: string[] }[]
   { name: "shipping", says: /\bshipped\b|\bdispatched\b|\bmailed\b|\bsent (?:the|it|your|their|her|his) (?:parcel|package|order|item|vase|set)\b|\baccepted the (?:parcel|package)\b|\bacceptance\b|\bposted\b/i, record: /ship|accepted|dispatch|transit|label|mail|post/i },
   { name: "the order", says: /\bordered\b|\bplaced\b|\bpurchased\b|\bbought\b/i, record: /order|placed|purchas|bought/i },
   { name: "the expiry", says: /\bexpir/i, record: /expir/i },
+  // The claim prints when the case opened next to when the response is due: one isn't the other.
+  { name: "the case opening", says: /\b(?:case|chargeback|dispute|claim)s? (?:was |were )?(?:opened|filed|raised)\b|\bopened (?:the|this|a|her|his|their) (?:case|chargeback|dispute|claim)\b/i, record: /\bopened\b/i },
+  { name: "the response deadline", says: /\b(?:respond|response|reply|answer)(?:s|ed)? (?:is |was )?(?:due|by)\b|\bdeadline\b/i, record: /respond by|due/i },
   { name: "the signing", says: /\bsigned (?:the|an?|its|their|her|his)\b/i, record: /sign/i },
   {
     name: "a message",
