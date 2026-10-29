@@ -17,7 +17,7 @@
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20v2%20%C2%B7%20Payments%20v2%20%C2%B7%20Disputes%20%C2%B7%20Webhooks%20%C2%B7%20Agent%20Toolkit-2b63e8">
   <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20OpenAI-13203a">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-134-17845a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-191-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
@@ -56,6 +56,7 @@ Exhibit is never told which story you picked. It only sees the records. Each sto
 | [`/new`](https://exhibit-desk.vercel.app/new) | The seven stories as chargeback notices; one click opens a real sandbox dispute |
 | [`/desk`](https://exhibit-desk.vercel.app/desk) | Every dispute on the sandbox account in AG Grid, with your move, PayPal reviewing, won, refunded and lost read from PayPal |
 | [`/desk/analytics`](https://exhibit-desk.vercel.app/desk/analytics) | The desk in AG Studio: custom widgets (deadline ladder, kept/refunded/lost ledger, checker strikes, stamps), themed as paperwork, with an analyst agent built on the Studio Agent Framework |
+| [`/import`](https://exhibit-desk.vercel.app/import) | Bring your own case: paste an order export, tracking and an email thread; Exhibit builds the exhibits, the requirements card and a checked brief, and files nothing |
 | [`/proof`](https://exhibit-desk.vercel.app/proof) | The measured eval, sourced cost figures, and why not the Resolution Center or a chargeback service |
 | [`/api/mcp`](https://exhibit-desk.vercel.app/api/mcp) | Exhibit as an MCP server, so a seller's own agent can run the desk |
 | [`/api/health`](https://exhibit-desk.vercel.app/api/health) | Pool stock per story, oldest stock, cases near PayPal's deadline, store and model |
@@ -182,7 +183,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 134 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
+npm test                                                   # 191 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
 npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
