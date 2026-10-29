@@ -160,7 +160,9 @@ export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<Arg
   if (useModel) {
     yield { type: "status", text: "Weighing the records" };
     try {
-      brief = await argueWithModel(ctx.dispute, ctx.exhibits);
+      // The autopilot (PayPal's webhook, the seller's lane) lets the model read the case through PayPal's Agent
+      // Toolkit first; a visitor watching the brief stream gets it from the exhibits at once.
+      brief = await argueWithModel(ctx.dispute, ctx.exhibits, { toolkit: Boolean(opts.autopilot) });
     } catch (e) {
       console.error("model brief failed", (e as Error).message);
       yield { type: "status", text: "The model didn't answer, so the rules engine is writing the brief" };

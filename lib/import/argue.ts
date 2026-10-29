@@ -53,7 +53,7 @@ export async function argueImport(c: ImportedCase, ip: string, onStep: (s: Step)
   onStep({ type: "status", text: "Weighing the records" });
   let brief: Brief;
   try {
-    brief = await argueWithModel(d, c.exhibits, { system: importSystem() });
+    brief = await argueWithModel(d, c.exhibits, { system: importSystem(), toolkit: false }); // a pasted case is not in PayPal
   } catch (e) {
     console.error("import brief failed", (e as Error).message);
     onStep({ type: "status", text: "The model didn't answer, so the rules engine is writing the brief" });

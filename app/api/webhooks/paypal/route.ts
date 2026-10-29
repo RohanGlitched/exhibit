@@ -7,7 +7,8 @@ import { storage } from "@/lib/storage";
 import { MINUTE, allow } from "@/lib/limits";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// The autopilot argues in after(): with PayPal's toolkit reads first, a brief can take most of a minute.
+export const maxDuration = 300;
 
 /**
  * PayPal's webhook for CUSTOMER.DISPUTE.CREATED, .UPDATED and .RESOLVED. Each delivery is checked with
