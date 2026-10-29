@@ -77,9 +77,13 @@ async function pooled<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Pr
 }
 
 /** Every dispute on the sandbox account, straight from the Disputes API, with Exhibit's notes where it has them. */
-async function readDesk(): Promise<{ rows: DeskRow[]; claimed: Record<string, string> }> {
-  // A failed read throws, so the snapshot never caches an empty desk: the last good one is served meanwhile.
-  const [disputes, records]: [DisputeSummary[], CaseRecord[]] = await Promise.all([listDisputes({ pageSize: 50, pages: 6 }), listCases()]);
+async function readDesk(lenient = false): Promise<{ rows: DeskRow[]; claimed: Record<string, string> }> {
+  // A failed read throws, so the snapshot never caches a desk missing its records: the last good one is served
+  // meanwhile. Only the uncached fallback (lenient) reads PayPal's list without Exhibit's records.
+  const [disputes, records]: [DisputeSummary[], CaseRecord[]] = await Promise.all([
+    listDisputes({ pageSize: 50, pages: 6 }),
+    lenient ? listCases().catch(() => [] as CaseRecord[]) : listCases(),
+  ]);
   const byId = new Map(records.map((r) => [r.disputeId, r]));
   // Who took each case from the pool stays on the server: the snapshot is shared, "mine" is set per visitor.
   const claimed = Object.fromEntries(records.filter((r) => r.claimedBy).map((r) => [r.disputeId, r.claimedBy!]));
@@ -161,9 +165,13 @@ export interface DeskSnapshot {
 }
 
 export async function deskSnapshot(visitor: string | null): Promise<DeskSnapshot> {
-  const s = await snapshot().catch((e) => {
+  const s = await snapshot().catch(async (e) => {
     console.error("desk snapshot", (e as Error).message);
-    return { at: new Date().toISOString(), rows: [] as DeskRow[], claimed: {} as Record<string, string> };
+    // Not cached: PayPal's list as it is now (without Exhibit's records if the store is down), or nothing.
+    const now = new Date().toISOString();
+    return readDesk(true)
+      .then((d) => ({ at: now, ...d }))
+      .catch(() => ({ at: now, rows: [] as DeskRow[], claimed: {} as Record<string, string> }));
   });
   return { at: s.at, rows: s.rows.map((r) => ({ ...r, mine: Boolean(visitor && s.claimed[r.id] === visitor) })) };
 }
