@@ -7,7 +7,7 @@ import type { DeskRow } from "./desk";
 import type { Stage } from "./cases/derive";
 
 type Counted = Pick<DeskRow, "where" | "decidedBy" | "pooled" | "retired" | "source" | "due" | "amount" | "sentences" | "struck" | "filed"> &
-  Partial<Pick<DeskRow, "withdrawn">>;
+  Partial<Pick<DeskRow, "withdrawn" | "askedFor">>;
 
 /** The shop's own cases: not pool stock waiting for a visitor, not retired stock, not build-day API probes. */
 export const shopRows = <R extends Counted>(rows: R[]): R[] => rows.filter((r) => !r.pooled && !r.retired && r.source !== "probe");
@@ -22,6 +22,9 @@ export interface DeskCounts {
   wonByItself: number;
   lostAsked: number;
   lostByItself: number;
+  /** Rulings Exhibit asked for that PayPal hasn't given yet, by the side asked for. */
+  askedSeller: number;
+  askedBuyer: number;
   refunded: number;
   open: number;
   lapsed: number;
@@ -42,6 +45,8 @@ export function deskCounts(rows: Counted[]): DeskCounts {
     wonByItself: by("won", false),
     lostAsked: by("lost", true),
     lostByItself: by("lost", false),
+    askedSeller: live.filter((r) => r.askedFor === "seller").length,
+    askedBuyer: live.filter((r) => r.askedFor === "buyer").length,
     refunded: n(["refunded"]),
     open: n(["open"]),
     lapsed: n(["lapsed"]),

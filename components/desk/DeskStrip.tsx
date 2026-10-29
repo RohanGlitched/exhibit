@@ -19,6 +19,11 @@ export default function DeskStrip({ c, at }: { c: DeskTotals; at: string }) {
         <div>
           <dt>PayPal reviewing</dt>
           <dd>{c.reviewing + c.open}</dd>
+          {c.askedBuyer + c.askedSeller > 0 && (
+            <p className={styles.split}>
+              Rulings asked for: {c.askedBuyer} for the buyer, {c.askedSeller} for the seller
+            </p>
+          )}
         </div>
         <div>
           <dt>Won</dt>

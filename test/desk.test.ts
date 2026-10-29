@@ -19,6 +19,7 @@ const row = (id: string, extra: Partial<DeskRow> = {}): DeskRow => ({
   where: "filed",
   whereLine: "",
   decidedBy: null,
+  askedFor: null,
   due: null,
   opened: "2026-10-29T10:00:00.000Z",
   updated: "2026-10-29T10:00:00.000Z",
@@ -171,4 +172,14 @@ test("within a tier, the hero whose brief the checker matched more of wins; tier
   // A win the sandbox closed on its own never outranks a requested one, however much was checked.
   const byItself = showcaseRank({ where: "won", decidedBy: "sandbox", filings: [asked[0]], checks: 99, scenarioId: "delivered", engine: "model" });
   assert.ok(fewer > byItself);
+});
+
+test("rulings asked for and not yet given are counted by side", async () => {
+  const { deskCounts } = await import("../lib/desk-counts.ts");
+  const { askedSide } = await import("../lib/desk-side.ts");
+  const c = deskCounts([row("A", { where: "filed", askedFor: "buyer" }), row("B", { where: "filed", askedFor: "seller" }), row("C", { where: "filed" })]);
+  assert.equal(c.askedBuyer, 1);
+  assert.equal(c.askedSeller, 1);
+  assert.equal(askedSide([{ action: "ruling", ok: true, detail: "Asked the sandbox to rule for the buyer, by the autopilot under house rule 5" }]), "buyer");
+  assert.equal(askedSide([{ action: "evidence", ok: true }]), null);
 });

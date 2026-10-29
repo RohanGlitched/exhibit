@@ -147,7 +147,11 @@ export default async function Home() {
               <dt>Won in the sandbox</dt>
               <dd>{stats.won}</dd>
               <p>
-                {stats.wonAsked} ruled at Exhibit&apos;s request, {stats.wonByItself} closed by the sandbox on its own
+                {stats.wonAsked} ruled at Exhibit&apos;s request, {stats.wonByItself} closed by the sandbox on its own; lost{" "}
+                {stats.lostAsked} at Exhibit&apos;s request, {stats.lostByItself} otherwise
+                {stats.askedBuyer + stats.askedSeller > 0
+                  ? `. Rulings asked for and not yet given: ${stats.askedBuyer} for the buyer, ${stats.askedSeller} for the seller`
+                  : ""}
               </p>
             </div>
             <div>

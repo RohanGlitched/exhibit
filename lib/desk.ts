@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { getDispute, listDisputes, type Dispute, type DisputeSummary } from "./paypal/disputes";
 import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
+import { askedSide } from "./desk-side";
 import { decidedBy, mergeFilings, paypalFilings, refundedLate, ruledAt, stageLine, stageOf, type DecidedBy, type Stage } from "./cases/derive";
 import { inPool, untouched } from "./cases/pool";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
@@ -27,6 +28,8 @@ export interface DeskRow {
   whereLine: string;
   /** Who decided a case that is over: PayPal at Exhibit's request, the sandbox on its own, the deadline, or the seller's refund. */
   decidedBy: DecidedBy | null;
+  /** A ruling Exhibit asked for and PayPal hasn't given yet: for which side. */
+  askedFor: "seller" | "buyer" | null;
   due: string | null;
   opened: string;
   updated: string;
@@ -124,6 +127,7 @@ async function readDesk(lenient = false): Promise<{ rows: DeskRow[]; claimed: Re
       where,
       whereLine: stageLine(where, merged, filings, resolvedAt),
       decidedBy: decidedBy(where, filings, resolvedAt),
+      askedFor: where === "filed" || where === "reviewing" ? askedSide(filings) : null,
       due: d.seller_response_due_date ?? null,
       opened: d.create_time,
       updated: d.update_time,
