@@ -474,3 +474,8 @@
   display: block;
   margin-top: 2px;
 }
+/* A second table inside a section: the held-out free-text runs per 100. */
+.subhead {
+  font-size: 18px;
+  margin: 30px 0 6px;
+}

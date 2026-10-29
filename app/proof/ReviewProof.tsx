@@ -5,7 +5,7 @@ import Exchange from "@/components/case/Exchange";
 import type { Hearing } from "@/lib/cases/hearing";
 import { day } from "@/lib/format";
 import styles from "./proof.module.css";
-import own from "./review.module.css";
+import css from "./review.module.css";
 
 interface Summary {
   briefsFrom: string | null;
@@ -50,6 +50,12 @@ interface Summary {
   onCard?: number;
   fightsWithObjections?: number;
   fightsWithOverruled?: number;
+  reviewerObjections?: number;
+  fightsWithReviewerObjections?: number;
+  overruledOnReviewer?: number;
+  reasked?: number;
+  stillUnruled?: number;
+  verdictCaveats?: number;
 }
 interface Recheck {
   at?: string;
@@ -66,7 +72,10 @@ interface ReviewProofFile {
   summary: Summary;
   hearings: { key: string; label: string; brief: string; reviewerMatchesLabel: boolean; hearing: Hearing }[];
   /** The run this one replaced, with its saved answers re-read by the checker of the day. */
-  previous?: { at: string; summary: Summary; recheck: Recheck } | null;
+  previous?: { at: string; instructions?: string; summary: Summary; recheck: Recheck } | null;
+  /** The versions before that, newest first. */
+  earlier?: { at: string; instructions?: string; summary: Summary }[];
+  carelessAt?: string;
   /** Today's checker over this run's saved answers; the figures above stay as measured. */
   recheck?: Recheck;
 }
@@ -80,22 +89,28 @@ function load(): ReviewProofFile | null {
   }
 }
 
-/** The hearing whose exchanges best show the machinery: an answer the reviewer overruled, else a struck answer, else a concession. */
+/**
+ * The hearing whose exchanges best show the machinery: an answer the reviewer overruled on an objection it raised
+ * itself (not one the card added in code), else any overruled answer, else a struck answer, else a concession.
+ */
 function pickHearing(p: ReviewProofFile) {
   const fights = p.hearings.filter((h) => h.hearing.mode === "cross");
   return (
-    fights.find((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled" && e.objection.pressed)) ??
+    fights.find((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled" && !e.objection.pressed && e.objection.requirement)) ??
+    fights.find((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled" && !e.objection.pressed)) ??
     fights.find((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled")) ??
     fights.find((h) => h.hearing.exchanges.some((e) => e.answer.stance === "answer" && !e.answer.kept)) ??
     fights.find((h) => h.hearing.exchanges.length > 0)
   );
 }
 
-function Transcript({ h, caption }: { h: ReviewProofFile["hearings"][number]; caption: string }) {
-  const shown = h.hearing.exchanges.slice(0, 2);
+function Transcript({ h, caption, only }: { h: ReviewProofFile["hearings"][number]; caption: string; only?: (e: Hearing["exchanges"][number]) => boolean }) {
+  // The exchange the caption names first, then the next one.
+  const first = only ? h.hearing.exchanges.findIndex(only) : 0;
+  const shown = [...h.hearing.exchanges.slice(Math.max(0, first)), ...h.hearing.exchanges.slice(0, Math.max(0, first))].slice(0, 2);
   return (
     <Pleading lines={Math.max(10, shown.length * 7 + 2)}>
-      <p className={own.caption}>
+      <p className={css.caption}>
         {h.key.split("#")[0]} · {caption} · verdict for the {h.hearing.verdict.side}
       </p>
       {shown.map((e, i) => (
@@ -119,12 +134,25 @@ export default function ReviewProof() {
   const p = load();
   if (!p || !p.hearings.length) return null;
   const s = p.summary;
-  const v2 = p.previous?.summary ?? null;
   const pick = pickHearing(p);
-  // A fight the reviewer pressed from the card and the seller conceded, to show beside the overruled one.
-  const pressed = p.hearings.find((h) => h !== pick && h.hearing.mode === "cross" && h.hearing.exchanges.some((e) => e.objection.requirement && e.answer.stance === "concede"));
+  // An objection the card added in code, where the reviewer left that item alone, to show beside the reviewer's own.
+  const isPressed = (e: Hearing["exchanges"][number]) => !!e.objection.pressed;
+  const pressed = p.hearings.find((h) => h !== pick && h.hearing.mode === "cross" && h.hearing.exchanges.some(isPressed));
   const lostFights = p.hearings.filter((h) => h.hearing.mode === "cross" && h.label === "fight" && h.hearing.verdict.side !== "seller").map((h) => h.key.split("#")[0]);
-  const careless = p.previous?.recheck;
+  const lostFraud = lostFights.filter((k) => k.startsWith("fraud-")).length;
+  // The correction below is about the second version's published figure, so it shows only beside that version.
+  const careless = /^second/.test(p.previous?.instructions ?? "") ? p.previous?.recheck : undefined;
+  // Whose objections they are: the reviewer's own, or added in code from the card where it left an item alone.
+  const all = p.hearings.flatMap((h) => h.hearing.exchanges);
+  const own = s.reviewerObjections ?? all.filter((e) => !e.objection.pressed).length;
+  const ownFights = s.fightsWithReviewerObjections ?? p.hearings.filter((h) => h.hearing.mode === "cross" && h.hearing.exchanges.some((e) => !e.objection.pressed)).length;
+  const byCard = s.pressedByCard ?? all.filter((e) => e.objection.pressed).length;
+  // Every version measured, oldest first, with a short name from its instructions.
+  const versions = [
+    ...[...(p.earlier ?? [])].reverse(),
+    ...(p.previous ? [{ at: p.previous.at, instructions: p.previous.instructions, summary: p.previous.summary }] : []),
+    { at: p.at, instructions: p.instructions, summary: s, current: true as const },
+  ].map((v) => ({ ...v, name: (v.instructions ?? "").split(/[:(]/)[0].replace(/ version\s*$/, "").trim().replace(/^./, (c) => c.toUpperCase()) || "Earlier", what: (v.instructions ?? "").split(":")[1]?.trim() }));
   return (
     <section className={styles.section} id="cross-examination">
       <div className={styles.sectionHead}>
@@ -134,7 +162,8 @@ export default function ReviewProof() {
           for sentence), and put before a second model playing PayPal&apos;s dispute reviewer, which saw nothing else but the requirements card for the
           case&apos;s reason code: what the card network asks for, each item marked on file, weak or missing by code. The card drives the objections: every
           weak or missing item the case needs is objected to, by the reviewer or, where it left one alone, from the card, and a fight with nothing weak is
-          put to proof on the item it turns on. Exhibit answered from the exhibits or conceded, and the checker read every answer. Where Exhibit advised a
+          put to proof on the item it turns on. Since 30 Oct the card also reads whether the cardholder returned the item or tried to, and whether
+          delivery came before the case opened. Exhibit answered from the exhibits or conceded, and the checker read every answer. Where Exhibit advised a
           refund, the reviewer ruled on the exhibit pages alone.
         </p>
       </div>
@@ -143,7 +172,7 @@ export default function ReviewProof() {
           <dt>Objections raised</dt>
           <dd>{s.objections}</dd>
           <p>
-            on {s.fightsWithObjections ?? "?"} of {s.fights} fights{s.pressedByCard ? `; ${s.pressedByCard} raised from the card` : ""}
+            {own} by the reviewer itself, on {ownFights} of {s.fights} fights, plus {byCard} the requirements card adds in code
           </p>
         </div>
         <div>
@@ -181,18 +210,18 @@ export default function ReviewProof() {
           <dd>
             {s.carelessStruck}/{s.carelessAnswers}
           </dd>
-          <p>from an answerer told never to concede</p>
+          <p>from an answerer told never to concede{p.carelessAt ? `, measured ${day(p.carelessAt)}` : ""}</p>
         </div>
       </dl>
 
-      {v2 && (
-        <div className={`sheet ${styles.compare} ${own.versions}`}>
+      {versions.length > 1 && (
+        <div className={`sheet ${styles.compare} ${css.versions}`}>
           <table>
             <thead>
               <tr>
                 <th scope="col">Hearing instructions</th>
-                <th scope="col">Objections</th>
-                <th scope="col">Fights objected to</th>
+                <th scope="col">Objections: reviewer&apos;s own + card&apos;s</th>
+                <th scope="col">Fights the reviewer objected to</th>
                 <th scope="col">Overruled</th>
                 <th scope="col">Sustained</th>
                 <th scope="col">Conceded</th>
@@ -201,50 +230,54 @@ export default function ReviewProof() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <th scope="row">Second, {day(p.previous!.at)}</th>
-                <td>{v2.objections}</td>
-                <td>
-                  {v2.objections ? 1 : 0}/{v2.fights}
-                </td>
-                <td>{v2.overruled}</td>
-                <td>{v2.sustained}</td>
-                <td>{v2.conceded}</td>
-                <td>
-                  {v2.answersKept}/{v2.answered}
-                </td>
-                <td>
-                  {v2.reviewerMatchesLabel}/{v2.hearings}
-                </td>
-              </tr>
-              <tr data-us="true">
-                <th scope="row">Third, {day(p.at)}: driven by the card</th>
-                <td>{s.objections}</td>
-                <td>
-                  {s.fightsWithObjections}/{s.fights}
-                </td>
-                <td>{s.overruled}</td>
-                <td>{s.sustained}</td>
-                <td>{s.conceded}</td>
-                <td>
-                  {s.answersKept}/{s.answered}
-                </td>
-                <td>
-                  {s.reviewerMatchesLabel}/{s.hearings}
-                </td>
-              </tr>
+              {versions.map((v) => {
+                const x = v.summary;
+                const mine = x.reviewerObjections ?? x.objections - (x.pressedByCard ?? 0);
+                return (
+                  <tr key={v.at} data-us={"current" in v ? "true" : undefined}>
+                    <th scope="row">
+                      {v.name}, {day(v.at)}
+                      {"current" in v && v.what ? <small className={styles.kindSource}>: {v.what}</small> : null}
+                    </th>
+                    <td>
+                      {mine} + {x.pressedByCard ?? 0}
+                    </td>
+                    <td>
+                      {x.fightsWithReviewerObjections ?? (x.objections ? 1 : 0)}/{x.fights}
+                    </td>
+                    <td>{x.overruled}</td>
+                    <td>{x.sustained}</td>
+                    <td>{x.conceded}</td>
+                    <td>
+                      {x.answersKept}/{x.answered}
+                    </td>
+                    <td>
+                      {x.reviewerMatchesLabel}/{x.hearings}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      <div className={`${styles.split} ${own.split}`}>
+      <div className={`${styles.split} ${css.split}`}>
         <div>
-          <h3 className={own.h3}>How a hearing is decided</h3>
-          <ul className={own.rules}>
+          <h3 className={css.h3}>How a hearing is decided</h3>
+          <ul className={css.rules}>
             <li>An answer counts only if the checker keeps it: every amount, date, time and id must be in the exhibits it cites. A struck answer is no answer, and the sentence it defended is withdrawn.</li>
             <li>A concession is always sustained. Exhibit says what follows: the sentence goes, or the call becomes a refund, and a conceded case is ruled for the buyer whatever the reviewer wrote.</li>
             <li>Only the reviewer can overrule, and only an answer that survived the checker.</li>
+            <li>
+              A kept answer the reviewer leaves unruled is put to it once more rather than held against the seller, and a verdict for the seller that rests on
+              a point the hearing sustained is sent back once; if it still does, the verdict says so.
+              {s.reasked === undefined
+                ? ""
+                : s.reasked === 0 && !s.stillUnruled && !s.verdictCaveats
+                  ? " In this run the reviewer ruled on every kept answer that mattered and no verdict leaned on a sustained point, so no re-ask was needed."
+                  : ` In this run ${s.reasked} hearing${s.reasked === 1 ? " was" : "s were"} asked again; ${s.stillUnruled ?? 0} answer${s.stillUnruled === 1 ? "" : "s"} stayed unruled and ${s.verdictCaveats ?? 0} verdict${s.verdictCaveats === 1 ? " is" : "s are"} flagged.`}
+            </li>
             <li>
               On a live case the verdict is the outcome Exhibit asks the sandbox ruling for, and the case shows &ldquo;Ruled by the simulated reviewer&rdquo; with
               the reason.
@@ -258,8 +291,7 @@ export default function ReviewProof() {
           </ul>
           <p className={styles.note}>
             A harder reviewer agrees with the labels less: it ruled for the buyer on {lostFights.length} of the {s.fights} cases labelled fight (
-            {lostFights.join(", ")}). Two of those are fraud cases with no earlier orders and no 3-D Secure, where Exhibit itself conceded that the
-            compelling evidence the networks ask for isn&apos;t there; the labels were set before the card existed.
+            {lostFights.join(", ")}).{lostFraud ? ` ${lostFraud === 1 ? "One" : lostFraud === 2 ? "Two" : lostFraud} of those ${lostFraud === 1 ? "is a fraud case" : "are fraud cases"} with no 3-D Secure result and no device or IP match on file, where Exhibit itself conceded that the compelling evidence the networks ask for isn't complete; the labels were set before the card existed.` : ""}
             {p.recheck?.hearingAnswersChanged
               ? ` ${p.recheck.hearingAnswersChanged} of the ${p.recheck.hearingAnswers} answers were struck by a checker misread, "3-D Secure" read as the count 3 and "sentence 2" as a figure; it is fixed since, and today's checker keeps both. The figures above are as measured.`
               : ""}
@@ -276,16 +308,16 @@ export default function ReviewProof() {
             Measured {day(p.at)} on the briefs from the run above ({s.briefsFrom}). Reviewer and answerer: {s.reviewer}. {s.calls} model calls,{" "}
             {(s.inputTokens + s.outputTokens).toLocaleString("en-US")} tokens
             {s.priceIn !== null ? `, about $${s.spendUsd.toFixed(2)} at $${s.priceIn} and $${s.priceOut} per million tokens in and out` : ""}. The reviewer is
-            the same family of model as the drafter and was written by the same people, so agreement measures consistency, not a bank&apos;s judgement. All three
-            versions ran on the same cases, so treat the gains as tuned, not held out. The first version, before 25 Oct and not kept as a data file, conceded 18 of 19 objections and matched the label in 20 of 28.
+            the same family of model as the drafter and was written by the same people, so agreement measures consistency, not a bank&apos;s judgement. All{" "}
+            {versions.length} versions ran on the same cases, so treat the gains as tuned, not held out. The first version, before 25 Oct and not kept as a data file, conceded 18 of 19 objections and matched the label in 20 of 28.
           </p>
         </div>
-        <div className={own.transcripts}>
-          {pick && <Transcript h={pick} caption="hearing transcript, overruled" />}
-          {pressed && <Transcript h={pressed} caption="pressed from the card" />}
+        <div className={css.transcripts}>
+          {pick && <Transcript h={pick} caption="the reviewer's own objection, overruled" only={(e) => e.ruling === "overruled" && !e.objection.pressed} />}
+          {pressed && <Transcript h={pressed} caption="an objection the card added in code" only={isPressed} />}
         </div>
       </div>
-      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.45</pre>
+      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.235 --steps hearings</pre>
     </section>
   );
 }

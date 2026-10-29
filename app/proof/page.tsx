@@ -5,6 +5,7 @@ import { FIGURES, OPTIONS, CHARGEFLOW_PRICING, PROTECTION_SOURCES } from "@/lib/
 import policies from "@/data/policies.json";
 import { day, usd } from "@/lib/format";
 import proof from "@/data/proof.json";
+import toolkitBrief from "@/data/toolkit-brief.json";
 import styles from "./proof.module.css";
 import ReviewProof from "./ReviewProof";
 
@@ -134,7 +135,20 @@ interface Proof {
     /** The held-out answers a re-run replaced (scripts/eval.ts --update heldout). */
     previous?: {
       at: string;
+      prompt?: string;
       summary: { runs: number; correct: number; textRuns: number; textCorrect: number; seedRuns?: SeedRun[] };
+      runs: { key: string; variant: string; label: string; model: Answer | null }[];
+    } | null;
+  };
+  /** The main set's own re-run (scripts/eval.ts --update main), with the answers it replaced. */
+  main?: {
+    at: string;
+    prompt: string;
+    spend?: { calls: number; usd: number };
+    previous?: {
+      at: string;
+      prompt: string;
+      summary: { runs: number; correct: number; textRuns: number; textCorrect: number; recordRuns: number; recordCorrect: number; seedRuns?: SeedRun[]; seedSpread?: Spread | null };
       runs: { key: string; variant: string; label: string; model: Answer | null }[];
     } | null;
   };
@@ -155,15 +169,21 @@ const STORY: Record<string, string> = {
 
 const CALL: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
 
-/** Why a held-out variant moved in the 29 Oct re-run, as read from its answers. */
+/** Why a held-out variant moved between the run replaced and this one, as read from its answers. */
 const WHY_MOVED: Record<string, string> = {
   "heldout-agent-mandate-revoked":
     "A code check now reads the cardholder's words in the agent's log; “Hold off for now” before checkout makes the order the agent platform's, and the mandate check says so.",
   "heldout-agent-overreach-approved": "The same check reads “Go ahead at $104” as written approval of the overage, so the cart is the cardholder's.",
   "heldout-duplicate-two-orders":
-    "Lost: the requirements card read “no second transaction on file” because the second order was only in the store's notes and history. The card reads those since this run; not re-measured.",
-  "heldout-fraud-descriptor":
-    "Lost on one of two runs: the brief refunded because the card marked the compelling evidence missing, though the cardholder's email admits the order. The card lists a written admission since this run; not re-measured.",
+    "Won on both runs: since 29 Oct the requirements card reads a second order in the store's notes and history (“weak”, not “no second transaction on file”), and this is the first run to measure it.",
+};
+
+/** Why a main-set variant moved when the main set was re-run on today's prompt, as read from its answers. */
+const MAIN_MOVED: Record<string, string> = {
+  "untracked-buyer-confirms":
+    "Lost on both customers: the requirements card marks tracking and a delivered scan missing, and the drafter refunded although the buyer's own email says the vase arrived. The card reads carrier records, not emails, for delivery.",
+  "fraud-home-signed":
+    "Lost on one of two customers: with no 3-D Secure result and no earlier orders on the card, the drafter refunded a first order signed for at the billing address, where the label is fight.",
 };
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : "n/a");
 const range = (s: Spread | null | undefined) => (s ? (s.min === s.max ? `${s.min}` : `${s.min} to ${s.max}`) : null);
@@ -199,6 +219,19 @@ function Repeats({ rows }: { rows: { call: string | null; correct: boolean | nul
   );
 }
 
+/** The model's call on the run a re-run replaced, small, after today's: "25 Oct: Fight". */
+function Before({ row, on }: { row: { model: Answer | null } | undefined; on: string }) {
+  if (!row?.model) return null;
+  return (
+    <span className={styles.repeats} aria-label={`On the ${on} prompt`} title={`On the ${on} prompt`}>
+      <small>{on}:</small>
+      <span className={styles.call} data-ok={row.model.correct}>
+        {CALL[row.model.call]}
+      </span>
+    </span>
+  );
+}
+
 export default function ProofPage() {
   const s = P.summary;
   const byVariant = P.variants.map((v) => ({ ...v, runs: P.runs.filter((r) => r.variant === v.id) }));
@@ -224,6 +257,26 @@ export default function ProofPage() {
   const ablation = (s.ablationRuns ?? 0) > 0;
   const survivors = mutationKinds.flatMap(([kind, k]) => (k.survived ?? []).slice(0, 1).map((x) => ({ kind, ...x })));
   const unverified = s.unverifiedSentences ?? s.figurelessSentences;
+  // The main set's re-run on today's prompt, and the run it replaced.
+  const mainRun = P.main?.previous ? P.main : null;
+  const mainPrev = mainRun?.previous ?? null;
+  const prevDay = mainPrev ? day(mainPrev.at).replace(/ \d{4}$/, "") : "";
+  const beforeOf = (key: string) => mainPrev?.runs.find((r) => r.key === key);
+  const mainMoved = mainPrev
+    ? P.variants
+        .map((v) => {
+          const now = P.runs.filter((r) => r.variant === v.id && r.model);
+          const was = mainPrev.runs.filter((r) => r.variant === v.id && r.model);
+          return { id: v.id, change: v.change, after: now.filter((r) => r.model!.correct).length, before: was.filter((r) => r.model!.correct).length, of: now.length };
+        })
+        .filter((m) => m.before !== m.after)
+    : [];
+  const second = (policies as { secondPass?: { kept: number; unverified: number; wordingMatched: number; neither: number; threshold: number } }).secondPass ?? null;
+  // Not as described (Visa 13.3): the colour story's fights, and how many open with the buyer keeping the bowls.
+  const colourFights = [...P.runs, ...(P.heldout?.runs ?? [])].filter((r) => /^(?:heldout-)?colour-/.test(r.variant) && r.model?.call === "fight");
+  const leadsWithKept = colourFights.filter((r) => /\b(?:kept|keeps|did not return|didn't return|not returned)\b/i.test(r.model?.sentences?.[0]?.text ?? "")).length;
+  const fightRow = policies.table.find((t) => t.id === "fight")!;
+  const exhibitRow = policies.table.find((t) => t.id === "exhibit")!;
   const notRun = [
     !held && "the held-out set",
     !inj && "prompt injection in the buyer's email",
@@ -262,6 +315,7 @@ export default function ProofPage() {
               </dd>
               <p>
                 model vs the stronger rules, of {textRuns} runs where it sits in an email, a listing or a note
+                {mainPrev ? `; ${mainPrev.summary.textCorrect} on the ${prevDay} prompt` : ""}
               </p>
             </div>
             <div>
@@ -269,7 +323,9 @@ export default function ProofPage() {
               <dd>
                 {s.modelCorrectOnRecord} vs {s.strongCorrectOnRecord}
               </dd>
-              <p>of {s.recordRuns} runs; a rule reading the records does as well here</p>
+              <p>
+                of {s.recordRuns} runs; a rule reading the records does as well here{mainPrev ? `; ${mainPrev.summary.recordCorrect} on the ${prevDay} prompt` : ""}
+              </p>
             </div>
           </>
         ) : (
@@ -286,7 +342,13 @@ export default function ProofPage() {
           <dd>
             {seeds > 1 && s.seedSpread ? range(s.seedSpread) : s.modelCorrect}/{seeds > 1 && s.seedSpread ? s.seedSpread.of : s.modelRuns}
           </dd>
-          <p>{seeds > 1 ? `across ${seeds} runs of every case, lowest to highest` : "of labelled runs, one run each"}</p>
+          <p>
+            {seeds > 1
+              ? `across ${seeds} runs of every case, lowest to highest`
+              : mainPrev
+                ? `today's prompt, one run each; ${mainPrev.summary.correct} of ${mainPrev.summary.runs} on the ${prevDay} prompt${mainPrev.summary.seedRuns && mainPrev.summary.seedRuns.length > 1 ? `, all ${mainPrev.summary.seedRuns.length} runs` : ""}`
+                : "of labelled runs, one run each"}
+          </p>
         </div>
         <div>
           <dt>False statements struck</dt>
@@ -300,7 +362,10 @@ export default function ProofPage() {
           <dd>
             {unverified}/{s.keptSentences}
           </dd>
-          <p>no figure or name in them to check; marked, not counted as checked</p>
+          <p>
+            no figure or name in them to check; marked, not counted as checked
+            {second ? `. A second pass on their words alone: ${second.wordingMatched} match the exhibit they cite, ${second.neither}/${second.kept} have neither` : ""}
+          </p>
         </div>
         <div>
           <dt>Time and tokens per brief</dt>
@@ -321,6 +386,7 @@ export default function ProofPage() {
             orders and read the mandate check; they never read an email or a listing. The model&apos;s number is the evidence balance from its own
             tally, not a chance of winning.
             {seeds > 1 ? ` Small marks after the model's call are its ${seeds - 1} repeat runs.` : ""}
+            {mainPrev ? ` The model's call is the run of ${day(mainRun!.at)} on today's prompt; the small mark after it is the run of ${day(mainPrev.at)} on the prompt before the requirements card.` : ""}
           </p>
         </div>
         {stories.map((story) => (
@@ -379,6 +445,7 @@ export default function ProofPage() {
                             <span key={r.key} className={styles.withRepeats}>
                               <Call run={r} side="model" />
                               <Repeats rows={repeatsOf(r.key, "main")} />
+                              <Before row={beforeOf(r.key)} on={prevDay} />
                             </span>
                           ))}
                         </span>
@@ -402,13 +469,47 @@ export default function ProofPage() {
               {s.modelCorrectOnText}, the stronger rules {s.strongCorrectOnText}, the fallback {s.rulesCorrectOnText}. That free-text margin is the number to
               read, and {textRuns} runs is a small base.
             </p>
-            {ablation && (
+            {mainPrev && (
               <p>
-                The prompt carries a short rubric, &ldquo;How cases are usually decided&rdquo;, that mirrors how the labels were set. With it taken out, the
-                model got {s.ablationCorrect} of {s.ablationRuns} right, and {s.ablationCorrectOnText} of {s.ablationTextRuns} free-text runs (with it:{" "}
-                {s.modelCorrect} of {s.modelRuns}, and {s.modelCorrectOnText} of {textRuns}).
+                Re-run once on {day(mainRun!.at)} on today&apos;s prompt ({mainRun!.prompt}): {s.modelCorrect} of {s.modelRuns}, down from{" "}
+                {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)}, before the drafter read the requirements card. The card made it
+                warier where a required item is marked missing, and it lost these:
               </p>
             )}
+            {mainMoved.length > 0 && (
+              <ul className={styles.moved}>
+                {mainMoved.map((m) => (
+                  <li key={m.id}>
+                    <strong>
+                      {m.before} → {m.after} of {m.of}
+                    </strong>{" "}
+                    {m.change}
+                    {MAIN_MOVED[m.id] ? <small className={styles.kindSource}> {MAIN_MOVED[m.id]}</small> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {mainPrev && colourFights.length > 0 && (
+              <p>
+                Not as described (Visa 13.3): the card now marks whether the cardholder returned the item or tried to, and the drafter is told to lead with
+                it. Of the {colourFights.length} glaze-colour fights in the main and held-out runs, {leadsWithKept} open with the buyer keeping the bowls and
+                turning down the $30 return.
+              </p>
+            )}
+            {ablation && (
+              <p>
+                The prompt carries a short rubric, &ldquo;How cases are usually decided&rdquo;, that mirrors how the labels were set. With it taken out
+                {mainPrev ? `, on the ${prevDay} prompt,` : ","} the model got {s.ablationCorrect} of {s.ablationRuns} right, and {s.ablationCorrectOnText} of{" "}
+                {s.ablationTextRuns} free-text runs (with it{mainPrev ? ", on that prompt" : ""}: {mainPrev ? mainPrev.summary.correct : s.modelCorrect} of{" "}
+                {mainPrev ? mainPrev.summary.runs : s.modelRuns}, and {mainPrev ? mainPrev.summary.textCorrect : s.modelCorrectOnText} of {textRuns}).
+              </p>
+            )}
+            {seeds < 2 && mainPrev?.summary.seedRuns && mainPrev.summary.seedRuns.length > 1 ? (
+              <p>
+                On the {prevDay} prompt every case ran {mainPrev.summary.seedRuns.length} times: {mainPrev.summary.seedRuns.map((r) => r.correct).join(", ")} of{" "}
+                {mainPrev.summary.runs}. Today&apos;s prompt ran once, to keep the spend small.
+              </p>
+            ) : null}
             {seeds > 1 && s.seedRuns && (
               <p>
                 Every case ran {seeds} times. Right calls per run of the {s.seedSpread?.of} labelled runs:{" "}
@@ -429,9 +530,14 @@ export default function ProofPage() {
             <li>
               Stronger rules, records: <strong>{s.strongCorrectOnRecord}/{s.recordRuns}</strong>
             </li>
+            {mainPrev && (
+              <li>
+                Model, all runs, {prevDay} prompt: <strong>{mainPrev.summary.correct}/{mainPrev.summary.runs}</strong>
+              </li>
+            )}
             {ablation && (
               <li>
-                Model without the rubric: <strong>{s.ablationCorrect}/{s.ablationRuns}</strong>
+                Model without the rubric{mainPrev ? `, ${prevDay} prompt` : ""}: <strong>{s.ablationCorrect}/{s.ablationRuns}</strong>
               </li>
             )}
           </ul>
@@ -453,8 +559,8 @@ export default function ProofPage() {
             </p>
             {held.previous && held.at && (
               <p>
-                Re-run {day(held.at)}, once, on today&apos;s prompt: {held.prompt}. Before, on the main run&apos;s prompt ({day(held.previous.at)},{" "}
-                {held.previous.summary.seedRuns?.length ?? 1} runs): {held.previous.summary.correct} of {held.previous.summary.runs}, and{" "}
+                Re-run {day(held.at)}, once, on today&apos;s prompt: {held.prompt}. Before ({day(held.previous.at)}, {held.previous.prompt ?? "on the main run's prompt"},{" "}
+                {held.previous.summary.seedRuns?.length ?? 1} run{(held.previous.summary.seedRuns?.length ?? 1) === 1 ? "" : "s"}): {held.previous.summary.correct} of {held.previous.summary.runs}, and{" "}
                 {held.previous.summary.textCorrect} of {held.previous.summary.textRuns} on free text. What moved, first runs compared:
               </p>
             )}
@@ -473,9 +579,9 @@ export default function ProofPage() {
             )}
             {held.previous && (
               <p className={styles.note}>
-                The same set was used to find the agent-lane miss, so treat that gain as tuned, not held out. The stronger rules are the frozen baseline
-                and don&apos;t read the agent&apos;s log; the fallback rules follow the consent check, so they gain the agent cases too. This run cost $
-                {held.spend?.usd.toFixed(2)} for {held.spend?.calls} calls.
+                The same set was used to find the agent-lane miss and the two-orders gap in the card, so treat those gains as tuned, not held out. The
+                stronger rules are the frozen baseline and don&apos;t read the agent&apos;s log; the fallback rules follow the consent check, so they gain the
+                agent cases too. This run cost ${held.spend?.usd.toFixed(2)} for {held.spend?.calls} calls.
               </p>
             )}
           </div>
@@ -588,6 +694,9 @@ export default function ProofPage() {
             no record shows; and the words it quotes as proof have to be in a cited exhibit, word for word. {unverified} of the {s.keptSentences} kept
             sentences carry nothing it can match (&ldquo;We offered the buyer a return&rdquo;): they are kept, shown as unverified, and held only to their
             citation. It reads figures and names, not meaning.
+            {second
+              ? ` A second pass reads each of those against the text of the exhibits it cites and nothing else: ${second.wordingMatched} of the ${second.unverified} have at least ${Math.round(second.threshold * 100)}% of their content words there, which leaves ${second.neither} of the ${second.kept} kept sentences with neither a figure nor their wording matched. That pass reads words, not meaning, and changes nothing that is filed.`
+              : ""}
           </p>
           {s.templateSentences ? (
             <p className={styles.note}>
@@ -745,12 +854,20 @@ export default function ProofPage() {
             log (consent withdrawn, an overage approved in writing). The model writes the response around it. A signed mandate is not authorisation
             evidence the card networks recognise yet, and the briefs now say so.
           </li>
-          <li>
-            The 56 main runs above are from {day(P.at)}, before the drafter read the reason code&apos;s requirements card (added 29 Oct). Since then it
-            is warier of fraud and agent cases with no 3-D Secure result or compelling evidence: on 29 Oct a live agent case inside the mandate
-            (PP-R-UPI-10195190) was argued as a refund at an evidence balance of 50%, where the main set&apos;s label is fight. The held-out set and the
-            hearings were re-run with the card; the main set was not.
-          </li>
+          {mainPrev ? (
+            <li>
+              The main set was re-run once on {day(mainRun!.at)} on today&apos;s prompt, with the requirements card: {s.modelCorrect} of {s.modelRuns}, against{" "}
+              {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)} before the card. Its repeat runs and the rubric ablation are from the{" "}
+              {prevDay} prompt and were not re-run. The card makes the drafter warier of fraud and agent cases with no 3-D Secure result or compelling
+              evidence: on 29 Oct a live agent case inside the mandate (PP-R-UPI-10195190) was argued as a refund at an evidence balance of 50%.
+              {mainRun!.spend ? ` The re-run cost $${mainRun!.spend.usd.toFixed(2)} for ${mainRun!.spend.calls} calls.` : ""}
+            </li>
+          ) : (
+            <li>
+              The 56 main runs above are from {day(P.at)}, before the drafter read the reason code&apos;s requirements card (added 29 Oct). The held-out set
+              and the hearings were re-run with the card; the main set was not.
+            </li>
+          )}
           {P.recheckedAt && (
             <li>
               The model&apos;s answers are from the run on {day(P.at)}; the checker, the stronger rules and the mutations were re-run over those saved
@@ -785,7 +902,8 @@ export default function ProofPage() {
           <p>
             The {policies.from.runs} labelled runs of the main set above, scaled to 100, each at its own disputed amount (
             {usd(policies.disputedUsdPer100)} per 100 in all, {usd(policies.winnableUsdPer100)} of it on cases labelled fight). Exhibit is the
-            model&apos;s first run on {day(policies.from.measured)}.
+            model&apos;s run on {day(policies.from.measured)}. The last two columns read the requirements card of every case each policy fights: the share
+            with every required network item on file, and the share with none missing.
           </p>
         </div>
         <div className={`sheet ${styles.compare}`}>
@@ -798,6 +916,8 @@ export default function ProofPage() {
                 <th scope="col">Responses to write</th>
                 <th scope="col">Fights on cases it should refund</th>
                 <th scope="col">After PayPal&apos;s fees</th>
+                <th scope="col">Fights with every required item on file</th>
+                <th scope="col">Fights with none missing</th>
               </tr>
             </thead>
             <tbody>
@@ -809,6 +929,8 @@ export default function ProofPage() {
                   <td>{t.responses}</td>
                   <td>{t.fightsOnRefundCases}</td>
                   <td>{t.netUsd < 0 ? `−${usd(-t.netUsd)}` : usd(t.netUsd)}</td>
+                  <td>{t.completePct === null ? "n/a" : `${t.completePct}%`}</td>
+                  <td>{t.noneMissingPct === null ? "n/a" : `${t.noneMissingPct}%`}</td>
                 </tr>
               ))}
             </tbody>
@@ -818,12 +940,59 @@ export default function ProofPage() {
           How it is counted: a case labelled fight that is fought counts as kept and one that is refunded as given up; a case labelled refund ends with
           the money back with the buyer whichever way it goes, so fighting it only costs a response. Real responses win less often than their label, so
           &ldquo;kept&rdquo; is the most each policy could keep. PayPal&apos;s {usd(policies.feePerCase)} card chargeback fee is counted on every case
-          under every policy, because the fee page doesn&apos;t say it is waived on a win. On money alone, always fighting keeps as much as Exhibit on
-          this set; the difference is the {policies.table.find((t) => t.id === "fight")!.responses - policies.table.find((t) => t.id === "exhibit")!.responses}{" "}
-          responses per 100 nobody has to write and the {policies.table.find((t) => t.id === "fight")!.fightsOnRefundCases} fights on cases the seller
-          should refund. We found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by{" "}
-          <code>scripts/policies.ts</code> into <code>data/policies.json</code>.
+          under every policy, because the fee page doesn&apos;t say it is waived on a win.{" "}
+          {fightRow.keptUsd > exhibitRow.keptUsd
+            ? `On money alone, always fighting keeps more than Exhibit on this set (${usd(fightRow.keptUsd)} against ${usd(exhibitRow.keptUsd)}): Exhibit refunded ${usd(exhibitRow.givenUpUsd)} per 100 it should have fought. `
+            : "On money alone, always fighting keeps as much as Exhibit on this set. "}
+          What Exhibit does instead is file {fightRow.responses - exhibitRow.responses} fewer responses per 100, none of them on a case the seller should
+          refund (always fighting files {fightRow.fightsOnRefundCases}), and {exhibitRow.completePct}% of the fights it files have every required item on
+          file, against {fightRow.completePct}% for always fighting ({exhibitRow.noneMissingPct}% and {fightRow.noneMissingPct}% with none missing). We
+          found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by <code>scripts/policies.ts</code>{" "}
+          into <code>data/policies.json</code>.
         </p>
+        {policies.heldoutText && (
+          <>
+            <h3 className={styles.subhead}>The held-out free-text runs, per 100</h3>
+            <p className={styles.note}>
+              The {policies.heldoutText.runs} held-out runs where the deciding fact sits only in an email, a listing or a note (re-run{" "}
+              {day(policies.heldoutText.measured)}), counted the same way: {usd(policies.heldoutText.disputedUsdPer100)} disputed per 100,{" "}
+              {usd(policies.heldoutText.winnableUsdPer100)} of it on cases labelled fight. This is where the model&apos;s right calls and the rules&apos; part
+              ways.
+            </p>
+            <div className={`sheet ${styles.compare}`}>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Per 100 held-out free-text disputes</th>
+                    <th scope="col">Kept, at most</th>
+                    <th scope="col">Given up on cases it should fight</th>
+                    <th scope="col">Responses to write</th>
+                    <th scope="col">Fights on cases it should refund</th>
+                    <th scope="col">After PayPal&apos;s fees</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policies.heldoutText.table.map((t) => (
+                    <tr key={t.id} data-us={t.id === "exhibit"}>
+                      <th scope="row">{t.name}</th>
+                      <td>{usd(t.keptUsd)}</td>
+                      <td>{usd(t.givenUpUsd)}</td>
+                      <td>{t.responses}</td>
+                      <td>{t.fightsOnRefundCases}</td>
+                      <td>{t.netUsd < 0 ? `−${usd(-t.netUsd)}` : usd(t.netUsd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className={styles.note}>
+              Exhibit keeps {usd(policies.heldoutText.table.find((t) => t.id === "exhibit")!.keptUsd)} per 100 here, the stronger rules{" "}
+              {usd(policies.heldoutText.table.find((t) => t.id === "strong")!.keptUsd)}; always fighting keeps the most only by also fighting{" "}
+              {policies.heldoutText.table.find((t) => t.id === "fight")!.fightsOnRefundCases} cases per 100 the seller should refund, which a real reviewer
+              would rule against. {policies.heldoutText.runs} runs is a small base.
+            </p>
+          </>
+        )}
       </section>
 
       <section className={styles.section}>
@@ -894,6 +1063,17 @@ export default function ProofPage() {
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <th scope="row">get_dispute, get_shipment_tracking, get_refund, get_order</th>
+                <td>
+                  Given to the GPT-5.6 drafter as functions on a live case, next to write_brief: it may read PayPal itself, at most {toolkitBrief.maxReads} reads in
+                  one turn, before the brief is forced. Each read is listed under the brief on the case page. Measured once on {toolkitBrief.dispute} (
+                  {day(toolkitBrief.at)}, read-only): it called {toolkitBrief.toolkit.map((t) => t.tool).join(", ")}, then wrote the brief;{" "}
+                  {toolkitBrief.tokens ? `${toolkitBrief.tokens.input.toLocaleString("en-US")} tokens in and ${toolkitBrief.tokens.output.toLocaleString("en-US")} out` : ""}
+                  {toolkitBrief.usd !== null ? `, $${toolkitBrief.usd.toFixed(4)}` : ""}, {(toolkitBrief.ms / 1000).toFixed(0)} s. The evals run without it, so they never
+                  call PayPal.
+                </td>
+              </tr>
               <tr>
                 <th scope="row">get_dispute, get_shipment_tracking</th>
                 <td>The autopilot&apos;s read step on the seller&apos;s lane, before it decides under the house rules; written on the case as an audit line. Also on MCP as paypal_get_dispute and paypal_get_shipment_tracking.</td>
