@@ -52,6 +52,13 @@ const TITLES: Record<string, string> = {
 
 const fact = (e: Exhibit | undefined, label: string) => e?.facts.find((f) => f.label === label)?.value;
 const zipOf = (s?: string) => s?.match(/\b\d{5}\b(?!.*\b\d{5}\b)/)?.[0];
+const MON = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+/** "4 Oct 2026" (with or without a time after it) as a UTC day in ms, or null. */
+const dateOf = (s?: string) => {
+  const m = s?.match(/^(\d{1,2}) (\w{3})\w* (\d{4})/);
+  const mi = m ? MON.indexOf(m[2].toLowerCase()) : -1;
+  return m && mi >= 0 ? Date.UTC(Number(m[3]), mi, Number(m[1])) : null;
+};
 const letters = (...es: (Exhibit | undefined)[]) => [...new Set(es.filter((e): e is Exhibit => !!e).map((e) => e.id))];
 
 /** The card brand on the order ("Paid with: VISA ending 4242"), when there is a card. */
@@ -107,6 +114,26 @@ function delivery(exhibits: Exhibit[], amount: number): Requirement[] {
         ? item("address", "Delivered to the address on the transaction", "missing", `Delivered in ${deliveredZip}; the order ships to ${shipZip}`, letters(scans, order), true, `The delivery scan is in ${deliveredZip} and the order ships to ${shipZip}: how was it delivered to the buyer's address?`)
         : item("address", "Delivered to the address on the transaction", delivered ? "weak" : "missing", delivered ? "The scan's ZIP can't be matched to the ship-to" : "Nothing shows where it was delivered", letters(scans, order), true, "Which page ties the delivery to the address on the order?"),
   );
+  // Visa 13.1: delivered before the dispute, and within the delivery time; with no date agreed, Visa has the
+  // cardholder wait 15 calendar days from the purchase before disputing non-receipt.
+  const deliveredOn = dateOf(date);
+  const orderedOn = dateOf(fact(order, "Ordered"));
+  const opened = exhibits.find((e) => e.kind === "claim");
+  const openedOn = dateOf(fact(opened, "Opened"));
+  if (delivered && deliveredOn !== null && (orderedOn !== null || openedOn !== null)) {
+    const days = orderedOn !== null ? Math.round((deliveredOn - orderedOn) / 86_400_000) : null;
+    const after = openedOn !== null && deliveredOn > openedOn;
+    const late = days !== null && days > 15;
+    const by = letters(scans, ...(days !== null ? [order] : []), ...(openedOn !== null ? [opened] : []));
+    const when = `${days !== null ? `${days} day${days === 1 ? "" : "s"} after the ${fact(order, "Ordered")!.replace(/,.*$/, "")} order` : "with no order date on file"}${openedOn !== null ? `${after ? ", after" : " and before"} the case opened on ${fact(opened, "Opened")}` : ""}`;
+    out.push(
+      after
+        ? item("window", "Delivered before the dispute, within the delivery time", "missing", `Delivered ${date}, ${when}`, by, true, `The delivered scan is dated ${date}, after the case opened on ${fact(opened, "Opened")}. What shows the buyer had it before disputing?`)
+        : late
+          ? item("window", "Delivered before the dispute, within the delivery time", "weak", `Delivered ${date}, ${when}: later than the 15 days Visa allows when no delivery date was agreed`, by, true, `The parcel arrived ${days} days after the order. What delivery date was the buyer promised?`)
+          : item("window", "Delivered before the dispute, within the delivery time", "on file", `Delivered ${date}, ${when}`, by, true, ""),
+    );
+  }
   // PayPal's Seller Protection asks for signed proof only over $750; it is strong evidence at any amount.
   out.push(
     signed
@@ -127,29 +154,69 @@ function delivery(exhibits: Exhibit[], amount: number): Requirement[] {
 /* ───────────── Not as described: the listing, a disclosure, a return ───────────── */
 
 const ADMITS = /\b(?:I|we) (?:do )?recogni[sz]e\b|\brealised it was my order\b|\brealized it was my order\b|\bit was my (?:order|purchase)\b|\bI'?m keeping (?:it|them)\b|\bI (?:have|got|received) (?:the|them|it|my)\b|\bI (?:did )?(?:make|made|placed?) (?:this|the|that) (?:order|purchase)\b|\b(?:cancel|drop) the (?:dispute|chargeback)\b/i;
+// The seller offering this buyer a return, in the words a shop writes: "You're welcome to return them within 30
+// days for a refund", "you can return it", "return them within 30 days".
 const OFFERS_RETURN =
-  /\breturns? (?:are|is) accepted\b|\bwe (?:can|will|would) (?:take|accept) (?:it|them|the \w+) back\b|\bsend (?:it|them) back\b|\breturn label\b|\bhappy to (?:take|accept) (?:it|them) back\b|\boffer(?:ed)? (?:a |you a )?return\b/i;
+  /\breturns? (?:are|is) accepted\b|\bwe (?:can|will|would) (?:take|accept) (?:it|them|the \w+) back\b|\bsend (?:it|them|the \w+) back\b|\breturn label\b|\bhappy to (?:take|accept) (?:it|them) back\b|\boffer(?:ed)? (?:a |you a )?return\b|\bwelcome to (?:return|send)\b|\byou (?:can|may|could) (?:always )?(?:return|send back)\b|\breturn (?:it|them|the \w+)(?: to us)? within \d+ days\b/i;
 const DISCLOSES = /\bvar(?:y|ies|iation)\b|\bdiffer|\beach piece\b|\bno two\b|\bshifts?\b|\bmay (?:look|appear|show|differ)\b|\bunique\b/i;
+// The cardholder sent the item back, or is sending it.
+const RETURNED = /\b(?:I(?:'ve| have)?|we(?:'ve| have)?) (?:sent|posted|mailed|shipped|returned|dropped off) (?:it|them|the \w+)(?: back)?\b|\b(?:I'?ll|I will|I'?m going to) (?:send|post|mail|ship) (?:it|them|the \w+) back\b|\bposting (?:it|them) (?:back )?today\b|\byou (?:got|received|have) (?:the \w+|it|them) back\b|\breturn(?:ed)? (?:parcel|package|tracking)\b|\bthe returned \w+\b/i;
+// The cardholder keeping the item, or refusing a return: "I'm keeping them", "Return shipping ... would be about
+// $30. That doesn't seem fair."
+const KEEPS = /\bI'?m keeping (?:it|them)\b|\bI(?:'ll| will) keep (?:it|them)\b|\b(?:won'?t|will not|not going to|refuse to) (?:send|return|post|pay for (?:the )?return)\b|\breturn shipping\b[^.]*\.?\s*(?:that )?(?:doesn'?t|does not|isn'?t|is not) (?:seem )?(?:fair|right|reasonable|worth)\b|\b(?:doesn'?t|does not) seem fair\b|\bnot (?:paying|going to pay) (?:for )?(?:the )?return\b/i;
+
+/** An inbox line as "date, time, Name: text", split; `buyer` is the cardholder's name from the order's ship-to. */
+function said(inbox: Exhibit | undefined, buyer: string | undefined) {
+  return (inbox?.lines ?? []).map((line) => {
+    const m = line.replace(/[’]/g, "'").match(/^\d{1,2} \w{3} \d{4}, \d{2}:\d{2}, ([^:]+): ([\s\S]*)$/);
+    const who = m?.[1]?.trim();
+    return { line, text: m?.[2] ?? line.replace(/[’]/g, "'"), from: !who || !buyer ? ("?" as const) : who === buyer ? ("buyer" as const) : ("seller" as const) };
+  });
+}
+const buyerName = (exhibits: Exhibit[]) => fact(exhibits.find((e) => e.kind === "order"), "Ship to")?.split(",")[0]?.trim() || undefined;
 
 function described(exhibits: Exhibit[]): Requirement[] {
   const by = (k: Exhibit["kind"]) => exhibits.find((e) => e.kind === k);
   const listing = by("listing");
   const policy = by("policy");
   const inbox = by("inbox");
+  const notes = by("note");
   const text = (e?: Exhibit) => [...(e?.facts ?? []).map((f) => f.value), ...(e?.lines ?? [])].join(" ");
   const disclosed = DISCLOSES.test(text(listing)) ? listing : DISCLOSES.test(text(policy)) ? policy : undefined;
   const returnLine = /\breturns?\b/i.test(text(policy)) ? policy : undefined;
-  const offered = inbox?.lines?.find((l) => OFFERS_RETURN.test(l));
+  const lines = said(inbox, buyerName(exhibits));
+  // The seller's own email offering a return; a line from the buyer ("can I return them within 30 days?") isn't one.
+  const offered = lines.find((l) => l.from !== "buyer" && OFFERS_RETURN.test(l.text));
+  // Visa 13.3 and Mastercard 4853 ask the cardholder to return the item, or try to, before disputing it.
+  const wrote = lines.find((l) => l.from !== "seller" && RETURNED.test(l.text));
+  const noted = wrote ? undefined : notes?.lines?.find((t) => /\breturned \w+ (?:arrived|reached|came back)\b|\breturn tracking\b|\bwas returned\b/i.test(t));
+  // Kept: the buyer says so, or turns down the return (what a return would cost them) in a line about returning.
+  const kept = lines.find((l) => l.from !== "seller" && KEEPS.test(l.text) && /\breturn|\bkeep/i.test(l.text));
+  // The words that carry the point: the whole message when it is short, else the sentence that matched.
+  const quoted = (t: string, re?: RegExp) => {
+    const part = t.length > 110 && re ? (t.split(/(?<=[.!?])\s+/).find((x) => re.test(x)) ?? t) : t;
+    return `“${part.length > 110 ? `${part.slice(0, 109).trimEnd()}…` : part}”`;
+  };
+  const NEED = "Whether the cardholder returned the item, or tried to";
+  const returned =
+    wrote || noted
+      ? item("returned", NEED, "missing", `The cardholder sent the item back: ${quoted(wrote?.text ?? noted!)}`, letters(wrote ? inbox : notes), true, "The buyer sent the item back. Where is the credit for the return?")
+      : kept
+        ? item("returned", NEED, "on file", `The cardholder kept the item and didn't return it: ${quoted(kept.text)}`, letters(inbox), false, "")
+        : item("returned", NEED, "weak", "Nothing on file shows the item returned, or a return tried", letters(inbox), false, "Did the buyer return the item, or try to?");
   return [
     listing
       ? item("listing", "The item as it was described when sold", "on file", `The listing for ${listing.title.replace(/^Listing: /, "")}`, letters(listing), true, "")
       : item("listing", "The item as it was described when sold", "missing", "No listing on file", [], true, "What did the listing say the buyer was buying?"),
+    returned,
     disclosed
       ? item("disclosure", "A disclosure of what the buyer complains about", "weak", `${disclosed.kind === "listing" ? "The listing" : "The policy"} discloses variation; whether it covers this complaint is a reading of the words`, letters(disclosed), true, "Where do the pages disclose the specific difference the buyer complains about?")
       : item("disclosure", "A disclosure of what the buyer complains about", "missing", "Nothing on file discloses a difference", letters(listing), true, "Where did the listing warn the buyer about the difference they complain about?"),
     returnLine
-      ? item("return", "A return offered under the policy shown at checkout", offered ? "on file" : "weak", offered ? "The policy, and the seller offered a return by email" : "The policy offers returns; no email offering one", letters(policy, offered ? inbox : undefined), false, "Did the seller offer this buyer a return?")
-      : item("return", "A return offered under the policy shown at checkout", "missing", "No return policy on file", [], false, "Was a return ever offered?"),
+      ? item("return", "A return offered under the policy shown at checkout", offered ? "on file" : "weak", offered ? `The policy, and the seller offered a return by email: ${quoted(offered.text, OFFERS_RETURN)}` : "The policy offers returns; no email offering one", letters(policy, offered ? inbox : undefined), false, "Did the seller offer this buyer a return?")
+      : offered
+        ? item("return", "A return offered under the policy shown at checkout", "weak", `No return policy on file, but the seller offered a return by email: ${quoted(offered.text, OFFERS_RETURN)}`, letters(inbox), false, "Where is the return policy the buyer saw at checkout?")
+        : item("return", "A return offered under the policy shown at checkout", "missing", "No return policy on file", [], false, "Was a return ever offered?"),
   ];
 }
 

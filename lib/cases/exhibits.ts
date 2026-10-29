@@ -107,6 +107,8 @@ export function buildExhibits(src: Sources): Exhibit[] {
     { label: "Stage", value: STAGES[d.dispute_life_cycle_stage ?? ""] ?? "Claim" },
     { label: "Channel", value: d.dispute_channel === "EXTERNAL" ? "Card issuer chargeback" : "PayPal Resolution Center" },
   ];
+  // When the case opened: the requirements card holds a delivery to it (Visa 13.1 wants delivery before the dispute).
+  if (d.create_time) claimFacts.push({ label: "Opened", value: day(d.create_time) });
   if (d.seller_response_due_date) claimFacts.push({ label: "Respond by", value: day(d.seller_response_due_date) });
   if (tx?.seller_transaction_id) claimFacts.push({ label: "Payment", value: tx.seller_transaction_id });
   if (tx?.seller_protection_eligible !== undefined) claimFacts.push({ label: "Seller Protection", value: tx.seller_protection_eligible ? "Eligible" : "Not eligible" });

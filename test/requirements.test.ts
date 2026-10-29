@@ -98,3 +98,61 @@ test("a second order in the store's records is weak, not missing; a cardholder's
   assert.equal(status(fraud, "admission"), "weak");
   assert.equal(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011")]), "admission"), undefined);
 });
+
+const colour = (inbox: string[], notes: string[] = []): Exhibit[] => [
+  order("VISA ending 4242", "Priya Raman, 77 Prospect Place, Brooklyn, NY 11217"),
+  { id: "F", kind: "inbox", title: "Emails with the buyer", source: "Store", facts: [], lines: inbox },
+  { id: "G", kind: "listing", title: "Listing: Nesting bowls", source: "Store", facts: [], lines: ["Each set is unique; colour shifts from deep blue to green where the glaze pools."] },
+  { id: "H", kind: "policy", title: "Store policy", source: "Store", facts: [{ label: "Returns", value: "Returns accepted within 30 days of delivery." }] },
+  { id: "J", kind: "note", title: "Seller's notes", source: "Store", facts: [], lines: notes },
+];
+// The colour story's Exhibit F (PP-R-GQZ-10195194), as the store inbox prints it.
+const GQZ_F = [
+  "3 Oct 2026, 19:00, Priya Raman: The bowls arrived safely but they're much greener than the photos. I bought them to match my blue dishes. Not what I expected.",
+  "4 Oct 2026, 11:00, Ines Halden: Sorry they're not the blue you hoped for, Priya. Tide-blue does pool green where it's thick, as the listing says. You’re welcome to return them within 30 days for a refund.",
+  "5 Oct 2026, 08:00, Priya Raman: Return shipping for three bowls would be about $30. That doesn't seem fair.",
+];
+
+test("Visa 13.3: the seller's email offering a return is found in the words a shop writes", () => {
+  const card = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour(GQZ_F));
+  const ret = card!.items.find((i) => i.id === "return")!;
+  assert.equal(ret.status, "on file");
+  assert.deepEqual(ret.exhibits, ["H", "F"]);
+  assert.match(ret.detail, /welcome to return them within 30 days/);
+  for (const offer of ["You can return them for a refund.", "Please return it within 14 days and I'll refund you.", "We will take them back."]) {
+    const c = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour([`4 Oct 2026, 11:00, Ines Halden: ${offer}`]));
+    assert.equal(status(c, "return"), "on file", offer);
+  }
+  // The buyer asking about a return is not the seller offering one.
+  const asked = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour(["3 Oct 2026, 19:00, Priya Raman: Can I return them within 30 days?"]));
+  assert.equal(status(asked, "return"), "weak");
+});
+
+test("Visa 13.3: whether the cardholder returned the item, or tried to, is read from the inbox", () => {
+  const kept = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour(GQZ_F));
+  const r = kept!.items.find((i) => i.id === "returned")!;
+  assert.equal(r.status, "on file");
+  assert.match(r.detail, /kept the item and didn't return it: “Return shipping for three bowls would be about \$30/);
+  assert.match(cardText(kept!), /\[on file, strengthens\] Whether the cardholder returned the item/);
+
+  const sent = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour([...GQZ_F, "9 Oct 2026, 12:00, Priya Raman: Fine, I'll send them back. Posting them today."]));
+  assert.equal(status(sent, "returned"), "missing");
+  assert.equal(sent!.standing, "not met");
+  const noted = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour([], ["The returned bowls arrived at the studio on day 14, unused."]));
+  assert.equal(status(noted, "returned"), "missing");
+  const silent = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, colour([GQZ_F[0]]));
+  assert.equal(status(silent, "returned"), "weak");
+});
+
+test("Visa 13.1: delivered before the case opened and within 15 days of the order", () => {
+  const claim = (opened: string): Exhibit => ({ id: "A", kind: "claim", title: "The claim", source: "PayPal", facts: [{ label: "Opened", value: opened }] });
+  const ordered: Exhibit = { ...order("VISA ending 1881"), facts: [...order("VISA ending 1881").facts, { label: "Ordered", value: "27 Sep 2026, 10:30" }] };
+  const card = (scan: string, opened: string) => requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", amount: "46.00" }, [claim(opened), ordered, tracking, scans(scan)]);
+  const ok = card("1 Oct 2026, 11:00  Delivered, San Francisco, CA 94109", "12 Oct 2026");
+  assert.equal(status(ok, "window"), "on file");
+  assert.match(ok!.items.find((i) => i.id === "window")!.detail, /4 days after the 27 Sep 2026 order and before the case opened on 12 Oct 2026/);
+  assert.equal(status(card("20 Oct 2026, 11:00  Delivered, San Francisco, CA 94109", "30 Oct 2026"), "window"), "weak");
+  const after = card("14 Oct 2026, 11:00  Delivered, San Francisco, CA 94109", "12 Oct 2026");
+  assert.equal(status(after, "window"), "missing");
+  assert.equal(after!.standing, "not met");
+});
