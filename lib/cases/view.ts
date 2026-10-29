@@ -116,7 +116,8 @@ export interface HouseView {
   audit: AuditLine[];
 }
 
-const FIX_DUPLICATE = "2026-10-30T00:00:00Z";
+// The second charge got its own exhibit with the deploy of 29 Oct 2026, 20:13 UTC.
+const FIX_DUPLICATE = "2026-10-29T20:13:00Z";
 /** UNAUTHORISED agent cases the sandbox never opened for a ruling, and when Exhibit tried to move them. */
 const STUCK_TRIED: Record<string, string> = { "PP-R-YTQ-10191473": "30 Oct 2026", "PP-R-OMG-10191469": "30 Oct 2026" };
 
@@ -137,8 +138,8 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
   const notes: string[] = [];
   const d = ctx.dispute;
   const second = ctx.exhibits.find((e) => e.title === "The second charge, refunded");
-  if (second && ctx.brief && ctx.brief.createdAt < FIX_DUPLICATE) {
-    notes.push(`This brief was written on ${utcDay(ctx.brief.createdAt)}, before the second charge had its own exhibit (Exhibit ${second.id}, added 30 Oct 2026) and before the refund named the payment it credited. The response PayPal holds doesn't cite it.`);
+  if (second && ctx.brief && ctx.brief.createdAt < FIX_DUPLICATE && !ctx.brief.sentences.some((s) => s.cites.includes(second.id))) {
+    notes.push(`This brief was written on ${utcDay(ctx.brief.createdAt)}, before the second charge had its own exhibit (Exhibit ${second.id}, added 29 Oct 2026) and before the refund named the payment it credited. The response PayPal holds doesn't cite it.`);
   }
   if (agent?.legacy) {
     notes.push("Script, stand-in key: this case was opened before the live buyer agent (26 Oct 2026). Its agent log is the story's script, and its mandates were signed with keys derived from the order number, not the published ones. Cases opened since are bought by the live agent and signed with the keys at /.well-known/exhibit-keys.json.");

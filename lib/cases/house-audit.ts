@@ -60,7 +60,7 @@ export function houseAudit(i: AuditInput): AuditLine[] {
       audit.push(
         h
           ? { at: p.decidedAt, text, hearing: hearingAnchor(h) }
-          : { at: p.decidedAt, text, missing: p.decidedAt < KEPT_FROM ? "transcript not kept (recorded before 30 Oct)" : "transcript not kept" },
+          : { at: p.decidedAt, text, missing: p.decidedAt < KEPT_FROM ? "transcript not kept: recorded before 30 Oct" : "transcript not kept" },
       );
     }
     audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${p.reason}` });
