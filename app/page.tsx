@@ -260,9 +260,10 @@ export default async function Home() {
               <strong>overruled</strong>; struck or conceded, it is <strong>sustained</strong> and the sentence is withdrawn.
             </p>
             <p>
-              Measured on {reviewProof.summary.hearings} labelled cases: {reviewProof.summary.objections} objections on{" "}
-              {reviewProof.summary.fightsWithObjections} of {reviewProof.summary.fights} fights, {reviewProof.summary.overruled} overruled,{" "}
-              {reviewProof.summary.sustained} sustained, {reviewProof.summary.conceded} conceded; the reviewer reached the labelled call in{" "}
+              Measured on {reviewProof.summary.hearings} labelled cases: the reviewer raised {reviewProof.summary.reviewerObjections} objections on{" "}
+              {reviewProof.summary.fightsWithReviewerObjections} of {reviewProof.summary.fights} fights, and the requirements card added{" "}
+              {reviewProof.summary.objections - reviewProof.summary.reviewerObjections} more in code; {reviewProof.summary.overruled} were overruled,{" "}
+              {reviewProof.summary.sustained} sustained ({reviewProof.summary.conceded} conceded). The reviewer reached the labelled call in{" "}
               {reviewProof.summary.reviewerMatchesLabel} of {reviewProof.summary.hearings}. Its verdict is the ruling Exhibit asks the sandbox for.
             </p>
             <p className={styles.readPdf}>
@@ -407,12 +408,15 @@ export default async function Home() {
             Shopping agents now pay with their owner&apos;s card. When the owner later says &ldquo;I never authorised this&rdquo;, the question is what
             they signed. Exhibit reads the cardholder&apos;s signed intent (what the agent may buy, up to what total, shipped where, until when), the
             agent&apos;s signed cart, and the SHA-256 of that cart the PayPal order carries, then checks all of it in code before the model writes a word.
-            Signatures are checked against the keys Exhibit publishes, never a key the mandate brings along.
+            Signatures are checked against the demo keys Exhibit publishes (it holds the stand-in wallet and agent-platform keys), never a key the
+            mandate brings along.
           </p>
           <p>
-            Inside the mandate, the purchase was authorised: fight. Past the limit the cardholder signed, or with a signature that doesn&apos;t verify,
-            nobody allowed that order: refund, and the check says who answers for it, the cardholder, the agent or the merchant. In both stories a buyer
-            agent with shopping tools makes the purchase, and in one a line planted in the listing pushes it toward the wrong cart.
+            The mandate decides who is responsible: inside it, the cardholder; past the limit, or with a signature that doesn&apos;t verify, the agent
+            platform, and Exhibit refunds. Responsibility isn&apos;t the same as winning: card networks don&apos;t yet treat a signed mandate as
+            authorisation evidence, so Exhibit fights only when network-recognised evidence backs it, such as earlier undisputed orders from the same
+            device and IP address (compelling evidence) or a 3-D Secure result. Without it, as on PP-R-UPI-10195190, it advises a refund. A buyer agent
+            with shopping tools makes every purchase, and in one story a line planted in the listing pushes it toward the wrong cart.
           </p>
           <p>
             The seller can have an agent too. Exhibit is an MCP server at <span className={styles.code}>/api/mcp</span>: any assistant that speaks
