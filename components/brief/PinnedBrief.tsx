@@ -5,6 +5,7 @@ import type { BriefSentence, Exhibit, Recommendation, TallyItem } from "@/lib/ca
 import ExhibitCard, { sideOf } from "./ExhibitCard";
 import Tally from "./Tally";
 import { repairLabel } from "@/lib/cases/hearing";
+import { sentenceState, stateLine } from "@/lib/cases/sentence-state";
 import styles from "./brief.module.css";
 
 export interface Verdict {
@@ -120,6 +121,7 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
   const citedBy = (exhibitId: string) => sentences.some((s, i) => s.kept && s.cites.includes(exhibitId) && (hoverSentence === null || hoverSentence === i));
   const lit = (t: Thread) => (litExhibit ? t.exhibit === litExhibit : hoverSentence !== null ? t.sentence === hoverSentence : false);
   const anyHover = litExhibit !== null || hoverSentence !== null;
+  const states = sentences.map((s) => sentenceState(s, exhibits));
 
   return (
     <div className={`${styles.board} ${compact ? styles.compact : ""}`} ref={board}>
@@ -146,7 +148,7 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
             <Fragment key={si}>
               <p
                 title={s.kept && s.checked?.length ? `Checked against the record: ${s.checked.join(", ")}` : undefined}
-                className={`${styles.sentence} ${s.kept ? "" : styles.struck} ${s.kept && s.unverified ? styles.unverified : ""} ${hoverSentence === si ? styles.sentenceLit : ""} ${
+                className={`${styles.sentence} ${s.kept ? "" : styles.struck} ${states[si].kind === "unverified" ? styles.unverified : ""} ${states[si].kind === "withdrawn" ? styles.withdrawn : ""} ${hoverSentence === si ? styles.sentenceLit : ""} ${
                   litExhibit && s.kept && s.cites.includes(litExhibit) ? styles.sentenceLit : ""
                 } ${anyHover && !(hoverSentence === si || (litExhibit && s.cites.includes(litExhibit))) ? styles.sentenceDim : ""}`}
                 onMouseEnter={() => s.kept && setHoverSentence(si)}
@@ -181,24 +183,20 @@ export default function PinnedBrief({ head, exhibits, sentences, tally, verdict,
                   );
                 })}
               </p>
-              {!s.kept && <p className={styles.strikeNote}>Struck before filing: {s.why}</p>}
+              {states[si].kind === "struck" && <p className={styles.strikeNote}>{stateLine(s, states[si])}</p>}
+              {states[si].kind === "withdrawn" && <p className={styles.withdrawnNote}>{stateLine(s, states[si])}</p>}
               {s.kept && s.repaired && (
                 <p className={styles.repairNote} title={`As first written: ${s.repaired.from}`}>
                   {repairLabel(s)}. As first written it was struck: {s.repaired.why}
                 </p>
               )}
-              {s.kept && s.unverified && (
-                <p className={styles.unverifiedNote}>
-                  Unverified: no figure or name in it to check, so it rests on its citation
-                  {s.quote ? (
-                    <>
-                      {" "}
-                      and the words it quotes from Exhibit {s.cites.join(", ")}: &ldquo;{s.quote}&rdquo;
-                    </>
-                  ) : null}
-                  .
+              {states[si].kind === "quoted" && (
+                <p className={styles.quotedNote}>
+                  <span aria-hidden="true">&#10003; </span>
+                  {stateLine(s, states[si])}: &ldquo;{s.quote}&rdquo;, word for word.
                 </p>
               )}
+              {states[si].kind === "unverified" && <p className={styles.unverifiedNote}>{stateLine(s, states[si])}</p>}
               {inline?.s === si && (
                 <div className={styles.inlineCard}>
                   {exhibits.filter((e) => e.id === inline.e).map((e) => (

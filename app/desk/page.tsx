@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DeskGrid from "@/components/desk/DeskGrid";
-import { deskCounts, deskRows } from "@/lib/desk";
-import { day } from "@/lib/format";
+import { deskSnapshot } from "@/lib/desk";
+import { utcDay } from "@/lib/format";
 import { visitorId } from "@/lib/visitor";
 import styles from "./desk.module.css";
 
@@ -10,15 +10,15 @@ export const metadata: Metadata = { title: "Desk" };
 export const dynamic = "force-dynamic";
 
 export default async function Desk() {
-  const rows = await deskRows(await visitorId());
-  const c = deskCounts(rows);
+  // The desk's snapshot: the same rows, counted the same way, as the home page's figures.
+  const { rows, at } = await deskSnapshot(await visitorId());
   return (
     <main className={`shell ${styles.page}`}>
       <header className={styles.head}>
         <div>
           <p className={styles.docketLine}>
             <span className="bates">Docket</span>
-            <span>{day(new Date())}</span>
+            <span>{utcDay(new Date())}</span>
             <span>Halden Ceramics, sandbox account</span>
           </p>
           <h1>The desk</h1>
@@ -36,39 +36,7 @@ export default async function Desk() {
           </Link>
         </div>
       </header>
-      <dl className={styles.strip}>
-        <div>
-          <dt>Your move</dt>
-          <dd>{c.waiting}</dd>
-        </div>
-        <div>
-          <dt>PayPal reviewing</dt>
-          <dd>{c.reviewing + c.open}</dd>
-        </div>
-        <div>
-          <dt>Won</dt>
-          <dd data-tone="won">{c.won}</dd>
-          <p className={styles.split}>
-            {c.wonAsked} ruled at Exhibit&apos;s request, {c.wonByItself} closed by the sandbox on its own
-          </p>
-        </div>
-        <div>
-          <dt>Refunded</dt>
-          <dd>{c.refunded}</dd>
-        </div>
-        <div>
-          <dt>Lost</dt>
-          <dd data-tone="lost">{c.lost}</dd>
-          <p className={styles.split}>
-            {c.lostAsked} ruled at Exhibit&apos;s request, {c.lostByItself} closed by the sandbox or the deadline
-          </p>
-        </div>
-        <div>
-          <dt>Soonest deadline</dt>
-          <dd>{c.soonest ? day(c.soonest) : "None"}</dd>
-        </div>
-      </dl>
-      <DeskGrid initial={rows} />
+      <DeskGrid initial={rows} at={at} />
     </main>
   );
 }

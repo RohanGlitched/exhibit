@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import HeroReplay from "@/components/HeroReplay";
 import type { Brief, Exhibit } from "@/lib/cases/types";
-import { day } from "@/lib/format";
+import { utcDay } from "@/lib/format";
 import { heroRulingLine } from "@/lib/showcase-rank";
+import { briefCounts } from "@/lib/cases/sentence-state";
 import type { DecidedBy } from "@/lib/cases/derive";
 import CaseFile from "./CaseFile";
 import styles from "./stage.module.css";
@@ -29,7 +30,8 @@ const PHASES = [
 /** The landing's stage: a real case argued on a dark desk, with the steps lighting up beside it. */
 export default function HomeStage({ head, exhibits, brief, filedAt, ruling }: Props) {
   const [phase, setPhase] = useState(-1);
-  const kept = brief.sentences.filter((s) => s.kept).length;
+  // A sentence withdrawn at the hearing is not a checker strike: the two are counted apart, as the autopilot counts them.
+  const n = briefCounts(brief.sentences);
   return (
     <section className={styles.stage} aria-label="A real case, argued">
       <div className={styles.side}>
@@ -54,10 +56,11 @@ export default function HomeStage({ head, exhibits, brief, filedAt, ruling }: Pr
           ))}
         </ol>
         <p className={styles.facts}>
-          {exhibits.length} exhibits, {kept} sentences, {brief.sentences.length - kept} struck.{" "}
+          {exhibits.length} exhibits, {n.kept} sentences, {n.checked} matched to the record, {n.struck ? `${n.struck} struck by the checker` : "nothing struck by the checker"}
+          {n.withdrawn ? `, ${n.withdrawn} withdrawn at the hearing` : ""}.{" "}
           {brief.engine === "model" ? `Argued by ${brief.model}` : "Argued by the rules engine"}
-          {filedAt ? `, filed ${day(filedAt)}` : ""}
-          {ruling ? `. ${heroRulingLine({ where: ruling.where, by: ruling.by, reviewer: ruling.reviewer, day: ruling.at ? day(ruling.at) : null })}` : "."}
+          {filedAt ? `, filed ${utcDay(filedAt)}` : ""}
+          {ruling ? `. ${heroRulingLine({ where: ruling.where, by: ruling.by, reviewer: ruling.reviewer, day: ruling.at ? utcDay(ruling.at) : null })}` : "."}
         </p>
         <Link href={`/case/${head.id}`} className={styles.open}>
           Open this case

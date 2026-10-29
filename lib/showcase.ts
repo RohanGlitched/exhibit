@@ -1,7 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { listCases } from "./store";
-import { deskCounts, deskRows } from "./desk";
+import { deskRows, deskSnapshot, deskTotals } from "./desk";
 import { caseContext } from "./cases/service";
 import { checkSentence } from "./cases/verify";
 import { exhibitText } from "./cases/exhibits";
@@ -9,6 +9,8 @@ import { reasonLabel, usd } from "./format";
 import { followedReviewer, ruledAt, rulingRequestOf, type DecidedBy } from "./cases/derive";
 import { showcaseRank } from "./showcase-rank";
 import { untouched } from "./cases/pool";
+import { hearingsOf } from "./cases/hearing-log";
+import { briefCounts } from "./cases/sentence-state";
 import type { Brief, BriefSentence, Exhibit } from "./cases/types";
 
 export interface Showcase {
@@ -63,7 +65,8 @@ export const showcase = unstable_cache(
         scenarioId: c.scenarioId,
         filings: c.filings,
         engine: c.brief?.engine,
-        hearing: c.hearing,
+        hearings: hearingsOf(c),
+        checks: c.brief ? briefCounts(c.brief.sentences).checked : 0,
       });
     const pick = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt))[0];
     if (!pick?.brief) return null;
@@ -109,28 +112,10 @@ export const showcase = unstable_cache(
 );
 
 /**
- * Live numbers for the landing strip: the same rows the desk shows (PayPal's dispute list, with what PayPal
- * holds as filed), and the briefs from Exhibit's records.
+ * Live numbers for the landing strip: the desk's own snapshot (PayPal's dispute list, with what PayPal holds as
+ * filed, and Exhibit's briefs), counted by the same function the desk uses, with the time it was read.
  */
-export const deskStats = unstable_cache(
-  async () => {
-    // One base for every figure: the shop's cases Exhibit argued (a brief on record). Filings PayPal holds from
-    // before Exhibit kept briefs, and cases nobody argued, are on the desk but not in these numbers.
-    const rows = (await deskRows(null)).filter((r) => !r.pooled && !r.retired && r.source !== "probe");
-    const argued = rows.filter((r) => r.sentences !== null);
-    const c = deskCounts(argued);
-    return {
-      argued: argued.length,
-      sentences: argued.reduce((n, r) => n + (r.sentences ?? 0), 0),
-      struck: argued.reduce((n, r) => n + (r.struck ?? 0), 0),
-      filed: argued.filter((r) => r.filed && !/^Accepted/.test(r.filed)).length,
-      refunded: argued.filter((r) => r.filed && /^Accepted/.test(r.filed)).length,
-      won: c.won,
-      wonAsked: c.wonAsked,
-      wonByItself: c.wonByItself,
-      atStake: argued.filter((r) => r.where === "waiting" || r.where === "filed" || r.where === "open").reduce((n, r) => n + r.amount, 0),
-    };
-  },
-  ["desk-stats-v4"],
-  { revalidate: 120 },
-);
+export async function deskStats() {
+  const s = await deskSnapshot(null);
+  return { at: s.at, ...deskTotals(s.rows) };
+}

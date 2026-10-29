@@ -1,7 +1,7 @@
 import type { Dispute, DisputeSummary, Evidence } from "../paypal/disputes";
 import type { Order } from "../paypal/orders";
 import { scenario as findScenario, storyForSku, type Scenario } from "../shop/scenarios";
-import { day, dayTime, daysMissed, missedWords, shortDay, usd } from "../format";
+import { daysMissed, missedWords, usd, utcDay, utcShortDay, utcTime } from "../format";
 import type { Filing } from "./types";
 
 /**
@@ -145,8 +145,9 @@ export const followedReviewer = (ruling: FilingLike | null) => Boolean(ruling?.s
 export function outcomeWords(where: Stage, by: DecidedBy | null, at: string | null): { line: string; what: string; stamp: string } | null {
   if (where !== "won" && where !== "lost") return null;
   const side = where === "won" ? "seller" : "buyer";
-  const date = at ? ` ${shortDay(at).toUpperCase()}` : "";
-  const out = (what: string, stamp: string, tail = "") => ({ what: what + tail, line: `${what}${at ? `, ${day(at)}` : ""}${tail}`, stamp: stamp + date });
+  // Dates of real events are UTC days, as every time on a case page is UTC.
+  const date = at ? ` ${utcShortDay(at).toUpperCase()}` : "";
+  const out = (what: string, stamp: string, tail = "") => ({ what: what + tail, line: `${what}${at ? `, ${utcDay(at)}` : ""}${tail}`, stamp: stamp + date });
   if (by === "requested") return out(`PayPal ruled for the ${side} at Exhibit's request`, "PAYPAL RULED");
   if (by === "deadline") return out("Closed for the buyer after the deadline passed", "CLOSED");
   return out(`Closed for the ${side} by the sandbox on its own`, "SANDBOX CLOSED", "; nobody asked it to rule");
@@ -173,6 +174,11 @@ export function stageLine(
         ? `Lost: PayPal ruled for the buyer at Exhibit's request; ${amount} returned to the buyer`
         : `Lost: the sandbox closed it for the buyer on its own, nobody asked it to rule; ${amount} returned to the buyer`;
     case "refunded":
+      if (refundedLate(filings, d.seller_response_due_date)) {
+        return d.status === "RESOLVED"
+          ? `Refunded after the deadline passed: nothing was filed in time, so the seller accepted the claim; ${amount} back to the buyer`
+          : `Refunded after the deadline passed: the seller accepted the claim; PayPal is closing the case`;
+      }
       return d.status === "RESOLVED" ? `Refunded: the seller accepted, ${amount} back to the buyer` : `Refund accepted; PayPal is closing the case`;
     case "filed":
       return "Filed with PayPal; under review";
@@ -189,6 +195,17 @@ export function stageLine(
     default:
       return d.status.toLowerCase().replace(/_/g, " ");
   }
+}
+
+/**
+ * A refund made after PayPal's deadline had passed with nothing filed: the seller accepted the claim late. Read
+ * from the filings (PayPal's record of the acceptance, or Exhibit's) and PayPal's due date, never from a case id.
+ */
+export function refundedLate(filings: FilingLike[], due: string | null | undefined): boolean {
+  if (!due) return false;
+  const accept = filings.find((f) => f.action === "accept" && f.ok !== false);
+  if (!accept?.at || filings.some((f) => f.action === "evidence" && f.at && f.at <= accept.at!)) return false;
+  return accept.at > new Date(due).toISOString();
 }
 
 /** When PayPal decided the case, if it has. */
@@ -240,4 +257,4 @@ export function splitFiled(notes: string): { text: string; cites: string[] }[] {
   return out;
 }
 
-export const restoredNote = (at: string | undefined) => (at ? `Read back from the response PayPal holds, filed ${dayTime(at)}` : "Read back from PayPal's record");
+export const restoredNote = (at: string | undefined) => (at ? `Read back from the response PayPal holds, filed ${utcTime(at)}` : "Read back from PayPal's record");

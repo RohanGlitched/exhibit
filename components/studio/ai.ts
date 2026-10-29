@@ -90,13 +90,13 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
         execute: (_args: Record<string, never>, ctx) => {
           const data = read();
           if (!data) return ctx.error("The desk's data hasn't loaded yet. Try again in a moment.");
-          const total = (k: "kept" | "refunded" | "lostAmount" | "atStake") => data.cases.reduce((s, c) => s + c[k], 0);
+          const total = (k: "kept" | "keptAsked" | "keptByItself" | "refunded" | "lostAmount" | "atStake") => data.cases.reduce((s, c) => s + c[k], 0);
           const count = (k: "stage" | "call") =>
             Object.entries(data.cases.reduce<Record<string, number>>((m, c) => ((m[c[k]] = (m[c[k]] ?? 0) + 1), m), {}))
               .map(([v, n]) => `${v} ${n}`)
               .join(", ");
           return ctx.success(
-            `Kept by fighting ${usd(total("kept"))}; refunded ${usd(total("refunded"))}; lost ${usd(total("lostAmount"))}; still at stake ${usd(total("atStake"))}. ` +
+            `Kept by fighting ${usd(total("kept"))} (${usd(total("keptAsked"))} ruled at Exhibit's request, ${usd(total("keptByItself"))} closed by the sandbox on its own); refunded ${usd(total("refunded"))}; lost ${usd(total("lostAmount"))}; still at stake ${usd(total("atStake"))}. ` +
               `Cases by where they stand: ${count("stage")}. By Exhibit's call: ${count("call")}.`,
           );
         },

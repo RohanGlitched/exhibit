@@ -3,10 +3,18 @@ import { unstable_cache } from "next/cache";
 import { getDispute, listDisputes, type Dispute, type DisputeSummary } from "./paypal/disputes";
 import { listCases } from "./store";
 import { scenario as findScenario, storyForSku } from "./shop/scenarios";
-import { decidedBy, mergeFilings, paypalFilings, ruledAt, stageLine, stageOf, type DecidedBy, type Stage } from "./cases/derive";
+import { decidedBy, mergeFilings, paypalFilings, refundedLate, ruledAt, stageLine, stageOf, type DecidedBy, type Stage } from "./cases/derive";
 import { inPool, untouched } from "./cases/pool";
 import type { CaseRecord, Filing, Recommendation } from "./cases/types";
 import { oddsFor } from "./cases/verify";
+import { checkerStrikes } from "./cases/autopilot";
+import { hearingsOf } from "./cases/hearing-log";
+import { briefCounts } from "./cases/sentence-state";
+
+export { deskCounts, deskTotals, shopRows, type DeskCounts, type DeskTotals } from "./desk-counts";
+
+/** The cache tag of the desk snapshot: a filing, a new case or a brief marks it stale at once. */
+export const DESK_TAG = "desk";
 
 export interface DeskRow {
   id: string;
@@ -30,8 +38,14 @@ export interface DeskRow {
   recommendation: Recommendation | null;
   odds: number | null;
   engine: string | null;
-  struck: number | null; // sentences the checker struck
+  struck: number | null; // sentences the checker struck (a sentence withdrawn at a hearing is not one)
+  withdrawn: number | null; // sentences withdrawn at the hearing on the draft
+  checks: number | null; // kept sentences matched to the record: figures and names, or a quote found verbatim
   sentences: number | null;
+  /** Exhibit conceded at the hearing on PayPal's copy after filing: the call is a refund from then on. */
+  conceded: boolean;
+  /** Refunded after PayPal's deadline had passed with nothing filed. */
+  late: boolean;
   filed: string | null; // the last thing filed
   filedAt: string | null;
   outcome: string | null;
@@ -63,13 +77,17 @@ async function pooled<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Pr
 }
 
 /** Every dispute on the sandbox account, straight from the Disputes API, with Exhibit's notes where it has them. */
-export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
-  const [disputes, records] = await Promise.all([
-    listDisputes({ pageSize: 50, pages: 6 }).catch(() => [] as DisputeSummary[]),
-    listCases().catch(() => [] as CaseRecord[]),
+async function readDesk(lenient = false): Promise<{ rows: DeskRow[]; claimed: Record<string, string> }> {
+  // A failed read throws, so the snapshot never caches a desk missing its records: the last good one is served
+  // meanwhile. Only the uncached fallback (lenient) reads PayPal's list without Exhibit's records.
+  const [disputes, records]: [DisputeSummary[], CaseRecord[]] = await Promise.all([
+    listDisputes({ pageSize: 50, pages: 6 }),
+    lenient ? listCases().catch(() => [] as CaseRecord[]) : listCases(),
   ]);
   const byId = new Map(records.map((r) => [r.disputeId, r]));
-  return pooled(disputes, 8, async (d): Promise<DeskRow> => {
+  // Who took each case from the pool stays on the server: the snapshot is shared, "mine" is set per visitor.
+  const claimed = Object.fromEntries(records.filter((r) => r.claimedBy).map((r) => [r.disputeId, r.claimedBy!]));
+  const rows = await pooled(disputes, 8, async (d): Promise<DeskRow> => {
     const r = byId.get(d.dispute_id);
     // What was filed: Exhibit's own note, else PayPal's record of the seller's evidence.
     let filings: Filing[] = r?.filings ?? [];
@@ -91,6 +109,11 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
     const last = filings.filter((f) => f.action !== "ruling").at(-1);
     const buyerName = full?.disputed_transactions?.[0]?.buyer?.name;
     const exhibitCase = Boolean(r?.scenarioId || s);
+    // A concession at the hearing on PayPal's copy, held after the response was filed, turns the call to a refund.
+    const filedAt = filings.filter((f) => f.action === "evidence").map((f) => f.at).sort().at(-1);
+    const heard = hearingsOf(r).filter((h) => h.source === "paypal" && (!filedAt || h.at >= filedAt)).at(-1);
+    const conceded = Boolean(filedAt && heard && heard.after !== "fight");
+    const counts = r?.brief ? briefCounts(r.brief.sentences) : null;
     return {
       id: d.dispute_id,
       reason: d.reason,
@@ -108,56 +131,50 @@ export async function deskRows(visitor: string | null): Promise<DeskRow[]> {
       story: s?.title ?? null,
       storyId: s?.id ?? null,
       tag: r?.lane === "autopilot" ? "Seller's lane, autopilot" : s?.agent ? (r?.agent ? (r.agent.engine === "model" ? "Live buyer agent" : "Scripted agent, published keys") : "Script, stand-in key") : null,
-      recommendation: r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null),
-      odds: r?.brief ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
+      recommendation: conceded ? "accept" : (r?.brief?.recommendation ?? (last?.action === "accept" ? "accept" : last?.action === "evidence" ? "fight" : null)),
+      odds: r?.brief && !conceded ? oddsFor(r.brief.recommendation, r.brief.odds) : null,
       engine: r?.brief?.engine ?? null,
-      struck: r?.brief ? r.brief.sentences.filter((x) => !x.kept).length : null,
+      struck: r?.brief ? checkerStrikes(r.brief) : null,
+      withdrawn: counts ? counts.withdrawn : null,
+      checks: counts ? counts.checked : null,
       sentences: r?.brief ? r.brief.sentences.length : null,
+      conceded,
+      late: where === "refunded" && refundedLate(filings, d.seller_response_due_date),
       filed: last ? last.summary : null,
       filedAt: last ? last.at : null,
       outcome: d.outcome ?? null,
-      mine: Boolean(visitor && r?.claimedBy === visitor),
+      mine: false,
       pooled: Boolean(r && inPool(r)),
       retired: Boolean(r?.retired && untouched(r)),
       source: r && !r.restored ? "exhibit" : exhibitCase ? "paypal" : "probe",
     };
   });
+  return { rows, claimed };
 }
 
-export interface DeskCounts {
-  waiting: number;
-  reviewing: number;
-  won: number;
-  lost: number;
-  /** Won and lost, split by who decided: PayPal at Exhibit's request, or the sandbox on its own. */
-  wonAsked: number;
-  wonByItself: number;
-  lostAsked: number;
-  lostByItself: number;
-  refunded: number;
-  open: number;
-  lapsed: number;
-  soonest: string | null;
+/**
+ * The desk as one snapshot, read from PayPal and the case store at most once a minute (and at once after a
+ * filing, a new case or a brief, by DESK_TAG), with the time it was read. The desk, its strip, the home page's
+ * figures, the analytics page and the MCP list all read it, so their numbers agree and say when they're from.
+ */
+const snapshot = unstable_cache(async () => ({ at: new Date().toISOString(), ...(await readDesk()) }), ["desk-snapshot-v1"], { revalidate: 60, tags: [DESK_TAG] });
+
+export interface DeskSnapshot {
+  at: string;
+  rows: DeskRow[];
 }
 
-/** The strip above the desk: shop cases only, not the pool stock or build-day probes. */
-export function deskCounts(rows: DeskRow[]): DeskCounts {
-  const live = rows.filter((r) => !r.pooled && !r.retired && r.source !== "probe");
-  const n = (w: Stage[]) => live.filter((r) => w.includes(r.where)).length;
-  const by = (w: Stage, asked: boolean) => live.filter((r) => r.where === w && (r.decidedBy === "requested") === asked).length;
-  return {
-    waiting: n(["waiting"]),
-    reviewing: n(["filed", "reviewing"]),
-    won: n(["won"]),
-    lost: n(["lost"]),
-    wonAsked: by("won", true),
-    wonByItself: by("won", false),
-    lostAsked: by("lost", true),
-    lostByItself: by("lost", false),
-    refunded: n(["refunded"]),
-    open: n(["open"]),
-    lapsed: n(["lapsed"]),
-    // Only deadlines still ahead: a lapsed case has no deadline left to meet.
-    soonest: live.filter((r) => r.due && r.where === "waiting").map((r) => r.due!).sort()[0] ?? null,
-  };
+export async function deskSnapshot(visitor: string | null): Promise<DeskSnapshot> {
+  const s = await snapshot().catch(async (e) => {
+    console.error("desk snapshot", (e as Error).message);
+    // Not cached: PayPal's list as it is now (without Exhibit's records if the store is down), or nothing.
+    const now = new Date().toISOString();
+    return readDesk(true)
+      .then((d) => ({ at: now, ...d }))
+      .catch(() => ({ at: now, rows: [] as DeskRow[], claimed: {} as Record<string, string> }));
+  });
+  return { at: s.at, rows: s.rows.map((r) => ({ ...r, mine: Boolean(visitor && s.claimed[r.id] === visitor) })) };
 }
+
+/** The snapshot's rows. */
+export const deskRows = async (visitor: string | null): Promise<DeskRow[]> => (await deskSnapshot(visitor)).rows;

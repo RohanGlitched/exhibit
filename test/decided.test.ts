@@ -95,7 +95,9 @@ test("health lists deadlines still ahead or just missed, and only counts the lon
     s.listed.map((n) => n.id),
     ["LIVE", "JUST"],
   );
-  assert.equal(s.missed, 3);
+  // Missed, as the desk counts it: cases on the desk only; retired pool stock is counted apart, by kind.
+  assert.equal(s.missed, 2);
+  assert.deepEqual(s.missedElsewhere, { "retired pool stock": 1 });
   assert.equal(s.missedLongAgo, 2);
 });
 

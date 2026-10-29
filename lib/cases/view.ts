@@ -1,6 +1,6 @@
 import "server-only";
 import { allowed } from "../paypal/disputes";
-import { decidedBy, filedDocument, followedReviewer, outcomeWords, ruledAt, rulingRequestOf, stageLine, stageOf, type DecidedBy, type Stage } from "./derive";
+import { decidedBy, filedDocument, followedReviewer, outcomeWords, refundedLate, ruledAt, rulingRequestOf, stageLine, stageOf, type DecidedBy, type Stage } from "./derive";
 import { caseContext, type CaseContext } from "./service";
 import { storyClock } from "./exhibits";
 import { oddsFor } from "./verify";
@@ -10,8 +10,10 @@ import type { Brief, Exhibit, Filing } from "./types";
 import { webhookView, type WebhookView } from "../webhooks/paypal";
 import type { Hearing } from "./hearing";
 import { requirementsFor, type RequirementsCard } from "./requirements";
-import { HOUSE_RULES, sinceWords, undoable, type HousePlan } from "./autopilot";
-import { day } from "../format";
+import { HOUSE_RULES, undoable, type HousePlan } from "./autopilot";
+import { hearingsOf } from "./hearing-log";
+import { houseAudit, rulingSide, type AuditLine } from "./house-audit";
+import { utcDay, utcTime } from "../format";
 
 /** What the buyer's agent did on an agent story, and who the mandate check holds responsible. */
 function agentView(ctx: CaseContext): AgentView | null {
@@ -92,6 +94,10 @@ export interface CaseView {
   webhook: WebhookView | null;
   /** The latest cross-examination by the simulated reviewer. */
   hearing: Hearing | null;
+  /** Every hearing kept on the case, oldest first (the draft's and PayPal's copy's); older records hold only the latest. */
+  hearings: Hearing[];
+  /** Refunded after PayPal's deadline had passed with nothing filed. */
+  refundedLate: boolean;
   /** Agent stories: what the buyer's agent did, and who the mandate check holds responsible. */
   agent: AgentView | null;
   /** What the card network asks for on this reason code, and whether the exhibits hold it (lib/cases/requirements.ts). */
@@ -107,7 +113,7 @@ export interface HouseView {
   plan: HousePlan | null;
   rules: { version: string; rules: { n: number; text: string }[] };
   undoable: boolean;
-  audit: { at: string; text: string }[];
+  audit: AuditLine[];
 }
 
 const FIX_DUPLICATE = "2026-10-30T00:00:00Z";
@@ -117,32 +123,13 @@ const STUCK_TRIED: Record<string, string> = { "PP-R-YTQ-10191473": "30 Oct 2026"
 function houseView(ctx: CaseContext): HouseView | null {
   const rec = ctx.record;
   if (!rec?.lane && !rec?.house && !ctx.filings.some((f) => f.action === "ruling" && /by the autopilot/.test(f.detail ?? ""))) return null;
-  const hook = rec?.autopilot?.receivedAt ?? null;
-  const after = (at: string) => (hook ? ` ${sinceWords(hook, at)} after PayPal's webhook` : "");
-  const audit: { at: string; text: string }[] = [];
-  if (rec?.autopilot) audit.push({ at: rec.autopilot.arguedAt, text: `Argued by the autopilot${after(rec.autopilot.arguedAt)}, with the ${rec.autopilot.engine === "model" ? "model" : "rules engine"}` });
   const p = rec?.house;
-  if (p) {
-    if (p.read) audit.push({ at: p.read.at, text: p.read.error ? `Couldn't read the case through PayPal's Agent Toolkit (${p.read.error}); read it with Exhibit's own client` : `Read through PayPal's Agent Toolkit: get_dispute (${(p.read.status ?? "unknown").toLowerCase().replace(/_/g, " ")}${p.read.due ? `, due ${day(p.read.due)}` : ""})${p.read.tracking ? ` and get_shipment_tracking (${p.read.tracking})` : ""}` });
-    if (p.hearing) audit.push({ at: p.decidedAt, text: `Heard on the draft: ${p.hearing.objections} objection${p.hearing.objections === 1 ? "" : "s"}, ${p.hearing.overruled} overruled, ${p.hearing.sustained} sustained; the reviewer found for the ${p.hearing.side}` });
-    audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${p.reason}` });
-    if (p.undone) audit.push({ at: p.undone.at, text: "Stopped in the undo window; the case waits for the seller" });
-    if (p.done) audit.push({ at: p.done.at, text: `${p.action === "accept" ? "Refunded" : "Filed"} by the autopilot${after(p.done.at)} under house rule ${p.rule}: ${p.done.summary}` });
-    if (p.failed) audit.push({ at: p.failed.at, text: `Couldn't send: ${p.failed.error}` });
-  }
-  for (const f of ctx.filings.filter((f) => f.action === "ruling" && /by the autopilot/.test(f.detail ?? ""))) {
-    audit.push({ at: f.at, text: `Ruling asked for by the autopilot${after(f.at)} under house rule 5: ${f.summary}` });
-  }
-  for (const e of rec?.events ?? []) {
-    if (e.type === "CUSTOMER.DISPUTE.RESOLVED") audit.push({ at: e.receivedAt, text: `PayPal sent CUSTOMER.DISPUTE.RESOLVED${after(e.receivedAt)}: ${e.status.toLowerCase().replace(/_/g, " ")}${e.outcome ? `, ${e.outcome.toLowerCase().replace(/_/g, " ")}` : ""}` });
-  }
-  audit.sort((a, b) => a.at.localeCompare(b.at));
   return {
     lane: rec?.lane === "autopilot",
     plan: p ?? null,
     rules: { version: HOUSE_RULES.version, rules: HOUSE_RULES.rules.map((r) => ({ n: r.n, text: r.text })) },
     undoable: undoable(p, Date.now()),
-    audit,
+    audit: houseAudit({ rec, filings: ctx.filings, hearings: hearingsOf(rec), status: ctx.dispute.status, adjudicable: allowed(ctx.dispute).has("adjudicate") }),
   };
 }
 
@@ -151,7 +138,7 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
   const d = ctx.dispute;
   const second = ctx.exhibits.find((e) => e.title === "The second charge, refunded");
   if (second && ctx.brief && ctx.brief.createdAt < FIX_DUPLICATE) {
-    notes.push(`This brief was written on ${day(ctx.brief.createdAt)}, before the second charge had its own exhibit (Exhibit ${second.id}, added 30 Oct 2026) and before the refund named the payment it credited. The response PayPal holds doesn't cite it.`);
+    notes.push(`This brief was written on ${utcDay(ctx.brief.createdAt)}, before the second charge had its own exhibit (Exhibit ${second.id}, added 30 Oct 2026) and before the refund named the payment it credited. The response PayPal holds doesn't cite it.`);
   }
   if (agent?.legacy) {
     notes.push("Script, stand-in key: this case was opened before the live buyer agent (26 Oct 2026). Its agent log is the story's script, and its mandates were signed with keys derived from the order number, not the published ones. Cases opened since are bought by the live agent and signed with the keys at /.well-known/exhibit-keys.json.");
@@ -159,8 +146,13 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
   const filed = ctx.filings.filter((f) => f.action === "evidence").map((f) => f.at).sort()[0];
   if (d.reason === "UNAUTHORISED" && d.status === "UNDER_REVIEW" && filed && !allowed(d).has("adjudicate") && Date.now() - new Date(filed).getTime() > 3 * 86_400_000) {
     const tried = STUCK_TRIED[d.dispute_id];
+    // A ruling request PayPal took (fileAction saves one only after the call went through) is said as such.
+    const asked = ctx.filings.filter((f) => f.action === "ruling" && f.ok !== false).at(-1);
+    const side = asked ? rulingSide(asked) : null;
     notes.push(
-      `PayPal's sandbox hasn't opened this unauthorised-transaction chargeback for a ruling since it was filed on ${day(filed)}, so no outcome can be asked for.` +
+      (asked
+        ? `Exhibit asked the sandbox to rule${side ? ` for the ${side}` : ""} on ${utcTime(asked.at)}, and PayPal took the request, but its sandbox hasn't ruled on this unauthorised-transaction chargeback since it was filed on ${utcDay(filed)}, and it offers no ruling now.`
+        : `PayPal's sandbox hasn't opened this unauthorised-transaction chargeback for a ruling since it was filed on ${utcDay(filed)}. Exhibit will ask for the ruling the hearing on PayPal's copy reaches once PayPal opens it.`) +
         (tried ? ` On ${tried} Exhibit asked again through provide-supporting-info; the sandbox refused the call (HTTP 400, invalid request). The case stays under review.` : ""),
     );
   }
@@ -206,7 +198,9 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     // The page says the response is PayPal's only when it is: read back from the evidence PayPal holds.
     restored: ctx.brief?.engine === "paypal",
     webhook: webhookView(ctx.record),
-    hearing: ctx.record?.hearing ?? null,
+    hearing: hearingsOf(ctx.record).at(-1) ?? null,
+    hearings: hearingsOf(ctx.record),
+    refundedLate: where === "refunded" && refundedLate(ctx.filings, d.seller_response_due_date),
     agent,
     requirements: requirementsFor({ reason: d.reason, amount: d.dispute_amount.value, brand: s?.cardBrand, sandboxCode: s?.reasonCode }, ctx.exhibits),
     house: houseView(ctx),

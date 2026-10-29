@@ -176,7 +176,7 @@ function Report({ payload, read }: { payload: AnalyticsPayload; read: () => Anal
       </div>
       <p className={styles.foot}>
         {payload.cases.length} cases and {payload.sentences.length} checked sentences, {decided} decided by PayPal. Read{" "}
-        {new Date(payload.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}, refreshed every minute. Double-click a case id or a
+        {new Date(payload.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC, refreshed every minute. Double-click a case id or a
         ladder rung to open the case.
       </p>
     </div>

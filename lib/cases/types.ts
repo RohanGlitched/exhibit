@@ -97,7 +97,9 @@ export interface CaseRecord {
   lane?: "autopilot";
   /** What the autopilot decided under the house rules, and what it did (lib/cases/autopilot.ts). */
   house?: HousePlan;
-  hearing?: Hearing; // the latest cross-examination by the simulated reviewer
+  hearing?: Hearing; // the latest cross-examination by the simulated reviewer (kept for older readers)
+  /** Every hearing held on the case, oldest first: on the draft and on the PDF PayPal holds (lib/cases/hearing-log.ts). Records saved before 30 Oct have only `hearing`. */
+  hearings?: Hearing[];
   agent?: AgentRun; // an agent story: the signed mandates and the buyer agent's tool calls, kept from the purchase
 }
 

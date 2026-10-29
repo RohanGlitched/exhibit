@@ -12,7 +12,8 @@ import CaseLedger from "./CaseLedger";
 import ToolkitCalls from "./ToolkitCalls";
 import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
-import { STATUSES, dayTime, daysToDue, reasonLabel, usd } from "@/lib/format";
+import { STATUSES, daysToDue, reasonLabel, usd, utcDay } from "@/lib/format";
+import { utcStamp } from "@/lib/webhooks/paypal";
 import styles from "./case.module.css";
 
 const STAMP: Partial<Record<CaseView["where"], { word: string; tone: "due" | "won" | "ink" }>> = {
@@ -153,18 +154,21 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
               <ol>
                 {view.filings.map((f, i) => (
                   <li key={i}>
-                    <span>{dayTime(f.at)}</span>
-                    {f.summary}.{f.source === "paypal" && <em className={styles.source}> From PayPal&apos;s record.</em>}
+                    <span>{utcStamp(f.at)}</span>
+                    {f.action === "ruling" && f.detail ? `${f.detail}. ` : ""}
+                    {f.summary.replace(/\.$/, "")}.{f.source === "paypal" && <em className={styles.source}> From PayPal&apos;s record.</em>}
+                    {f.action === "ruling" && !closed && <em className={styles.source}> PayPal took the request but hasn&apos;t ruled yet; the case is still under review.</em>}
                   </li>
                 ))}
                 {closed && view.ruledAt && view.ending && (
                   <li>
-                    <span>{dayTime(view.ruledAt)}</span>
+                    <span>{utcStamp(view.ruledAt)}</span>
                     {view.ending.what}.
                   </li>
                 )}
               </ol>
               <p className={styles.after}>
+                {view.refundedLate && <>{view.whereLine}. </>}
                 {closed ? (
                   <>
                     PayPal shows this case as <strong>resolved</strong>.
@@ -285,7 +289,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         </span>
         {due !== null && view.status === "WAITING_FOR_SELLER_RESPONSE" && (
           <span className={styles.due} data-soon={due <= 2}>
-            Respond by {dayTime(view.due!).split(",")[0]}, {due <= 0 ? "today" : `${due} day${due === 1 ? "" : "s"} left`}
+            Respond by {utcStamp(view.due!)}, {due <= 0 ? "today" : `${due} day${due === 1 ? "" : "s"} left`}
           </span>
         )}
       </div>
@@ -326,8 +330,8 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                 closed && view.ending
                   ? view.ending.stamp
                   : closed && view.ruledAt
-                    ? `PAYPAL CLOSED ${dayTime(view.ruledAt).split(",")[0].toUpperCase()}`
-                    : `WITH PAYPAL ${dayTime(view.filings[0].at).split(",")[0].toUpperCase()}`
+                    ? `PAYPAL CLOSED ${utcDay(view.ruledAt).toUpperCase()}`
+                    : `WITH PAYPAL ${utcDay(view.filings[0].at).toUpperCase()}`
               }
               tone={STAMP[view.where]?.tone ?? "due"}
             />
@@ -340,10 +344,15 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         verdict={verdict}
         status={status}
         placeholder={
-          closed ? (
+          view.where === "refunded" && !view.brief ? (
+            <div className={styles.empty}>
+              <p>The seller accepted this claim without a brief from Exhibit. {view.whereLine}.</p>
+              {view.refundedLate && view.due && <p>PayPal&apos;s deadline to answer this case was {utcStamp(view.due)}; a chargeback nobody answers by then can&apos;t be won, so refunding closes it.</p>}
+            </div>
+          ) : closed ? (
             <div className={styles.empty}>
               <p>PayPal closed this case before anyone answered it. {view.whereLine}.</p>
-              <p>{view.due ? `PayPal's deadline to answer this case was ${dayTime(view.due).split(",")[0]}` : "PayPal sets a response date on every case"}; a chargeback nobody answers by then can't be won.</p>
+              <p>{view.due ? `PayPal's deadline to answer this case was ${utcStamp(view.due)}` : "PayPal sets a response date on every case"}; a chargeback nobody answers by then can't be won.</p>
               <Link className="btn btnPrimary" href="/new">
                 Open a case you can answer
               </Link>

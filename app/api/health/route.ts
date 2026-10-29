@@ -6,7 +6,7 @@ import { llmModel, llmPing, llmReady } from "@/lib/llm";
 import { POOL_PER_SCENARIO, lastRefill } from "@/lib/cases/open";
 import { inPool, untouched } from "@/lib/cases/pool";
 import { SCENARIOS } from "@/lib/shop/scenarios";
-import { deadlineProblems, hoursSince, hoursUntil, readyForVisitor, refillProblem, splitDeadlines, READY_HOURS, RECENT_MISS_HOURS } from "@/lib/health";
+import { deadlineProblems, hoursSince, hoursUntil, readyForVisitor, refillProblem, splitDeadlines, ON_THE_DESK, READY_HOURS, RECENT_MISS_HOURS } from "@/lib/health";
 import { readWebhookLog, webhookSummary } from "@/lib/webhooks/log";
 import { lastTick, type TickReport } from "@/lib/cases/autopilot-run";
 import type { CaseRecord } from "@/lib/cases/types";
@@ -67,7 +67,7 @@ export async function GET() {
       return {
         id: d.dispute_id,
         dueInHours: hoursUntil(d.seller_response_due_date!, now),
-        kind: !r ? "not in Exhibit's store" : r.retired && untouched(r) ? "retired pool stock" : untouched(r) ? "pool stock" : "on the desk",
+        kind: !r ? "not in Exhibit's store" : r.retired && untouched(r) ? "retired pool stock" : untouched(r) ? "pool stock" : ON_THE_DESK,
       };
     })
     .sort((a, b) => a.dueInHours - b.dueInHours);
@@ -98,8 +98,10 @@ export async function GET() {
       },
       // Deadlines still ahead (within two days), or missed within the last day; older misses are only counted.
       nearDeadline: deadlines.listed,
-      // Cases that missed PayPal's deadline: shown on the desk as missed, not a fault.
+      // Cases on the desk (not retired pool stock) that missed PayPal's deadline: the desk's own count, not a fault.
       missedDeadline: deadlines.missed,
+      // The rest that missed it, by kind: pool stock that retired unused, and disputes Exhibit holds no record of.
+      missedDeadlineElsewhere: deadlines.missedElsewhere,
       missedOverHoursAgo: { hours: RECENT_MISS_HOURS, count: deadlines.missedLongAgo },
       paypal: { reachable: Boolean(disputes), disputes: disputes?.length ?? null },
       webhooks: webhookSummary(hooks, now),
