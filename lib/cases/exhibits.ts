@@ -1,6 +1,6 @@
 import "server-only";
 import type { Dispute } from "../paypal/disputes";
-import type { Capture, Order, Refund } from "../paypal/orders";
+import { refundedCaptureId, type Capture, type Order, type Refund } from "../paypal/orders";
 import type { Scenario } from "../shop/scenarios";
 import { SHOP, listingFor, product } from "../shop/catalog";
 import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
@@ -88,6 +88,8 @@ export interface Sources {
   openedAt: string;
   invoiceId?: string;
   refund?: Refund | null;
+  /** The capture the refund was made against, when it isn't the disputed one (the duplicate charge). */
+  refundedCapture?: Capture | null;
   agent?: AgentRun; // an agent story's purchase, signed and kept on the case record
 }
 
@@ -273,9 +275,13 @@ export function buildExhibits(src: Sources): Exhibit[] {
     }
   }
 
-  // A refund already made through PayPal (the duplicate charge).
+  // A refund already made through PayPal (the duplicate charge). It names the capture it credited, so a reviewer
+  // sees the money went back on the second charge, not the disputed one. Dated on the store's day, as the shop's
+  // email to the buyer is (the refund itself was made in the sandbox when the case was opened).
   if (src.refund) {
     const r = src.refund;
+    const parent = refundedCaptureId(r);
+    const storyDay = s?.reason === "DUPLICATE_TRANSACTION" && clock ? clock.at(1, 9) : null;
     out.push({
       kind: "refund",
       title: "Refund of the duplicate charge",
@@ -285,10 +291,15 @@ export function buildExhibits(src: Sources): Exhibit[] {
         { label: "Refund", value: r.id },
         { label: "Status", value: r.status === "COMPLETED" ? "Completed" : r.status },
         ...(r.amount ? [{ label: "Amount", value: usd(r.amount.value) }] : []),
-        ...(r.create_time ? [{ label: "Refunded", value: dayTime(r.create_time) }] : []),
+        ...(parent ? [{ label: "Refund of payment", value: parent }] : []),
+        ...(parent && capture && parent !== capture.id ? [{ label: "Disputed payment", value: `${capture.id}, not refunded` }] : []),
+        ...(r.invoice_id ? [{ label: "Store order", value: r.invoice_id }] : []),
+        ...(storyDay ? [{ label: "Refunded", value: dayTime(storyDay) }] : r.create_time ? [{ label: "Refunded", value: dayTime(r.create_time) }] : []),
         ...(r.note_to_payer ? [{ label: "Note to buyer", value: r.note_to_payer }] : []),
       ],
-      sandbox: s ? "Made in the sandbox when the case was opened; the story dates it the day after the order." : undefined,
+      sandbox: s
+        ? `Made in the sandbox on ${dayTime(r.create_time ?? src.openedAt)}, when the case was opened; dated here on the store's day, the morning after the order, as the shop's email to the buyer is.`
+        : undefined,
     });
   }
 
@@ -367,6 +378,27 @@ export function buildExhibits(src: Sources): Exhibit[] {
     if (notes.length) {
       out.push({ kind: "note", title: "Seller's notes", source: "Store order notes", facts: [], lines: notes });
     }
+  }
+
+  // The second charge itself, from PayPal. Added last so the letters cited by briefs written before it existed
+  // (before 30 Oct 2026) still point at the same exhibits.
+  const dup = src.refundedCapture;
+  if (dup && dup.id !== capture?.id) {
+    out.push({
+      kind: "payment",
+      title: "The second charge, refunded",
+      source: `PayPal Payments v2 · GET /v2/payments/captures/${dup.id}`,
+      ref: dup.id,
+      facts: [
+        { label: "Payment", value: dup.id },
+        { label: "Status", value: dup.status === "REFUNDED" ? "Refunded in full" : dup.status === "PARTIALLY_REFUNDED" ? "Partly refunded" : paymentStatus(dup.status, d) },
+        { label: "Gross", value: usd(dup.amount.value) },
+        ...(dup.invoice_id ? [{ label: "Store order", value: dup.invoice_id }] : []),
+        ...(s && clock ? [{ label: "Charged", value: dayTime(clock.orderAt) }] : []),
+        ...(src.refund ? [{ label: "Refund", value: src.refund.id }] : []),
+      ],
+      sandbox: s ? `Charged in the sandbox on ${dayTime(dup.create_time)}, when the case was opened; dated here on the store's day, with the order it duplicates.` : undefined,
+    });
   }
 
   return out.map((e, i) => ({ ...e, id: String.fromCharCode(65 + i) }));

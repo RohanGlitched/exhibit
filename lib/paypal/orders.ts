@@ -16,6 +16,7 @@ export interface Capture {
   status: string;
   amount: Money;
   create_time: string;
+  invoice_id?: string;
   seller_receivable_breakdown?: { gross_amount?: Money; paypal_fee?: Money; net_amount?: Money };
   processor_response?: { avs_code?: string; cvv_code?: string; response_code?: string };
   network_transaction_reference?: { id?: string; network?: string };
@@ -135,7 +136,13 @@ export interface Refund {
   amount?: Money;
   create_time?: string;
   note_to_payer?: string;
+  invoice_id?: string;
+  links?: { rel: string; href: string }[];
 }
+
+/** The capture a refund was made against, from its HATEOAS "up" link. */
+export const refundedCaptureId = (r: Pick<Refund, "links">): string | undefined =>
+  r.links?.find((l) => l.rel === "up" && /\/v2\/payments\/captures\//.test(l.href))?.href.split("/").pop();
 
 /** Refunds a capture in full, or in part when `amount` is given. */
 export const refundCapture = (captureId: string, note: string, amount?: string) =>

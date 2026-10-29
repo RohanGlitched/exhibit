@@ -1,6 +1,6 @@
 import "server-only";
 import { acceptClaim, adjudicate, allowed, getDispute, makeOffer, provideEvidence, sendMessage, type Dispute, type EvidenceInput } from "../paypal/disputes";
-import { getCapture, getOrder, getRefund, type Capture, type Order } from "../paypal/orders";
+import { getCapture, getOrder, getRefund, refundedCaptureId, type Capture, type Order } from "../paypal/orders";
 import { scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { loadCase, saveCase, updateCase } from "../store";
 import { takeModelCall } from "../budget";
@@ -44,6 +44,9 @@ export async function caseContext(id: string): Promise<CaseContext> {
     orderId ? getOrder(orderId).catch(() => null) : null,
     refundId ? getRefund(refundId).catch(() => null) : null,
   ]);
+  // The payment the refund was made against (the duplicate charge's own capture), so it gets its own exhibit.
+  const refundedId = refund ? refundedCaptureId(refund) : undefined;
+  const refundedCapture = refundedId && refundedId !== captureId ? await getCapture(refundedId).catch(() => null) : null;
   const tracking = record?.tracking ?? trackerNumber(order, captureId);
   const scenario = record?.scenarioId
     ? findScenario(record.scenarioId, { buyer: record.buyer ?? tx?.buyer?.name ?? 0, tracking })
@@ -57,6 +60,7 @@ export async function caseContext(id: string): Promise<CaseContext> {
     openedAt: record?.openedAt ?? dispute.create_time,
     invoiceId,
     refund,
+    refundedCapture,
     agent: record?.agent,
   });
   const filings = mergeFilings(record?.filings ?? [], paypalFilings(dispute));
@@ -224,7 +228,7 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
       ok: true,
       by: "sandbox",
       summary,
-      detail: `Asked the sandbox to rule ${outcome === "SELLER_FAVOR" ? "for the seller" : "for the buyer"}`,
+      detail: `Asked the sandbox to rule ${outcome === "SELLER_FAVOR" ? "for the seller" : "for the buyer"}${by === "autopilot" ? ", by the autopilot under house rule 5" : ""}`,
     };
     await updateCase(id, (r) => ({ ...r, filings: [...r.filings, f], ...(fresh && hearing.engine === "model" ? { hearing } : {}) }));
     return f;
