@@ -1,0 +1,35 @@
+MCP session, 2026-10-29T20:25:52.423Z
+Client: one seller agent. Servers: PayPal MCP (@paypal/mcp 1.8.1, stdio, SANDBOX) and Exhibit (https://exhibit-desk.vercel.app/api/mcp).
+PayPal MCP offers 28 tools, among them create_shipment_tracking, get_shipment_tracking, list_disputes, get_dispute, accept_dispute_claim, create_refund, get_refund.
+Exhibit offers 12 tools: preflight_cart, verify_mandate, list_cases, get_case, argue_case, file_response, cross_examine, open_case, paypal_get_dispute, paypal_list_disputes, paypal_get_shipment_tracking, paypal_get_refund.
+
+→ paypal.list_disputes {"page_size":5}
+← 2026 ms
+{"items":[{"dispute_id":"PP-R-UPI-10195190","create_time":"2026-10-29T20:24:10.000Z","update_time":"2026-10-29T20:25:03.000Z","disputed_transactions":[{"buyer_transaction_id":"8AB65928LL305405A","buyer":{"payer_id":"H336BTLDVZKYL"},"seller":{"merchant_id":"79C448PLU5KYL"}}],"reason":"UNAUTHORISED","status":"UNDER_REVIEW","dispute_state":"UNDER_PAYPAL_REVIEW","dispute_amount":{"currency_code":"USD","value":"180.00"},"dispute_life_cycle_stage":"CHARGEBACK","dispute_channel":"EXTERNAL","links":[{"href":"https://api.sandbox.paypal.com/v1/customer/disputes/PP-R-UPI-10195190","rel":"self","method":" …
+
+→ paypal.get_dispute {"dispute_id":"PP-R-UVT-10195188"}
+← 481 ms
+{"dispute_id":"PP-R-UVT-10195188","create_time":"2026-10-29T20:14:31.437Z","update_time":"2026-10-29T20:18:13.998Z","disputed_transactions":[{"buyer_transaction_id":"06R82549A9365060C","seller_transaction_id":"9LD38190TV557022E","create_time":"2026-10-29T20:14:27.000Z","transaction_status":"HELD","gross_amount":{"currency_code":"USD","value":"104.00"},"invoice_number":"HC-048660","buyer":{"payer_id":"JYC2FTZP6LG2J","name":"Ravi Deshpande"},"seller":{"email":"sb-6iuxn53113194@business.example.com","merchant_id":"79C448PLU5KYL","name":"Test Store"},"items":[{"item_id":"HC-SET-POUR","item_descrip …
+
+→ exhibit.get_case {"id":"PP-R-UVT-10195188"}
+← 2263 ms
+PP-R-UVT-10195188: Not received, $104.00. Waiting on the seller. Story: “It never arrived”, but the carrier says delivered; buyer Ravi Deshpande.
+PayPal's deadline for the seller: 2026-11-09T04:59:59.000Z.
+PayPal allows now: accept_claim, provide_evidence.
+Exhibits:
+[A] The buyer's claim: not received (PayPal Disputes API · GET /v1/customer/disputes/PP-R-UVT-10195188): Case PP-R-UVT-10195188; Reason Not received; Amount disputed $104.00; Stage Chargeback; Channel Card issuer chargeback; Respond by 8 Nov 2026; Payment 9LD38190TV557022E; Seller Protection Not eligible | Cardholder says the merch …
+
+→ exhibit.paypal_get_shipment_tracking {"transaction_id":"9LD38190TV557022E"}
+← 2114 ms
+{"trackers":[{"transaction_id":"9LD38190TV557022E","tracking_number":"9405511206213822657531","tracking_number_type":"CARRIER_PROVIDED","status":"SHIPPED","shipment_date":"2026-10-29","carrier":"USPS","notify_buyer":false,"last_updated_time":"1793304870407","shipment_direction":"FORWARD","shipment_uploader":"MERCHANT","account_id":"79C448PLU5KYL","links":[{"href":"https://api.sandbox.paypal.com/v1/shipping/trackers/9LD38190TV557022E-9405511206213822657531","rel":"self","method":"GET","encType":"application/json"},{"href":"https://api.sandbox.paypal.com/v1/shipping/trackers/9LD38190TV557022E-94 …
+
+→ exhibit.list_cases {"stage":"all"}
+← 3898 ms
+36 cases:
+PP-R-UPI-10195190: Unauthorised, $180.00, Zoe Fischer. PayPal reviewing.
+PP-R-UVT-10195188: Not received, $104.00, Ravi Deshpande. Waiting on the seller. Exhibit's call: fight (evidence balance 89%). Respond by 2026-11-09.
+PP-R-DIX-10194390: Unauthorised, $180.00, Imani Clarke. Waiting on the seller. Respond by 2026-11-04.
+PP-R-JWB-10194389: Unauthorised, $180.00, Zoe Fischer. Filed with PayPal; under review. Exhibit's call: fight (evidence balance 93%).
+PP-R-YTQ-10191473: Unauthorised, $180.00, Nina Petrova. Filed with PayPal; under review. Exhibit's call: fight (evidence balance 93 …
+
+PayPal's server answers what PayPal holds; Exhibit's answers what it proves: the lettered exhibits, the brief with every sentence checked, the hearing, and what may be filed now.

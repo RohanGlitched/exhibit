@@ -13,6 +13,10 @@ import { customIdFor, priceCart, signMandate, verifyAgentOrder } from "@/lib/age
 import { sampleKeys } from "@/lib/agentic/keys";
 import { scenario } from "@/lib/shop/scenarios";
 import proof from "@/data/proof.json";
+import reviewProof from "@/data/review-proof.json";
+import Exchange from "@/components/case/Exchange";
+import { homeLive } from "@/lib/home-live";
+import { utcStamp } from "@/lib/webhooks/paypal";
 import styles from "./home.module.css";
 
 export const revalidate = 300;
@@ -66,7 +70,11 @@ function sampleMandateCheck() {
 }
 
 export default async function Home() {
-  const [show, stats] = await Promise.all([showcase().catch(() => null), deskStats().catch(() => null)]);
+  const [show, stats, live] = await Promise.all([
+    showcase().catch(() => null),
+    deskStats().catch(() => null),
+    homeLive().catch(() => ({ hearing: null, lane: null, agent: null })),
+  ]);
   const sample = sampleMandateCheck();
   return (
     <main>
@@ -231,6 +239,110 @@ export default async function Home() {
             </p>
           </div>
           <PdfSpread head={show.head} brief={show.brief} exhibits={show.exhibits} />
+        </section>
+      )}
+
+      {live.hearing && (
+        <section className={`shell ${styles.section} ${styles.split}`} id="cross-examination">
+          <div>
+            <h2>Cross-examined before PayPal reads it</h2>
+            <p>
+              A second model plays PayPal&apos;s reviewer. It reads only the Bates-stamped PDF, and its objections come from what the card network asks
+              for on the reason code: delivery to the transaction&apos;s address, a 3-D Secure result, a credit on the duplicate. Exhibit answers from the
+              exhibits. An answer counts only if the same checker that guards the brief keeps every figure in it: kept, the objection is{" "}
+              <strong>overruled</strong>; struck or conceded, it is <strong>sustained</strong> and the sentence is withdrawn.
+            </p>
+            <p>
+              Measured on {reviewProof.summary.hearings} labelled cases: {reviewProof.summary.objections} objections on{" "}
+              {reviewProof.summary.fightsWithObjections} of {reviewProof.summary.fights} fights, {reviewProof.summary.overruled} overruled,{" "}
+              {reviewProof.summary.sustained} sustained, {reviewProof.summary.conceded} conceded; the reviewer reached the labelled call in{" "}
+              {reviewProof.summary.reviewerMatchesLabel} of {reviewProof.summary.hearings}. Its verdict is the ruling Exhibit asks the sandbox for.
+            </p>
+            <p className={styles.readPdf}>
+              <Link className="btn btnQuiet" href={`/case/${live.hearing.caseId}`}>
+                Take the reviewer&apos;s chair on {live.hearing.caseId}
+              </Link>
+            </p>
+          </div>
+          <div className={`sheet ${styles.transcript}`}>
+            <p className={styles.mandateHead}>
+              <span className="bates">{live.hearing.caseId}</span>
+              <span>
+                {live.hearing.source === "paypal" ? "On the PDF PayPal holds" : "On the draft, before filing"}, {utcStamp(live.hearing.at)}
+              </span>
+            </p>
+            {live.hearing.exchanges.map((e, i) => (
+              <Exchange key={i} index={i} objection={e.objection} answer={e.answer} ruling={e.ruling} reason={e.reason} />
+            ))}
+            <p className={styles.transcriptVerdict}>
+              <strong>Verdict for the {live.hearing.verdict.side}:</strong> {live.hearing.verdict.reason}.
+              {live.hearing.outcome ? ` ${live.hearing.outcome}.` : ""}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {(live.lane || live.agent) && (
+        <section className={`shell ${styles.section} ${styles.split}`} id="zero-touch">
+          <div>
+            <h2>Zero-touch, from PayPal&apos;s webhook to the ruling</h2>
+            <p>
+              PayPal announces every chargeback with a signed webhook, checked with verify-webhook-signature before anything runs, and the autopilot
+              argues the case at once. On the seller&apos;s own lane it then transacts under written house rules: it reads the case through PayPal&apos;s
+              Agent Toolkit, holds a hearing on the draft, files or refunds after a ten-minute undo window, and asks for the ruling when PayPal opens the
+              case for one. Every step is a line on the case.
+            </p>
+            {live.lane && (
+              <ol className={styles.trail}>
+                {live.lane.audit.map((a, i) => (
+                  <li key={i}>
+                    <time dateTime={a.at}>{utcStamp(a.at)}</time>
+                    <span>{a.text}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {live.lane && (
+              <p className={styles.readPdf}>
+                <Link className="btn btnQuiet" href={`/case/${live.lane.caseId}`}>
+                  Open {live.lane.caseId}
+                </Link>
+              </p>
+            )}
+          </div>
+          {live.agent && (
+            <div className={`sheet ${styles.mandate}`}>
+              <p className={styles.mandateHead}>
+                <span className="bates">{live.agent.caseId}</span>
+                <span>Live buyer agent{live.agent.model ? `, ${live.agent.model}` : ""}</span>
+              </p>
+              <p className={styles.mandateNote}>
+                {live.agent.cardholder ? `${live.agent.cardholder}'s` : "The cardholder's"} shopping agent made this purchase with tools, under an intent
+                signed with published key <span className="bates">{live.agent.intentKid}</span>. It signed the cart with{" "}
+                <span className="bates">{live.agent.cartKid}</span>, and the PayPal order{live.agent.orderId ? ` ${live.agent.orderId}` : ""} carries
+                ap2:{live.agent.digest.slice(0, 12)}… in custom_id.
+              </p>
+              <ol className={styles.toolTrail}>
+                {live.agent.steps.map((s) => (
+                  <li key={s.n} data-ok={s.ok}>
+                    <strong>
+                      <code>{s.tool}</code>
+                    </strong>
+                    <span>{s.why ?? s.result}</span>
+                  </li>
+                ))}
+              </ol>
+              <ol>
+                {live.agent.checks.map((c) => (
+                  <li key={c.label} data-ok={c.ok}>
+                    <strong>{c.ok ? "Pass" : "Fail"}</strong>
+                    <span>{c.label}</span>
+                  </li>
+                ))}
+              </ol>
+              {live.agent.verdict && <p className={styles.mandateNote}>{live.agent.verdict}</p>}
+            </div>
+          )}
         </section>
       )}
 
