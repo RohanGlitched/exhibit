@@ -6,7 +6,7 @@ import { llmModel, llmPing, llmReady } from "@/lib/llm";
 import { POOL_PER_SCENARIO, lastRefill } from "@/lib/cases/open";
 import { inPool, untouched } from "@/lib/cases/pool";
 import { SCENARIOS } from "@/lib/shop/scenarios";
-import { deadlineProblems, hoursSince, hoursUntil, readyForVisitor, refillProblem, READY_HOURS } from "@/lib/health";
+import { deadlineProblems, hoursSince, hoursUntil, readyForVisitor, refillProblem, splitDeadlines, READY_HOURS, RECENT_MISS_HOURS } from "@/lib/health";
 import { readWebhookLog, webhookSummary } from "@/lib/webhooks/log";
 import type { CaseRecord } from "@/lib/cases/types";
 
@@ -77,6 +77,7 @@ export async function GET() {
   const refillLate = refillProblem(refill?.startedAt ?? null, now);
   if (refillLate) problems.push(refillLate);
   problems.push(...deadlineProblems(nearDeadline));
+  const deadlines = splitDeadlines(nearDeadline);
   if (llmReady() && ping && !ping.ok) problems.push(`The model didn't answer a ping (${ping.error ?? "no reply"}): briefs fall back to the rules engine.`);
 
   return NextResponse.json(
@@ -93,9 +94,11 @@ export async function GET() {
         lastRefillAt: refill?.startedAt ?? null,
         lastRefill: refill,
       },
-      nearDeadline,
+      // Deadlines still ahead (within two days), or missed within the last day; older misses are only counted.
+      nearDeadline: deadlines.listed,
       // Cases that missed PayPal's deadline: shown on the desk as missed, not a fault.
-      missedDeadline: nearDeadline.filter((n) => n.dueInHours < 0).length,
+      missedDeadline: deadlines.missed,
+      missedOverHoursAgo: { hours: RECENT_MISS_HOURS, count: deadlines.missedLongAgo },
       paypal: { reachable: Boolean(disputes), disputes: disputes?.length ?? null },
       webhooks: webhookSummary(hooks, now),
       store: { kind: storage() ? (process.env.GCS_BUCKET ? "gcs" : "blob") : "local", reachable: storeOk, records: records?.length ?? null },

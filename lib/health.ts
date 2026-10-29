@@ -41,3 +41,16 @@ export function deadlineProblems(near: NearDeadline[]): string[] {
   }
   return out;
 }
+
+/** How long after its deadline a missed case is still listed by id under nearDeadline. */
+export const RECENT_MISS_HOURS = 24;
+
+/**
+ * What /api/health lists by id: cases whose deadline is still ahead, or passed within the last day. Cases that
+ * missed it longer ago are only counted (the desk shows them, folded, as missed), so the report stays about
+ * deadlines that can still be met.
+ */
+export function splitDeadlines(near: NearDeadline[], recentHours = RECENT_MISS_HOURS): { listed: NearDeadline[]; missed: number; missedLongAgo: number } {
+  const listed = near.filter((n) => n.dueInHours >= -recentHours);
+  return { listed, missed: near.filter((n) => n.dueInHours < 0).length, missedLongAgo: near.length - listed.length };
+}
