@@ -471,7 +471,7 @@ export default function ProofPage() {
             </p>
             {mainPrev && (
               <p>
-                Re-run once on {day(mainRun!.at)} on today&apos;s prompt ({mainRun!.prompt}): {s.modelCorrect} of {s.modelRuns}, down from{" "}
+                Re-run once on {day(mainRun!.at)} on today&apos;s prompt, {mainRun!.prompt}: {s.modelCorrect} of {s.modelRuns}, down from{" "}
                 {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)}, before the drafter read the requirements card. The card made it
                 warier where a required item is marked missing, and it lost these:
               </p>

@@ -1,3 +1,4 @@
+import { SHOP } from "../shop/catalog";
 import type { Exhibit } from "./types";
 
 /**
@@ -165,12 +166,13 @@ const RETURNED = /\b(?:I(?:'ve| have)?|we(?:'ve| have)?) (?:sent|posted|mailed|s
 // $30. That doesn't seem fair."
 const KEEPS = /\bI'?m keeping (?:it|them)\b|\bI(?:'ll| will) keep (?:it|them)\b|\b(?:won'?t|will not|not going to|refuse to) (?:send|return|post|pay for (?:the )?return)\b|\breturn shipping\b[^.]*\.?\s*(?:that )?(?:doesn'?t|does not|isn'?t|is not) (?:seem )?(?:fair|right|reasonable|worth)\b|\b(?:doesn'?t|does not) seem fair\b|\bnot (?:paying|going to pay) (?:for )?(?:the )?return\b/i;
 
-/** An inbox line as "date, time, Name: text", split; `buyer` is the cardholder's name from the order's ship-to. */
+/** An inbox line as "date, time, Name: text", split, with who wrote it: the shop, the buyer named on the order, or someone else. */
 function said(inbox: Exhibit | undefined, buyer: string | undefined) {
   return (inbox?.lines ?? []).map((line) => {
     const m = line.replace(/[’]/g, "'").match(/^\d{1,2} \w{3} \d{4}, \d{2}:\d{2}, ([^:]+): ([\s\S]*)$/);
     const who = m?.[1]?.trim();
-    return { line, text: m?.[2] ?? line.replace(/[’]/g, "'"), from: !who || !buyer ? ("?" as const) : who === buyer ? ("buyer" as const) : ("seller" as const) };
+    // The shop's own name marks the seller's emails; the order's ship-to name the buyer's; anyone else is unknown.
+    return { line, text: m?.[2] ?? line.replace(/[’]/g, "'"), from: who && who === SHOP.owner ? ("seller" as const) : who && who === buyer ? ("buyer" as const) : ("?" as const) };
   });
 }
 const buyerName = (exhibits: Exhibit[]) => fact(exhibits.find((e) => e.kind === "order"), "Ship to")?.split(",")[0]?.trim() || undefined;

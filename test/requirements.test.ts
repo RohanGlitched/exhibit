@@ -156,3 +156,11 @@ test("Visa 13.1: delivered before the case opened and within 15 days of the orde
   assert.equal(status(after, "window"), "missing");
   assert.equal(after!.standing, "not met");
 });
+
+test("the inbox is read by who wrote it even when the buyer's name isn't the order's ship-to name", () => {
+  // A live case rebuilt with another customer on the order: the shop's own emails are still the shop's.
+  const ex = colour(GQZ_F).map((e) => (e.kind === "order" ? order("VISA ending 4242", "Claire Donnelly, 214 Marlborough Street, Boston, MA 02116") : e));
+  const card = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", amount: "136.00" }, ex);
+  assert.equal(status(card, "returned"), "on file");
+  assert.equal(status(card, "return"), "on file");
+});
