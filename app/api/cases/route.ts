@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { claimFresh, claimReady, refillPool } from "@/lib/cases/open";
-import { deskRows } from "@/lib/desk";
+import { revalidateTag } from "next/cache";
+import { DESK_TAG, deskSnapshot } from "@/lib/desk";
 import { scenario } from "@/lib/shop/scenarios";
 import { clientIp, visitorId } from "@/lib/visitor";
 import { HOUR, allow } from "@/lib/limits";
@@ -9,8 +10,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET() {
-  const rows = await deskRows(await visitorId());
-  return NextResponse.json({ rows, at: new Date().toISOString() });
+  // The desk's snapshot, with the time it was read from PayPal (the desk and the home page count the same one).
+  const { rows, at } = await deskSnapshot(await visitorId());
+  return NextResponse.json({ rows, at });
 }
 
 export async function POST(req: Request) {
@@ -27,6 +29,7 @@ export async function POST(req: Request) {
   try {
     const ready = await claimReady(s.id, visitor);
     const rec = ready ?? (await claimFresh(s, visitor));
+    revalidateTag(DESK_TAG);
     after(() => refillPool(3, "visit").catch((e) => console.error("refill", e)));
     return NextResponse.json({ id: rec.disputeId, ready: Boolean(ready), openedAt: rec.openedAt });
   } catch (e) {

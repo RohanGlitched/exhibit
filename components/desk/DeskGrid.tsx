@@ -1,13 +1,43 @@
 "use client";
 
-import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef, type ICellRendererParams, type RowClassParams } from "ag-grid-community";
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  themeQuartz,
+  type ColDef,
+  type GridApi,
+  type ICellRendererParams,
+  type IRowNode,
+  type PostSortRowsParams,
+  type RowClassParams,
+  type RowHeightParams,
+} from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DeskRow } from "@/lib/desk";
-import { reasonLabel, shortDay, usd } from "@/lib/format";
-import { DECIDED_TINY, callCell, callWords, dueWords, isLive, isMissed, shortFiled } from "./rows";
+import { deskTotals } from "@/lib/desk-counts";
+import type { BriefSentence, Exhibit } from "@/lib/cases/types";
+import { sentenceState } from "@/lib/cases/sentence-state";
+import { reasonLabel, usd, utcShortDay } from "@/lib/format";
+import {
+  DECIDED_TINY,
+  arrange,
+  callCell,
+  callWords,
+  dueWords,
+  isLive,
+  isMissed,
+  lateWord,
+  matchesQuick,
+  shortFiled,
+  stakeByDay,
+  type DetailRow,
+  type GroupBy,
+  type GroupHead,
+} from "./rows";
+import DeskStrip from "./DeskStrip";
 import styles from "./desk.module.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -57,7 +87,207 @@ const FILTERS: { id: string; label: string; test: ((r: DeskRow) => boolean) | nu
   { id: "lost", label: "Lost", test: (r) => r.where === "lost" },
 ];
 
-const label = (r: DeskRow) => (r.pooled ? "In the house pool" : isMissed(r) ? "Missed" : (WHERE[r.where] ?? r.status));
+const label = (r: DeskRow) => (r.pooled ? "In the house pool" : isMissed(r) ? "Missed" : (lateWord(r) ?? WHERE[r.where] ?? r.status));
+
+/** Rows the grid holds: cases, and the full-width rows it adds (group headers and opened briefs). */
+type GridRow = DeskRow | GroupHead | DetailRow;
+const kindOf = (d: unknown) => (d as { kind?: string } | null | undefined)?.kind;
+
+const GROUP_BY: { id: GroupBy; label: string }[] = [
+  { id: "none", label: "None" },
+  { id: "stage", label: "Where it stands" },
+  { id: "decided", label: "Who decided" },
+];
+
+interface GridContext {
+  open: ReadonlySet<string>;
+  toggle: (id: string) => void;
+}
+
+/** The +/- at the head of a row whose brief can be opened under it. */
+function Expand(p: ICellRendererParams<DeskRow>) {
+  const r = p.data;
+  if (!r || kindOf(r) || r.sentences == null) return null;
+  const ctx = p.context as GridContext;
+  const open = ctx.open.has(r.id);
+  return (
+    <button
+      type="button"
+      className={styles.expand}
+      aria-expanded={open}
+      aria-label={`${open ? "Hide" : "Show"} the brief for ${r.id}`}
+      title={open ? "Hide the brief" : "Show the brief, sentence by sentence"}
+      onClick={(e) => {
+        e.stopPropagation();
+        ctx.toggle(r.id);
+      }}
+    >
+      {open ? "\u2212" : "+"}
+    </button>
+  );
+}
+
+/** A group's header row: its name, how many cases, how much money. */
+function GroupHeader(p: { data: GroupHead }) {
+  const g = p.data;
+  return (
+    <div className={styles.groupHead}>
+      <strong>{g.label}</strong>
+      <span>
+        {g.count} case{g.count === 1 ? "" : "s"}, {usd(g.amount)}
+      </span>
+    </div>
+  );
+}
+
+interface LoadedBrief {
+  sentences: BriefSentence[];
+  exhibits: Exhibit[];
+  engine: string;
+}
+
+// Briefs read once per page view; row heights kept so a re-sort doesn't make an opened row jump.
+const briefs = new Map<string, Promise<LoadedBrief>>();
+const heights = new Map<string, number>();
+
+function loadBrief(id: string): Promise<LoadedBrief> {
+  let p = briefs.get(id);
+  if (!p) {
+    p = fetch(`/api/cases/${id}`)
+      .then(async (r) => {
+        const j = (await r.json()) as { brief?: { sentences: BriefSentence[]; engine: string } | null; exhibits?: Exhibit[]; error?: string };
+        if (!r.ok || !j.brief) throw new Error(j.error ?? "No brief on record for this case.");
+        return { sentences: j.brief.sentences, exhibits: j.exhibits ?? [], engine: j.brief.engine };
+      })
+      .catch((e) => {
+        briefs.delete(id);
+        throw e;
+      });
+    briefs.set(id, p);
+  }
+  return p;
+}
+
+const BADGE: Record<string, string> = { struck: "Struck", withdrawn: "Withdrawn at the hearing", unverified: "Unverified", kept: "Kept" };
+
+/**
+ * A case's brief opened under its row: every sentence with the exhibits it cites (as Bates marks) and what the
+ * checker made of it. Read from the case on first open; the row grows to fit what it holds.
+ */
+function BriefDetail(p: ICellRendererParams<DetailRow>) {
+  const id = (p.data as DetailRow).caseId;
+  const [brief, setBrief] = useState<LoadedBrief | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let live = true;
+    loadBrief(id)
+      .then((b) => live && setBrief(b))
+      .catch((e) => live && setError((e as Error).message));
+    return () => {
+      live = false;
+    };
+  }, [id]);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const fit = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height) + 1;
+      if (heights.get(id) === h) return;
+      heights.set(id, h);
+      p.node.setRowHeight(h);
+      p.api.onRowHeightChanged();
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [id, brief, error, p.node, p.api]);
+  const title = (c: string) => brief?.exhibits.find((e) => e.id === c)?.title;
+  const by = brief ? (brief.engine === "model" ? "argued by the model" : brief.engine === "rules" ? "argued by the rules engine" : "read back from PayPal") : "";
+  return (
+    <div className={styles.detail} ref={box}>
+      <p className={styles.detailHead}>
+        <span className="bates">{id}</span>
+        <span>{brief ? `The brief, ${brief.sentences.length} sentences, ${by}` : "The brief"}</span>
+        <Link href={`/case/${id}`} prefetch={false} className={styles.detailOpen}>
+          Open the case
+        </Link>
+      </p>
+      {error ? (
+        <p className={styles.muted}>{error}</p>
+      ) : !brief ? (
+        <p className={styles.detailWait}>Reading the brief from the case…</p>
+      ) : (
+        <ol className={styles.sentences}>
+          {brief.sentences.map((s, i) => {
+            const st = sentenceState(s, brief.exhibits);
+            const badge =
+              st.kind === "checked"
+                ? `Checked: ${(s.checked ?? []).join(", ")}`
+                : st.kind === "quoted"
+                  ? `Quote matched in Exhibit ${st.exhibit ?? s.cites.join(" or ")}`
+                  : st.kind === "struck" && s.why
+                    ? `Struck: ${s.why}`
+                    : BADGE[st.kind];
+            return (
+              <li key={i} data-kind={st.kind}>
+                <span className={styles.sNum}>{i + 1}</span>
+                <span className={styles.sText}>{s.text}</span>
+                <span className={styles.sMarks}>
+                  {s.cites.map((c) => (
+                    <abbr key={c} title={title(c) ? `Exhibit ${c}: ${title(c)}` : `Exhibit ${c}`}>
+                      {c}
+                    </abbr>
+                  ))}
+                </span>
+                <span className={styles.sState}>{badge}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+/** Money opened per day over the last two weeks, with the part of it still at stake: a sparkline beside the counts. */
+function StakeSpark({ rows }: { rows: DeskRow[] }) {
+  const [now] = useState(() => Date.now());
+  const days = stakeByDay(rows, now, 14);
+  const max = Math.max(1, ...days.map((d) => d.opened));
+  const W = 9;
+  const H = 30;
+  const stake = days.reduce((n, d) => n + d.atStake, 0);
+  const line = (d: (typeof days)[number]) => `${utcShortDay(`${d.day}T12:00:00Z`)}: ${usd(d.opened)} opened, ${usd(d.atStake)} still at stake`;
+  const words = days.filter((d) => d.opened > 0).map(line);
+  return (
+    <figure className={styles.spark}>
+      <svg
+        width={days.length * W}
+        height={H}
+        viewBox={`0 0 ${days.length * W} ${H}`}
+        role="img"
+        aria-label={`Disputed money opened per day, last 14 days (UTC). ${words.join("; ") || "Nothing opened."}`}
+      >
+        {days.map((d, i) => {
+          const h = d.opened ? Math.max(2, Math.round((d.opened / max) * (H - 2))) : 1;
+          const k = d.atStake ? Math.max(2, Math.round((d.atStake / max) * (H - 2))) : 0;
+          return (
+            <g key={d.day}>
+              <title>{line(d)}</title>
+              <rect x={i * W} y={H - h} width={W - 3} height={h} className={d.opened ? styles.sparkOpened : styles.sparkNone} />
+              {k > 0 && <rect x={i * W} y={H - k} width={W - 3} height={k} className={styles.sparkStake} />}
+            </g>
+          );
+        })}
+      </svg>
+      <figcaption>
+        Disputed money opened per day, last 14 days (UTC). <span className={styles.sparkKey}>Blue</span> is still at stake: {usd(stake)} of it.
+      </figcaption>
+    </figure>
+  );
+}
 
 /**
  * The case id as a Bates number and a real link: it opens in a new tab, and Next prefetches the case. Every
@@ -141,9 +371,28 @@ function Status({ data }: ICellRendererParams<DeskRow, string>) {
   );
 }
 
-export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
+export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[]; at: string }) {
   const router = useRouter();
   const [rows, setRows] = useState(initial);
+  const [at, setAt] = useState(initialAt);
+  const [groupBy, setGroupBy] = useState<GroupBy>("none");
+  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
+  const api = useRef<GridApi | null>(null);
+  // Read by the grid's sort callback, which keeps groups and opened briefs together after every sort.
+  const arrangeBy = useRef<{ by: GroupBy; open: ReadonlySet<string> }>({ by: groupBy, open });
+  arrangeBy.current = { by: groupBy, open };
+  const toggle = useCallback((id: string) => {
+    setOpen((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const context = useMemo<GridContext>(() => ({ open, toggle }), [open, toggle]);
+  useEffect(() => {
+    api.current?.refreshCells({ columns: ["expand"], force: true });
+  }, [open]);
   const [mineOnly, setMineOnly] = useState(false);
   const [quick, setQuick] = useState("");
   const [filter, setFilter] = useState("all");
@@ -154,7 +403,10 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   useEffect(() => {
     const t = setInterval(async () => {
       const r = await fetch("/api/cases", { cache: "no-store" }).catch(() => null);
-      if (r?.ok) setRows(((await r.json()) as { rows: DeskRow[] }).rows);
+      if (!r?.ok) return;
+      const j = (await r.json()) as { rows: DeskRow[]; at?: string };
+      setRows(j.rows);
+      if (j.at) setAt(j.at);
     }, 30_000);
     return () => clearInterval(t);
   }, []);
@@ -163,7 +415,18 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   // reason and buyer take what is left.
   const cols = useMemo<ColDef<DeskRow>[]>(
     () => [
-      { field: "id", headerName: "Case", width: 204, cellRenderer: CaseId, pinned: "left" },
+      {
+        colId: "expand",
+        headerName: "",
+        headerTooltip: "Show a case's brief under its row",
+        width: 44,
+        pinned: "left",
+        sortable: false,
+        resizable: false,
+        cellRenderer: Expand,
+        cellClass: styles.expandCell,
+      },
+      { field: "id", headerName: "Case", width: 196, cellRenderer: CaseId, pinned: "left" },
       { field: "reason", headerName: "Reason", flex: 1, minWidth: 128, valueFormatter: (p) => reasonLabel(p.value ?? ""), cellRenderer: Reason },
       { field: "amount", headerName: "Amount", width: 86, type: "rightAligned", valueFormatter: (p) => usd(p.value ?? 0) },
       { field: "buyer", headerName: "Buyer", flex: 1, minWidth: 118, valueFormatter: (p) => p.value ?? "—" },
@@ -184,15 +447,15 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
           return (a ?? "9").localeCompare(b ?? "9");
         },
       },
-      { field: "odds", headerName: "Call · evidence balance", headerTooltip: BALANCE_TIP, width: 190, cellRenderer: Call },
+      { field: "odds", headerName: "Call · evidence balance", headerTooltip: BALANCE_TIP, width: 176, cellRenderer: Call },
       {
         field: "filed",
         headerName: "Filed",
-        width: 136,
+        width: 124,
         tooltipValueGetter: (p) => p.data?.filed ?? null,
         valueGetter: (p) => (p.data ? shortFiled(p.data) : ""),
       },
-      { field: "opened", headerName: "Opened", width: 70, valueFormatter: (p) => (p.value ? shortDay(p.value) : "") },
+      { field: "opened", headerName: "Opened", width: 70, valueFormatter: (p) => (p.value ? utcShortDay(p.value) : "") },
     ],
     [],
   );
@@ -207,17 +470,27 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
   const missed = desk.filter((r) => isMissed(r)).sort((a, b) => (b.due ?? "").localeCompare(a.due ?? ""));
   const live = desk.filter((r) => !isMissed(r));
   const test = FILTERS.find((f) => f.id === filter)?.test;
-  const shown = live.filter((r) => (!mineOnly || r.mine) && (!test || test(r)));
-  const open = live.filter((r) => isLive(r)).length;
+  const shown = live.filter((r) => (!mineOnly || r.mine) && (!test || test(r)) && matchesQuick(r, quick, reasonLabel));
+  const waitingCount = live.filter((r) => isLive(r)).length;
   const missedCount = missed.length;
+  // The one count (lib/desk-counts.ts): the strip, this line and the home page's figures read the same snapshot.
   // A missed deadline is not money still in play: PayPal decides those for the buyer.
-  const atStake = live.filter((r) => isLive(r) || r.where === "filed" || r.where === "open").reduce((s, r) => s + r.amount, 0);
+  const totals = deskTotals(rows);
+  const atStake = totals.atStake;
+  // Phone cards and the grid's first paint follow the grid's default order: live deadlines first, soonest first.
+  const rank = (r: DeskRow) => (r.due && !isMissed(r) && r.status === "WAITING_FOR_SELLER_RESPONSE" ? 0 : 1);
+  const ordered = [...shown].sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? (a.due ?? "").localeCompare(b.due ?? "") : 0));
+  const key = ordered.map((r) => `${r.id}:${r.updated}:${r.where}`).join(",");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const gridRows = useMemo(() => arrange(ordered, groupBy, open) as GridRow[], [key, groupBy, open]);
+  const cardRows = arrange(ordered, groupBy, new Set<string>());
 
   return (
     <div className={styles.wrap}>
+      <DeskStrip c={totals} at={at} />
       <div className={styles.toolbar}>
         <p className={styles.counts}>
-          <strong>{open}</strong> waiting on the seller, <strong>{usd(atStake)}</strong> at stake
+          <strong>{waitingCount}</strong> waiting on the seller, <strong>{usd(atStake)}</strong> at stake
           {missedCount > 0 && <span className={styles.pool}>; {missedCount} missed PayPal&apos;s deadline (listed under the desk)</span>}
           {pooled > 0 && <span className={styles.pool}>, plus {pooled} opened ahead for the next visitors</span>}
           {retired > 0 && <span className={styles.pool}> ({retired} more retired from the pool unused)</span>}
@@ -239,6 +512,7 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
           )}
         </div>
       </div>
+      <StakeSpark rows={desk} />
       <div className={styles.filters} role="group" aria-label="Show cases">
         {FILTERS.map((f) => {
           const n = f.test ? live.filter(f.test).length : live.length;
@@ -248,9 +522,33 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
             </button>
           );
         })}
+        <span className={styles.groupBy}>
+          <span className={styles.groupLabel} id="desk-group-by">
+            Group
+          </span>
+          <span className={styles.segments} role="group" aria-labelledby="desk-group-by">
+            {GROUP_BY.map((g) => (
+              <button key={g.id} type="button" className={styles.segment} aria-pressed={groupBy === g.id} onClick={() => setGroupBy(g.id)}>
+                {g.label}
+              </button>
+            ))}
+          </span>
+        </span>
       </div>
       <ol className={styles.cards}>
-        {shown.map((r) => {
+        {cardRows.map((row) => {
+          if (kindOf(row) === "group") {
+            const g = row as GroupHead;
+            return (
+              <li key={g.id} className={styles.cardGroup}>
+                <strong>{g.label}</strong>
+                <span>
+                  {g.count} case{g.count === 1 ? "" : "s"}, {usd(g.amount)}
+                </span>
+              </li>
+            );
+          }
+          const r = row as DeskRow;
           const call = callWords(r);
           const due = r.due && (r.status === "WAITING_FOR_SELLER_RESPONSE" || isMissed(r)) ? dueWords(r.due) : null;
           return (
@@ -279,25 +577,50 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
         {shown.length === 0 && <li className={styles.muted}>No cases yet. Open one and it lands here.</li>}
       </ol>
       <div className={`sheet ${styles.grid}`} data-painted={painted}>
-        {!painted && <PaperRows rows={shown} />}
+        {!painted && <PaperRows rows={ordered} />}
         <div className={styles.gridLayer}>
           <AgGridReact<DeskRow>
             theme={theme}
-            rowData={shown}
+            rowData={gridRows as DeskRow[]}
             columnDefs={cols}
-            quickFilterText={quick}
+            context={context}
             getRowId={(p) => p.data.id}
+            // Group headers and opened briefs are full-width rows (AG Grid Community); after every sort each group
+            // stays together under its header and each brief under its case.
+            isFullWidthRow={(p) => Boolean(kindOf(p.rowNode.data))}
+            fullWidthCellRenderer={FullWidth}
+            getRowHeight={(p: RowHeightParams<DeskRow>) => {
+              const k = kindOf(p.data);
+              if (k === "group") return 44;
+              if (k === "detail") return heights.get((p.data as unknown as DetailRow).caseId) ?? 120;
+              return undefined;
+            }}
+            postSortRows={(p: PostSortRowsParams<DeskRow>) => {
+              const { by, open: opened } = arrangeBy.current;
+              const byId = new Map(p.nodes.map((n) => [n.id, n]));
+              const cases = p.nodes.filter((n) => !kindOf(n.data)).map((n) => n.data as DeskRow);
+              const order = arrange(cases, by, opened)
+                .map((r) => byId.get(r.id))
+                .filter((n): n is IRowNode<DeskRow> => Boolean(n));
+              if (order.length === p.nodes.length) p.nodes.splice(0, p.nodes.length, ...order);
+            }}
             onFirstDataRendered={() => setPainted(true)}
             onGridReady={(e) => {
+              api.current = e.api;
               if (!e.api.getDisplayedRowCount()) setPainted(true);
             }}
             onRowClicked={(e) => {
-              // The case id is a link of its own; a click anywhere else on the row opens the case too.
-              if ((e.event?.target as HTMLElement | null)?.closest?.("a")) return;
-              if (e.data) router.push(`/case/${e.data.id}`);
+              // The case id is a link of its own and the +/- opens the brief; a click anywhere else on a case row opens the case.
+              if ((e.event?.target as HTMLElement | null)?.closest?.("a, button")) return;
+              if (e.data && !kindOf(e.data)) router.push(`/case/${e.data.id}`);
             }}
             rowClass={styles.row}
-            getRowClass={(p: RowClassParams<DeskRow>) => (p.data?.mine ? styles.mine : undefined)}
+            getRowClass={(p: RowClassParams<DeskRow>) => {
+              const k = kindOf(p.data);
+              if (k === "group") return styles.groupRow;
+              if (k === "detail") return styles.detailRow;
+              return p.data?.mine ? styles.mine : undefined;
+            }}
             domLayout="autoHeight"
             suppressCellFocus
             tooltipShowDelay={300}
@@ -333,6 +656,11 @@ export default function DeskGrid({ initial }: { initial: DeskRow[] }) {
       )}
     </div>
   );
+}
+
+/** A full-width row: a group's header, or a case's brief opened under it. */
+function FullWidth(p: ICellRendererParams<GridRow>) {
+  return kindOf(p.data) === "group" ? <GroupHeader data={p.data as GroupHead} /> : <BriefDetail {...(p as unknown as ICellRendererParams<DetailRow>)} />;
 }
 
 /**

@@ -129,7 +129,7 @@ test("a refund after a missed deadline reads as one, from the filings and PayPal
   assert.equal(refundedLate(late, null), false);
   // Filed in time, then refunded later: not a missed deadline.
   assert.equal(refundedLate([{ action: "evidence" as const, at: "2026-10-15T00:00:00.000Z" }, ...late], due), false);
-  const d = { status: "RESOLVED", dispute_amount: { value: "48.00", currency_code: "USD" }, seller_response_due_date: due };
+  const d = { status: "RESOLVED" as const, dispute_amount: { value: "48.00", currency_code: "USD" }, seller_response_due_date: due };
   assert.match(stageLine("refunded", d, late), /^Refunded after the deadline passed: nothing was filed in time/);
   assert.equal(stageLine("refunded", d, [{ action: "accept", at: "2026-10-15T12:00:00.000Z" }]), "Refunded: the seller accepted, $48.00 back to the buyer");
 });

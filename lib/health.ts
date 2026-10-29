@@ -45,12 +45,22 @@ export function deadlineProblems(near: NearDeadline[]): string[] {
 /** How long after its deadline a missed case is still listed by id under nearDeadline. */
 export const RECENT_MISS_HOURS = 24;
 
+/** The kind of case the desk lists among its missed deadlines (pool stock and stray disputes are not on the desk). */
+export const ON_THE_DESK = "on the desk";
+
 /**
  * What /api/health lists by id: cases whose deadline is still ahead, or passed within the last day. Cases that
  * missed it longer ago are only counted (the desk shows them, folded, as missed), so the report stays about
- * deadlines that can still be met.
+ * deadlines that can still be met. `missed` counts what the desk counts: cases on the desk, not retired pool
+ * stock or disputes Exhibit holds no record of; those are counted apart, by kind, in `missedElsewhere`.
  */
-export function splitDeadlines(near: NearDeadline[], recentHours = RECENT_MISS_HOURS): { listed: NearDeadline[]; missed: number; missedLongAgo: number } {
+export function splitDeadlines(
+  near: NearDeadline[],
+  recentHours = RECENT_MISS_HOURS,
+): { listed: NearDeadline[]; missed: number; missedLongAgo: number; missedElsewhere: Record<string, number> } {
   const listed = near.filter((n) => n.dueInHours >= -recentHours);
-  return { listed, missed: near.filter((n) => n.dueInHours < 0).length, missedLongAgo: near.length - listed.length };
+  const past = near.filter((n) => n.dueInHours < 0);
+  const missedElsewhere: Record<string, number> = {};
+  for (const n of past) if (n.kind !== ON_THE_DESK) missedElsewhere[n.kind] = (missedElsewhere[n.kind] ?? 0) + 1;
+  return { listed, missed: past.filter((n) => n.kind === ON_THE_DESK).length, missedLongAgo: near.length - listed.length, missedElsewhere };
 }

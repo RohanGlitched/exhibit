@@ -4,6 +4,7 @@ import { deskRows, type DeskRow } from "./desk";
 import { listCases } from "./store";
 import { REASONS, day, daysToDue } from "./format";
 import type { Stage } from "./cases/derive";
+import { checkerStrikes } from "./cases/autopilot";
 
 /**
  * Flat rows for the analytics dashboard (AG Studio): one per shop case on the sandbox account, from the same
@@ -126,7 +127,8 @@ export const analytics = unstable_cache(
     const cases = shop.map((r) => {
       const brief = byId.get(r.id)?.brief;
       const evidence = byId.get(r.id)?.filings.filter((f) => f.action === "evidence" || f.action === "accept").at(-1)?.summary ?? null;
-      return fact(r, brief?.sentences.length ?? 0, brief?.sentences.filter((s) => !s.kept).length ?? 0, evidence);
+      // Struck by the checker; a sentence withdrawn at a hearing is not counted as a strike (the home page and desk agree).
+      return fact(r, brief?.sentences.length ?? 0, brief ? checkerStrikes(brief) : 0, evidence);
     });
     const sentences: SentenceFact[] = shop.flatMap((r) => {
       const brief = byId.get(r.id)?.brief;

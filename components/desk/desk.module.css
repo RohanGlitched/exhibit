@@ -136,7 +136,7 @@
   font-weight: 700;
 }
 .missedBox[open] summary::before {
-  content: "2";
+  content: "\2212";
 }
 .missedTitle {
   font-weight: 650;
@@ -352,4 +352,254 @@
 .status[data-where="lapsed"] {
   color: var(--ink-soft);
   font-weight: 600;
+}
+/* Grouping: a segmented control after the filter chips. */
+.groupBy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.groupLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.segments {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--sheet);
+}
+.segment {
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.segment + .segment {
+  border-left: 1px solid var(--rule);
+}
+.segment[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* Group headers in the grid: a full-width row, like a divider tab in a binder. */
+.groupRow {
+  cursor: default;
+}
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 0 14px;
+  background: #eef2f8;
+  border-top: 2px solid var(--ink);
+  font-size: 14px;
+}
+.groupHead strong {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.groupHead span {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.cardGroup {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 2px 2px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 14px;
+}
+.cardGroup span {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The +/- that opens a case's brief under its row. */
+.expandCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+.expand {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+.expand:hover,
+.expand:focus-visible {
+  border-color: var(--respondent);
+  color: var(--respondent-ink);
+}
+.expand[aria-expanded="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* A brief opened under its case: the sentences on paper, each with its exhibit marks and the checker's word. */
+.detailRow {
+  cursor: default;
+}
+.detail {
+  padding: 12px 18px 16px 58px;
+  background: var(--sheet);
+  border-top: 1px dashed var(--rule);
+  white-space: normal;
+  line-height: 1.45;
+}
+.detailHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.detailOpen {
+  margin-left: auto;
+  color: var(--respondent-ink);
+  text-underline-offset: 3px;
+}
+.detailWait {
+  font-size: 14px;
+  color: var(--ink-faint);
+}
+.sentences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.sentences li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto minmax(150px, 280px);
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid #edf1f6;
+  font-size: 14px;
+}
+.sNum {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.sText {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 15px;
+  color: var(--ink);
+}
+.sMarks {
+  display: inline-flex;
+  gap: 3px;
+}
+.sMarks abbr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--respondent);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: help;
+}
+.sState {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.sentences li[data-kind="struck"] .sText {
+  text-decoration: line-through;
+  text-decoration-color: var(--due);
+  color: var(--ink-faint);
+}
+.sentences li[data-kind="struck"] .sState {
+  color: var(--due);
+}
+.sentences li[data-kind="withdrawn"] .sText {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+  color: var(--ink-faint);
+}
+.sentences li[data-kind="checked"] .sState,
+.sentences li[data-kind="quoted"] .sState {
+  color: var(--won);
+}
+.sentences li[data-kind="unverified"] .sState {
+  color: var(--ink-faint);
+}
+
+/* The at-stake sparkline: money opened per day, with the part still at stake in the seller's blue. */
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 0;
+}
+.spark svg {
+  flex: none;
+  display: block;
+}
+.spark figcaption {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.sparkOpened {
+  fill: var(--rule);
+}
+.sparkNone {
+  fill: var(--rule-soft);
+}
+.sparkStake {
+  fill: var(--respondent);
+}
+.sparkKey {
+  color: var(--respondent-ink);
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .groupBy {
+    margin-left: 0;
+    width: 100%;
+  }
+  .segments {
+    flex: 1;
+  }
+  .segment {
+    flex: 1;
+    height: 44px;
+    padding: 0 6px;
+  }
+  .spark {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
 }

@@ -19,7 +19,8 @@ import { homeLive } from "@/lib/home-live";
 import { utcStamp } from "@/lib/webhooks/paypal";
 import styles from "./home.module.css";
 
-export const revalidate = 300;
+// The figures come from the desk's own snapshot (read at most once a minute); the page keeps to the same minute.
+export const revalidate = 60;
 
 const STEPS = [
   {
@@ -133,7 +134,7 @@ export default async function Home() {
             <div>
               <dt>Struck before filing</dt>
               <dd>{stats.struck}</dd>
-              <p>by the checker</p>
+              <p>by the checker{stats.withdrawn ? `; ${stats.withdrawn} more withdrawn at hearings` : ""}</p>
             </div>
             <div>
               <dt>Answered through PayPal</dt>
@@ -155,6 +156,12 @@ export default async function Home() {
               <p>waiting on the seller or PayPal</p>
             </div>
           </dl>
+        )}
+        {stats && (
+          <p className={styles.asOf}>
+            Counted from PayPal&apos;s dispute list at <time dateTime={stats.at}>{utcStamp(stats.at)}</time>, the same snapshot{" "}
+            <Link href="/desk">the desk</Link> shows: {stats.cases} shop cases, {stats.argued} of them argued by Exhibit.
+          </p>
         )}
       </section>
 

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { DESK_TAG } from "@/lib/desk";
 import { fileAction, type FileAction } from "@/lib/cases/service";
 import { CASE_ID } from "@/lib/store";
 import { clientIp } from "@/lib/visitor";
@@ -20,7 +22,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "That's a lot of filings in ten minutes from one place. Give it a few minutes." }, { status: 429 });
   }
   try {
-    return NextResponse.json({ filing: await fileAction(id, body.action, "seller", { ip }) });
+    const filing = await fileAction(id, body.action, "seller", { ip });
+    // The desk and the home page's figures read one snapshot: a filing makes it stale at once.
+    revalidateTag(DESK_TAG);
+    return NextResponse.json({ filing });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 409 });
   }
