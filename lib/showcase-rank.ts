@@ -7,8 +7,10 @@ import type { Filing } from "./cases/types";
  * for the seller at Exhibit's request, after a hearing on the filed PDF in which the reviewer objected and at
  * least one objection was overruled, comes first: it shows the whole loop. Then a win ruled at Exhibit's request
  * that followed the reviewer's verdict, then any win ruled at Exhibit's request, then a win the sandbox closed
- * by itself, then (as before) the "delivered" story, filed, argued by
- * the model.
+ * by itself. Within a tier, the hero whose brief the checker matched more of to the record wins (sentences whose
+ * figures and names were matched, or whose quoted words were found verbatim in the exhibit they cite), so the
+ * flagship shows the checker working rather than abstaining; then (as before) the "delivered" story, filed,
+ * argued by the model.
  */
 export interface RankInput {
   where: Stage | undefined;
@@ -17,6 +19,10 @@ export interface RankInput {
   filings: (Pick<Filing, "action" | "at"> & Partial<Pick<Filing, "summary">>)[];
   engine?: string;
   hearing?: Pick<Hearing, "at" | "mode" | "exchanges"> | null;
+  /** Every hearing the case kept (lib/cases/hearing-log.ts); `hearing` alone on older records. */
+  hearings?: Pick<Hearing, "at" | "mode" | "exchanges">[];
+  /** Kept sentences the checker matched to the record: by figures and names, or by a quote found verbatim. */
+  checks?: number;
 }
 
 /** The hearing had a real contest: at least one objection, and at least one of them overruled. */
@@ -28,14 +34,14 @@ export function showcaseRank(c: RankInput): number {
   const asked = won && c.decidedBy === "requested";
   // The hearing the ruling followed: held before Exhibit asked the sandbox to rule.
   const ruling = c.filings.filter((f) => f.action === "ruling").at(-1);
-  const heardFirst = asked && contested(c.hearing) && (!ruling || !c.hearing || c.hearing.at <= ruling.at);
+  const heard = c.hearings ?? (c.hearing ? [c.hearing] : []);
+  const heardFirst = asked && heard.some((h) => contested(h) && (!ruling || h.at <= ruling.at));
   // A ruling that followed the simulated reviewer's verdict (asked since the hearing existed, 25 Oct).
   const followed = asked && Boolean(ruling?.summary && /^Ruled by the simulated reviewer/.test(ruling.summary));
+  const tier = (heardFirst ? 8 : 0) + (asked ? 4 : 0) + (followed ? 2 : 0) + (won ? 1 : 0);
   return (
-    (heardFirst ? 64 : 0) +
-    (asked ? 32 : 0) +
-    (followed ? 16 : 0) +
-    (won ? 8 : 0) +
+    tier * 10_000 +
+    Math.min(99, Math.max(0, c.checks ?? 0)) * 10 +
     (c.scenarioId === "delivered" ? 4 : 0) +
     (c.filings.some((f) => f.action === "evidence") ? 2 : 0) +
     (c.engine === "model" ? 1 : 0)

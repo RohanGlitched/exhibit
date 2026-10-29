@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Stamp from "@/components/Stamp";
 import type { Brief, Exhibit } from "@/lib/cases/types";
-import { day, shortDay, usd } from "@/lib/format";
+import { usd, utcDay, utcShortDay } from "@/lib/format";
 import type { DecidedBy } from "@/lib/cases/derive";
 import styles from "./casefile.module.css";
 
@@ -171,13 +171,13 @@ export default function CaseFile({ head, exhibits, brief, filedAt, ruling, onPha
                     key={run}
                     word="WON"
                     tone="won"
-                    line={`${ruling.by === "requested" ? "PAYPAL RULED" : "SANDBOX CLOSED"} ${shortDay(ruling.at ?? filedAt ?? brief.createdAt).toUpperCase()}`}
+                    line={`${ruling.by === "requested" ? "PAYPAL RULED" : "SANDBOX CLOSED"} ${utcShortDay(ruling.at ?? filedAt ?? brief.createdAt).toUpperCase()}`}
                   />
                 ) : (
                   <Stamp
                     key={run}
                     word={brief.recommendation === "accept" ? "REFUNDED" : "FILED"}
-                    line={`WITH PAYPAL ${day(filedAt ?? brief.createdAt).toUpperCase()}`}
+                    line={`WITH PAYPAL ${utcDay(filedAt ?? brief.createdAt).toUpperCase()}`}
                   />
                 )}
               </div>

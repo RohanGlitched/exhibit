@@ -101,6 +101,23 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
+/* Withdrawn at the hearing: Exhibit conceded it; not a checker strike. */
+.withdrawn .sentenceText {
+  text-decoration-color: var(--ink-faint);
+}
+.withdrawnNote {
+  margin: -8px 0 14px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+/* Nothing to match, but the words it quotes were found verbatim in the exhibit it cites. */
+.quotedNote {
+  margin: -8px 0 14px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  color: var(--won);
+}
 .unverifiedNote {
   margin: -8px 0 14px;
   font-family: var(--font-sans), sans-serif;
