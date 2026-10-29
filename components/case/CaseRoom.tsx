@@ -9,6 +9,7 @@ import HouseRules from "./HouseRules";
 import Hearing from "./Hearing";
 import AgentTranscript from "./AgentTranscript";
 import CaseLedger from "./CaseLedger";
+import ToolkitCalls from "./ToolkitCalls";
 import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, dayTime, daysToDue, reasonLabel, usd } from "@/lib/format";
@@ -374,6 +375,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
         }
       />
       </div>
+      <ToolkitCalls calls={view.brief?.toolkit} />
 
       {phase !== "arguing" && <Hearing view={view} onBrief={(b) => { setSentences(b.sentences); setVerdict(toVerdict(b)); setView((v) => ({ ...v, brief: b })); }} />}
       <CaseLedger view={view} />

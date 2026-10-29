@@ -1,0 +1,64 @@
+/* The drafter's own reads through PayPal's Agent Toolkit, under the brief. */
+.calls {
+  margin-top: 28px;
+  padding: 22px 26px 18px;
+  min-width: 0;
+}
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+.calls h2 {
+  margin: 0 0 12px;
+  font-size: clamp(19px, 2vw, 23px);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 6px 18px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 14px;
+}
+.tool {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  color: var(--ink);
+}
+.summary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+}
+.list li[data-ok="false"] .summary {
+  color: var(--due);
+}
+.summary small {
+  margin-left: 6px;
+  color: var(--ink-faint);
+}
+.foot {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+@media (max-width: 640px) {
+  .calls {
+    padding: 18px 16px 14px;
+  }
+  .list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

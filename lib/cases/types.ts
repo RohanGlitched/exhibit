@@ -57,6 +57,8 @@ export interface Brief {
   createdAt: string;
   tokens?: { input: number; output: number };
   retried?: boolean; // the model's first brief came back in the wrong shape and was asked for again
+  /** Reads the drafter made itself through PayPal's Agent Toolkit before it wrote the brief (live cases only). */
+  toolkit?: { tool: string; args: Record<string, unknown>; ms: number; ok: boolean; summary: string }[];
 }
 
 export interface Filing {
