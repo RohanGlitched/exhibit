@@ -51,6 +51,99 @@
 }
 .grid {
   overflow: hidden;
+  position: relative;
+}
+/* Until AG Grid has painted, the paper rows hold the space and the grid lays itself out unseen behind them. */
+.grid[data-painted="false"] .gridLayer {
+  position: absolute;
+  inset: 0 0 auto 0;
+  visibility: hidden;
+}
+.paperRows {
+  font-size: 14px;
+}
+.paperHead,
+.paperRow {
+  display: grid;
+  grid-template-columns: 190px 120px 90px 150px minmax(180px, 1.2fr) minmax(130px, 1fr);
+  align-items: center;
+  gap: 0 14px;
+  padding: 0 14px;
+}
+.paperHead {
+  height: 42px;
+  background: #f1f4f9;
+  color: #57627a;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #dbe2ec;
+}
+.paperRow {
+  height: 50px;
+  border-bottom: 1px solid #e6ebf2;
+  white-space: nowrap;
+}
+.paperRow > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.decided {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+.missedBox {
+  padding: 0;
+}
+.missedBox summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-height: 52px;
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+.missedBox summary::-webkit-details-marker {
+  display: none;
+}
+.missedBox summary::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.missedBox[open] summary::before {
+  content: "2";
+}
+.missedTitle {
+  font-weight: 650;
+}
+.missedCount {
+  margin-left: 4px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.missedBox summary em {
+  flex: 1 1 320px;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.missedBox ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px 10px;
+}
+.missedBox li {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) auto auto;
+  gap: 4px 18px;
+  align-items: center;
+  min-height: 46px;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 14px;
 }
 .cards {
   display: none;
@@ -89,6 +182,13 @@
 @media (max-width: 760px) {
   .cards {
     display: grid;
+  }
+  .chip {
+    height: 44px;
+  }
+  .missedBox li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 0;
   }
   .grid {
     display: none;
