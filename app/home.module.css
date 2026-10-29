@@ -529,3 +529,10 @@
   text-align: right;
   max-width: 45%;
 }
+
+.mandateHead .bates {
+  white-space: nowrap;
+}
+.mandateHead > span:last-child {
+  text-align: right;
+}
