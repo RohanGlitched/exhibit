@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Pleading from "@/components/home/Pleading";
-import { FIGURES, OPTIONS, CHARGEFLOW_PRICING } from "@/lib/impact";
-import { day } from "@/lib/format";
+import { FIGURES, OPTIONS, CHARGEFLOW_PRICING, PROTECTION_SOURCES } from "@/lib/impact";
+import policies from "@/data/policies.json";
+import { day, usd } from "@/lib/format";
 import proof from "@/data/proof.json";
 import styles from "./proof.module.css";
 import ReviewProof from "./ReviewProof";
@@ -100,6 +101,7 @@ interface Summary {
   heldoutModelCorrectOnText?: number;
   heldoutStrongCorrectOnText?: number;
   heldoutSeedSpread?: Spread | null;
+  heldoutSeedRuns?: SeedRun[];
   injectionRuns?: number;
   injectionCorrect?: number;
   injectionWrotePlanted?: number;
@@ -122,7 +124,20 @@ interface Proof {
   runs: Row[];
   pressure: Pressure[];
   mutations: Record<string, Kind>;
-  heldout?: { note: string; variants: { id: string; story: string; change: string; label: string; decidedBy: string; source: string; why: string }[]; runs: Row[] };
+  heldout?: {
+    note: string;
+    variants: { id: string; story: string; change: string; label: string; decidedBy: string; source: string; why: string }[];
+    runs: Row[];
+    at?: string;
+    prompt?: string;
+    spend?: { calls: number; usd: number };
+    /** The held-out answers a re-run replaced (scripts/eval.ts --update heldout). */
+    previous?: {
+      at: string;
+      summary: { runs: number; correct: number; textRuns: number; textCorrect: number; seedRuns?: SeedRun[] };
+      runs: { key: string; variant: string; label: string; model: Answer | null }[];
+    } | null;
+  };
   injection?: { variants: { id: string; change: string; label: string; attack: string }[]; runs: (Row & { wrotePlanted: boolean; keptPlanted: number })[] };
   repeats?: { main: { key: string; seed: number; call: string | null; correct: boolean | null }[]; heldout: { key: string; seed: number; call: string | null; correct: boolean | null }[]; injection: { key: string; seed: number; call: string | null; correct: boolean | null }[] };
 }
@@ -139,6 +154,17 @@ const STORY: Record<string, string> = {
 };
 
 const CALL: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
+
+/** Why a held-out variant moved in the 30 Oct re-run, as read from its answers. */
+const WHY_MOVED: Record<string, string> = {
+  "heldout-agent-mandate-revoked":
+    "A code check now reads the cardholder's words in the agent's log; “Hold off for now” before checkout makes the order the agent platform's, and the mandate check says so.",
+  "heldout-agent-overreach-approved": "The same check reads “Go ahead at $104” as written approval of the overage, so the cart is the cardholder's.",
+  "heldout-duplicate-two-orders":
+    "Lost: the requirements card read “no second transaction on file” because the second order was only in the store's notes and history. The card reads those since this run; not re-measured.",
+  "heldout-fraud-descriptor":
+    "Lost on one of two runs: the brief refunded because the card marked the compelling evidence missing, though the cardholder's email admits the order. The card lists a written admission since this run; not re-measured.",
+};
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : "n/a");
 const range = (s: Spread | null | undefined) => (s ? (s.min === s.max ? `${s.min}` : `${s.min} to ${s.max}`) : null);
 
@@ -185,6 +211,15 @@ export default function ProofPage() {
   const hasStrong = s.strongCorrect !== undefined;
   const textRuns = s.textRuns ?? 0;
   const held = P.heldout && (s.heldoutRuns ?? 0) > 0 ? P.heldout : null;
+  const heldSeeds = s.heldoutSeedRuns?.length ?? 1;
+  // Held-out variants whose right calls changed between the run replaced and this one (first runs).
+  const moved = (held?.previous ? held.variants : [])
+    .map((v) => {
+      const now = held!.runs.filter((r) => r.variant === v.id && r.model);
+      const was = held!.previous!.runs.filter((r) => r.variant === v.id && r.model);
+      return { id: v.id, change: v.change, after: now.filter((r) => r.model!.correct).length, before: was.filter((r) => r.model!.correct).length, of: now.length };
+    })
+    .filter((m) => m.before !== m.after);
   const inj = P.injection && (s.injectionRuns ?? 0) > 0 ? P.injection : null;
   const ablation = (s.ablationRuns ?? 0) > 0;
   const survivors = mutationKinds.flatMap(([kind, k]) => (k.survived ?? []).slice(0, 1).map((x) => ({ kind, ...x })));
@@ -205,7 +240,7 @@ export default function ProofPage() {
           {P.recheckedAt && <span>Checker re-run {day(P.recheckedAt)}</span>}
           <span>
             {s.model}
-            {/Azure/.test(s.model ?? "") ? `, reasoning ${P.reasoning}` : ""}
+            {/Azure/.test(s.model ?? "") && P.reasoning ? `, reasoning effort ${P.reasoning}` : ""}
           </span>
         </p>
         <h1>Measured, not promised</h1>
@@ -412,10 +447,37 @@ export default function ProofPage() {
               agent that was not shown Exhibit&apos;s prompt or its rubric, after the prompt was fixed, and they were not tuned on afterwards. No person
               labelled them, so this is a better test than the set above and a weaker one than real cases. Model {s.heldoutModelCorrect} of{" "}
               {s.heldoutRuns}
-              {range(s.heldoutSeedSpread) && seeds > 1 ? ` (${range(s.heldoutSeedSpread)} across ${seeds} runs)` : ""}; stronger rules{" "}
+              {range(s.heldoutSeedSpread) && heldSeeds > 1 ? ` (${range(s.heldoutSeedSpread)} across ${heldSeeds} runs)` : ""}; stronger rules{" "}
               {s.heldoutStrongCorrect} of {s.heldoutCases}; fallback {s.heldoutRulesCorrect}. On the {s.heldoutTextRuns} free-text runs: model{" "}
               {s.heldoutModelCorrectOnText}, stronger rules {s.heldoutStrongCorrectOnText}.
             </p>
+            {held.previous && held.at && (
+              <p>
+                Re-run {day(held.at)}, once, on today&apos;s prompt: {held.prompt}. Before, on the main run&apos;s prompt ({day(held.previous.at)},{" "}
+                {held.previous.summary.seedRuns?.length ?? 1} runs): {held.previous.summary.correct} of {held.previous.summary.runs}, and{" "}
+                {held.previous.summary.textCorrect} of {held.previous.summary.textRuns} on free text. What moved, first runs compared:
+              </p>
+            )}
+            {moved.length > 0 && (
+              <ul className={styles.moved}>
+                {moved.map((m) => (
+                  <li key={m.id}>
+                    <strong>
+                      {m.before} → {m.after} of {m.of}
+                    </strong>{" "}
+                    {m.change}
+                    {WHY_MOVED[m.id] ? <small className={styles.kindSource}> {WHY_MOVED[m.id]}</small> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {held.previous && (
+              <p className={styles.note}>
+                The same set was used to find the agent-lane miss, so treat that gain as tuned, not held out. The stronger rules are the frozen baseline
+                and don&apos;t read the agent&apos;s log; the fallback rules follow the consent check, so they gain the agent cases too. This run cost $
+                {held.spend?.usd.toFixed(2)} for {held.spend?.calls} calls.
+              </p>
+            )}
           </div>
           <div className={`sheet ${styles.ledger}`}>
             <table>
@@ -568,8 +630,10 @@ export default function ProofPage() {
             ))}
           </ul>
           <p className={styles.note}>
-            A real amount moved onto a claim with no role word next to it, or a denial of something its record never mentions (&ldquo;we never shipped
-            it&rdquo; citing only the order), has nothing in the record to contradict it.
+            What still gets through: a real amount with no role word close to it, a denial inside reported speech or a quoted policy (&ldquo;the buyer
+            reported that two bowls never arrived cracked&rdquo;), and a denial about a parcel&apos;s trip back to the sender. Since 30 Oct a denial that
+            cites only records silent on it (&ldquo;we never shipped order HC-067211&rdquo;, citing the order) is struck, and so is a true figure given
+            the wrong role: a unit price called the payment, an order date called the delivery.
           </p>
         </section>
       )}
@@ -676,7 +740,11 @@ export default function ProofPage() {
             {seeds > 1 ? `Each case ran ${seeds} times; the spread is shown, not a confidence interval.` : "One run per variant and customer."} The
             model&apos;s odds come from its own tally of weighted points; they aren&apos;t calibrated probabilities.
           </li>
-          <li>On agent-placed orders the decision is the mandate check, which is code; the model writes the response around it.</li>
+          <li>
+            On agent-placed orders the decision is the mandate check, which is code, and since 30 Oct it reads what the cardholder told the agent in its
+            log (consent withdrawn, an overage approved in writing). The model writes the response around it. A signed mandate is not authorisation
+            evidence the card networks recognise yet, and the briefs now say so.
+          </li>
           {P.recheckedAt && (
             <li>
               The model&apos;s answers are from the run on {day(P.at)}; the checker, the stronger rules and the mutations were re-run over those saved
@@ -703,6 +771,53 @@ export default function ProofPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className={styles.section} id="per-100">
+        <div className={styles.sectionHead}>
+          <h2>What each policy keeps per 100 disputes</h2>
+          <p>
+            The {policies.from.runs} labelled runs of the main set above, scaled to 100, each at its own disputed amount (
+            {usd(policies.disputedUsdPer100)} per 100 in all, {usd(policies.winnableUsdPer100)} of it on cases labelled fight). Exhibit is the
+            model&apos;s first run on {day(policies.from.measured)}.
+          </p>
+        </div>
+        <div className={`sheet ${styles.compare}`}>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Per 100 disputes</th>
+                <th scope="col">Kept, at most</th>
+                <th scope="col">Given up on cases it should fight</th>
+                <th scope="col">Responses to write</th>
+                <th scope="col">Fights on cases it should refund</th>
+                <th scope="col">After PayPal&apos;s fees</th>
+              </tr>
+            </thead>
+            <tbody>
+              {policies.table.map((t) => (
+                <tr key={t.id} data-us={t.id === "exhibit"}>
+                  <th scope="row">{t.name}</th>
+                  <td>{usd(t.keptUsd)}</td>
+                  <td>{usd(t.givenUpUsd)}</td>
+                  <td>{t.responses}</td>
+                  <td>{t.fightsOnRefundCases}</td>
+                  <td>{t.netUsd < 0 ? `−${usd(-t.netUsd)}` : usd(t.netUsd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className={styles.note}>
+          How it is counted: a case labelled fight that is fought counts as kept and one that is refunded as given up; a case labelled refund ends with
+          the money back with the buyer whichever way it goes, so fighting it only costs a response. Real responses win less often than their label, so
+          &ldquo;kept&rdquo; is the most each policy could keep. PayPal&apos;s {usd(policies.feePerCase)} card chargeback fee is counted on every case
+          under every policy, because the fee page doesn&apos;t say it is waived on a win. On money alone, always fighting keeps as much as Exhibit on
+          this set; the difference is the {policies.table.find((t) => t.id === "fight")!.responses - policies.table.find((t) => t.id === "exhibit")!.responses}{" "}
+          responses per 100 nobody has to write and the {policies.table.find((t) => t.id === "fight")!.fightsOnRefundCases} fights on cases the seller
+          should refund. We found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by{" "}
+          <code>scripts/policies.ts</code> into <code>data/policies.json</code>.
+        </p>
       </section>
 
       <section className={styles.section}>
@@ -742,8 +857,16 @@ export default function ProofPage() {
           <a href={CHARGEFLOW_PRICING.href} target="_blank" rel="noreferrer">
             Chargeflow&apos;s pricing page
           </a>
-          , checked {CHARGEFLOW_PRICING.checked}. Exhibit&apos;s price is a plan, not a product: in this hackathon build everything is free and runs in the
-          sandbox.
+          , checked {CHARGEFLOW_PRICING.checked}. Seller Protection and Chargeback Protection from PayPal&apos;s own pages, checked 30 Oct 2026:{" "}
+          {PROTECTION_SOURCES.map((x, i) => (
+            <span key={x.href}>
+              {i > 0 ? ", " : ""}
+              <a href={x.href} target="_blank" rel="noreferrer">
+                {x.label}
+              </a>
+            </span>
+          ))}
+          . Exhibit&apos;s price is a plan, not a product: in this hackathon build everything is free and runs in the sandbox.
         </p>
       </section>
 
