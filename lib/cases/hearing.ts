@@ -1,5 +1,6 @@
 import { checkSentence, citeList } from "./verify";
 import type { Brief, BriefSentence, Exhibit, Recommendation } from "./types";
+import { pressable, type RequirementsCard } from "./requirements";
 
 /**
  * Cross-examination, the deterministic half. A second model plays PayPal's reviewer: it reads only the PDF
@@ -34,6 +35,10 @@ export interface Objection {
   text: string;
   ground: Ground;
   pages: string[]; // Bates labels the reviewer relied on, as printed on the PDF
+  /** The requirements-card item it presses (lib/cases/requirements.ts), when it presses one. */
+  requirement?: string;
+  /** Raised by code from the requirements card because the reviewer left that item alone. */
+  pressed?: true;
 }
 
 export interface Answer {
@@ -99,7 +104,7 @@ const clip = (s: unknown, n: number) => String(s ?? "").replace(/\s+/g, " ").tri
 
 /** The reviewer's objections as the model gave them, cleaned: sentence numbers checked, duplicates and empties dropped, at most four. */
 export function normaliseObjections(
-  raw: { sentence?: unknown; objection?: unknown; ground?: unknown; pages?: unknown }[] | undefined,
+  raw: { sentence?: unknown; objection?: unknown; ground?: unknown; pages?: unknown; requirement?: unknown }[] | undefined,
   responseLength: number,
 ): Objection[] {
   const out: Objection[] = [];
@@ -114,10 +119,42 @@ export function normaliseObjections(
       .map((p) => String(p).toUpperCase().trim())
       .filter((p) => /^HC-\d{6}$/.test(p))
       .slice(0, 4);
-    out.push({ n: out.length + 1, sentence, text, ground, pages });
+    const requirement = typeof o.requirement === "string" && /^[a-z0-9-]{2,20}$/.test(o.requirement) && o.requirement !== "none" ? o.requirement : undefined;
+    out.push({ n: out.length + 1, sentence, text, ground, pages, ...(requirement ? { requirement } : {}) });
     if (out.length >= MAX_OBJECTIONS) break;
   }
   return out;
+}
+
+/**
+ * The reviewer's objections, pressed by the requirements card: every weak or missing item the response leans on
+ * or the reason code requires gets an objection, the reviewer's own if it raised one on that item, else one from
+ * the card. A fight the reviewer let through untouched is put to proof on the item it turns on. Card items come
+ * first, then the reviewer's other objections, at most four in all.
+ */
+export function pressObjections(
+  objections: Objection[],
+  card: RequirementsCard | null,
+  response: { text: string; cites: string[] }[],
+  pageOf: (exhibit: string) => string | undefined,
+): Objection[] {
+  if (!card) return objections;
+  const press = pressable(card, response);
+  const pages = (ids: string[]) => ids.map(pageOf).filter((p): p is string => !!p).slice(0, 4);
+  const onCard: Objection[] = [];
+  for (const item of press) {
+    const own = objections.find((o) => o.requirement === item.id);
+    onCard.push(own ?? { n: 0, sentence: null, text: item.ask, ground: item.status === "missing" ? "unanswered" : "unsupported", pages: pages(item.exhibits), requirement: item.id, pressed: true });
+  }
+  const rest = objections.filter((o) => !onCard.includes(o));
+  let all = [...onCard, ...rest];
+  if (!all.length && response.length) {
+    // Nothing weak on the card and no objection: make the seller show the item the case turns on.
+    const decisive = card.items.find((i) => i.required && i.status === "on file") ?? card.items.find((i) => i.status === "on file");
+    if (decisive)
+      all = [{ n: 0, sentence: null, text: `Show on the pages ${decisive.need.toLowerCase()}: where exactly is it?`, ground: "unsupported", pages: pages(decisive.exhibits), requirement: decisive.id, pressed: true }];
+  }
+  return all.slice(0, MAX_OBJECTIONS).map((o, k) => ({ ...o, n: k + 1 }));
 }
 
 /**
