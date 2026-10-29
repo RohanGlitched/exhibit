@@ -314,7 +314,7 @@ writeFileSync(
   JSON.stringify(
     {
       at: new Date().toISOString(),
-      instructions: "third version: the requirements card drives the reviewer's objections (30 Oct 2026)",
+      instructions: "third version: the requirements card drives the reviewer's objections",
       ...(repairsAt ? { repairsAt } : {}),
       summary,
       previous,

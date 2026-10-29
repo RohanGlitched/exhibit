@@ -155,7 +155,7 @@ const STORY: Record<string, string> = {
 
 const CALL: Record<string, string> = { fight: "Fight", accept: "Refund", offer: "Offer" };
 
-/** Why a held-out variant moved in the 30 Oct re-run, as read from its answers. */
+/** Why a held-out variant moved in the 29 Oct re-run, as read from its answers. */
 const WHY_MOVED: Record<string, string> = {
   "heldout-agent-mandate-revoked":
     "A code check now reads the cardholder's words in the agent's log; “Hold off for now” before checkout makes the order the agent platform's, and the mandate check says so.",
@@ -631,7 +631,7 @@ export default function ProofPage() {
           </ul>
           <p className={styles.note}>
             What still gets through: a real amount with no role word close to it, a denial inside reported speech or a quoted policy (&ldquo;the buyer
-            reported that two bowls never arrived cracked&rdquo;), and a denial about a parcel&apos;s trip back to the sender. Since 30 Oct a denial that
+            reported that two bowls never arrived cracked&rdquo;), and a denial about a parcel&apos;s trip back to the sender. Since 29 Oct a denial that
             cites only records silent on it (&ldquo;we never shipped order HC-067211&rdquo;, citing the order) is struck, and so is a true figure given
             the wrong role: a unit price called the payment, an order date called the delivery.
           </p>
@@ -741,7 +741,7 @@ export default function ProofPage() {
             model&apos;s odds come from its own tally of weighted points; they aren&apos;t calibrated probabilities.
           </li>
           <li>
-            On agent-placed orders the decision is the mandate check, which is code, and since 30 Oct it reads what the cardholder told the agent in its
+            On agent-placed orders the decision is the mandate check, which is code, and since 29 Oct it reads what the cardholder told the agent in its
             log (consent withdrawn, an overage approved in writing). The model writes the response around it. A signed mandate is not authorisation
             evidence the card networks recognise yet, and the briefs now say so.
           </li>
@@ -857,7 +857,7 @@ export default function ProofPage() {
           <a href={CHARGEFLOW_PRICING.href} target="_blank" rel="noreferrer">
             Chargeflow&apos;s pricing page
           </a>
-          , checked {CHARGEFLOW_PRICING.checked}. Seller Protection and Chargeback Protection from PayPal&apos;s own pages, checked 30 Oct 2026:{" "}
+          , checked {CHARGEFLOW_PRICING.checked}. Seller Protection and Chargeback Protection from PayPal&apos;s own pages, checked 29 Oct 2026:{" "}
           {PROTECTION_SOURCES.map((x, i) => (
             <span key={x.href}>
               {i > 0 ? ", " : ""}

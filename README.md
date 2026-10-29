@@ -21,7 +21,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
-**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 46 of 46; on held-out cases written without the prompt, 13 of 18 against 2 (re-run 30 Oct). A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
+**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Where the deciding fact sits only in free text (an email, a listing), the model made the right call on 10 of 10 labelled runs against 4 for a rules baseline that reads every structured record; where the records decide, both got 46 of 46; on held-out cases written without the prompt, 13 of 18 against 2 (re-run 29 Oct). A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
 
 When a buyer disputes a payment, a small seller has until the case's response date to answer PayPal (ten days on the sandbox chargebacks here), and a chargeback costs a $20 fee on top of the sale. Answering means digging out the order, the payment, the tracking, the carrier's scans and the emails, and writing it up. Many sellers don't, and lose cases they should have won. Others fight cases they can't win and pay for it.
 
@@ -125,18 +125,18 @@ The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/ref
 | Right call, 28 variants × 2 customers | model 56 of 56; stronger rules 50; fallback rules 44 |
 | Deciding fact only in free text: model vs stronger rules | 10 vs 4 of 10 runs |
 | Deciding fact in the records: model vs stronger rules | 46 vs 46 of 46 |
-| Held-out set, written blind to the prompt: free-text cases | model 13 of 18 on 30 Oct (12 of 18 on 25 Oct, all 3 runs); stronger rules 2 of 18 |
-| Held-out set, all cases, 30 Oct re-run (24 calls, $0.22) | model 19 of 24 (was 18): the agent lane 4 of 4 (was 0) from a code check on the cardholder's words in the agent's log; the two-orders duplicate 0 of 2 (was 2) and one fraud run lost, both from requirements-card gaps fixed since and not re-measured |
+| Held-out set, written blind to the prompt: free-text cases | model 13 of 18 on 29 Oct (12 of 18 on 25 Oct, all 3 runs); stronger rules 2 of 18 |
+| Held-out set, all cases, 29 Oct re-run (24 calls, $0.22) | model 19 of 24 (was 18): the agent lane 4 of 4 (was 0) from a code check on the cardholder's words in the agent's log; the two-orders duplicate 0 of 2 (was 2) and one fraud run lost, both from requirements-card gaps fixed since and not re-measured |
 | Buyer emails with instructions aimed at the AI (4 emails × 2 customers) | right call 8 of 8 runs; the planted fact written 0 times |
 | Same runs repeated (3 seeds) | 56 of 56 each time |
 | Prompt without its "how cases are usually decided" rubric | 54 of 56 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,026 of 1,038 struck (was 1,015 of 1,051 before the 30 Oct checker fixes; the base changed with the held-out answers) |
+| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,026 of 1,038 struck (was 1,015 of 1,051 before the 29 Oct checker fixes; the base changed with the held-out answers) |
 | The model's own sentences struck | 4 of 381: two quotes taken from a different exhibit or field than the one cited, one amount cited to the wrong exhibit, and one checker mistake ("two distinct transactions" read as a count) |
 | Kept sentences with nothing to check, marked unverified | 201 of 377 |
 | Per brief | median 6.4 s, about 2,000 tokens in and 550 out |
-| Cross-examination driven by the requirements card (30 Oct, 56 calls, $0.24) | 26 objections on 12 of 12 fights (was 4 on 1); 5 overruled, 21 sustained, 14 conceded; answers kept 10 of 12; the reviewer matches the label on 24 of 28 (was 27, a harder reviewer) |
+| Cross-examination driven by the requirements card (29 Oct, 56 calls, $0.24) | 26 objections on 12 of 12 fights (was 4 on 1); 5 overruled, 21 sustained, 14 conceded; answers kept 10 of 12; the reviewer matches the label on 24 of 28 (was 27, a harder reviewer) |
 | Careless answers struck | 5 of 10; the 25 Oct figure of 2 of 4 counted a checker misread as a catch, 1 of 4 re-checked |
 | Per 100 disputes, from the eval labels ([data/policies.json](data/policies.json)) | always fight and Exhibit both keep at most $4,743; Exhibit writes 43 responses, always fight 100 with 57 on cases to refund |
 

@@ -673,7 +673,7 @@ writeFileSync(
           ? {
               at: new Date().toISOString(),
               reasoning,
-              prompt: "with the requirements card, the AP2 line and the agent-log consent check (30 Oct 2026)",
+              prompt: "with the requirements card, the AP2 line and the agent-log consent check",
               spend: runSpend,
               previous: heldPrevious,
             }

@@ -78,7 +78,7 @@ export const OPTIONS: Option[] = [
 
 export const CHARGEFLOW_PRICING = { href: "https://www.chargeflow.io/pricing", checked: "15 Oct 2026" };
 
-/** Where the Seller Protection / Chargeback Protection row was read (checked 30 Oct 2026). */
+/** Where the Seller Protection / Chargeback Protection row was read (checked 29 Oct 2026). */
 export const PROTECTION_SOURCES = [
   { label: "What is PayPal Seller Protection?", href: "https://www.paypal.com/us/cshelp/article/what-is-paypal-seller-protection-help156" },
   { label: "What is Chargeback Protection?", href: "https://www.paypal.com/us/cshelp/article/what-is-chargeback-protection-help608" },
