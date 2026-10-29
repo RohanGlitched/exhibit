@@ -265,7 +265,9 @@ const AMOUNTS: { name: string; says: RegExp; record: RegExp; kinds?: string[] }[
   { name: "the net amount", says: /\bnet\b|\bproceeds\b/gi, record: /net/i },
   { name: "the limit", says: /\blimit(?:ed)?\b|\bcap(?:ped)?\b|\bup to \$|\bunder \$|\bat most\b/gi, record: /limit|under|up to|max/i },
   { name: "the total", says: /\btotal(?:l?ing|led|s)?\b/gi, record: /total|gross|amount/i },
-  { name: "what was paid", says: /\bpaid\b|\bcost\b/gi, record: /total|gross|amount|paid|price|×/i },
+  // "cost" as what was paid ("the set cost $124.00"), not an estimate or a hypothetical: "return shipping would
+  // cost about $30", quoting the buyer's own email, says what a return would cost, not what anyone paid.
+  { name: "what was paid", says: /\bpaid\b|(?<!\b(?:would|could|will|might|may|to|should|it'?d|estimated?|expected)\s+(?:\w+\s+)?)\bcost\b(?!\s+(?:about|around|roughly|approximately|an estimated)\b)/gi, record: /total|gross|amount|paid|price|×/i },
 ];
 /**
  * The role word nearest an amount in its clause, within a few words of it ("the $1.43 fee left net proceeds of

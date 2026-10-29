@@ -1,5 +1,5 @@
 import { GROUND_LABEL, type Answer, type Objection, type RulingWord } from "@/lib/cases/hearing";
-import { figures } from "@/lib/cases/verify";
+import { tokens } from "@/lib/cases/verify";
 import styles from "./hearing.module.css";
 
 /**
@@ -28,8 +28,8 @@ export default function Exchange({
   index?: number;
   who?: string;
 }) {
-  const f = figures(answer.text);
-  const hasFigures = f.money.length + f.dates.length + f.times.length + f.ids.length > 0;
+  // Everything the checker matched: amounts, dates, times and ids, and ZIPs, places, signers, carriers and counts.
+  const hasFigures = tokens(answer.text).length > 0;
   const target = objection.sentence === null ? "to the response as a whole" : `to sentence ${objection.sentence + 1}`;
   return (
     <div className={styles.exchange} style={{ "--i": index } as React.CSSProperties}>

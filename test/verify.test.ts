@@ -425,3 +425,29 @@ test("'3-D Secure' and 'sentence 2' are names, not counts", () => {
   assert.equal(check("Sentence 2 says only that USPS delivered it on 1 Oct 2026.", ["E"]).kept, true);
   assert.equal(check("The buyer ordered 3 mugs.", ["B"]).kept, false);
 });
+
+test("an estimate quoted from the buyer's email is not held to what was paid", () => {
+  // PP-R-GQZ-10195194, objection 2: the checker struck this true answer as "$30 ... not as what was paid".
+  const ex: Exhibit[] = [
+    { id: "B", kind: "order", title: "The order", source: "PayPal", facts: [{ label: "Total", value: "$136.00" }], lines: ["1 × Nesting bowls, set of three, $124.00"] },
+    {
+      id: "F",
+      kind: "inbox",
+      title: "Emails with the buyer",
+      source: "Store inbox",
+      facts: [{ label: "Messages", value: "2" }],
+      lines: [
+        "4 Oct 2026, 11:00, Ines Halden: Tide-blue does pool green where it's thick, as the listing says. You're welcome to return them within 30 days for a refund.",
+        "5 Oct 2026, 08:00, Priya Raman: Return shipping for three bowls would be about $30. That doesn't seem fair.",
+      ],
+    },
+  ];
+  const c = (t: string, cites: string[]) => checkSentence({ text: t, cites }, ex, text);
+  assert.equal(c("The buyer replied that return shipping would cost about $30.", ["F"]).kept, true);
+  assert.equal(c("The buyer wrote that a return would be about $30.", ["F"]).kept, true);
+  assert.equal(c("Return shipping was estimated to cost about $30.", ["F"]).kept, true);
+  // What was paid is still held to the order: the bowls cost $124.00, not $30.
+  assert.match(c("The bowls cost $30.", ["F"]).why!, /not as what was paid/);
+  assert.equal(c("The bowls cost $124.00.", ["B"]).kept, true);
+  assert.match(c("The buyer paid $30 for the bowls.", ["F"]).why!, /not as what was paid/);
+});
