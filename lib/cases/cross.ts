@@ -1,6 +1,6 @@
 import "server-only";
 import { downloadDocument } from "../paypal/disputes";
-import { takeModelCall } from "../budget";
+import { takeAutopilotCall, takeModelCall } from "../budget";
 import { llmReady } from "../llm";
 import { updateCase } from "../store";
 import { filedDocument } from "./derive";
@@ -46,7 +46,9 @@ async function inputFor(ctx: CaseContext): Promise<HearingInput> {
 /** Runs a hearing on a case already read, on the model behind the spend guard. */
 export async function hearingFor(ctx: CaseContext, ip: string): Promise<Hearing> {
   if (!llmReady()) throw new Error("The reviewer needs the model, and none is configured.");
-  return crossExamine(await inputFor(ctx), { take: () => takeModelCall(ip) });
+  // The autopilot's hearings draw on its own share of the day's budget, not a visitor's per-address allowance.
+  const take = ip === "autopilot" ? () => takeAutopilotCall() : () => takeModelCall(ip);
+  return crossExamine(await inputFor(ctx), { take });
 }
 
 /** The hearing the ruling request follows: a saved one held on PayPal's copy after the latest filing, else a new one, else the rules engine. */

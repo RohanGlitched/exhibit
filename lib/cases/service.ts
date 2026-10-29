@@ -3,7 +3,7 @@ import { acceptClaim, adjudicate, allowed, getDispute, makeOffer, provideEvidenc
 import { getCapture, getOrder, getRefund, refundedCaptureId, type Capture, type Order } from "../paypal/orders";
 import { scenario as findScenario, type Scenario } from "../shop/scenarios";
 import { loadCase, saveCase, updateCase } from "../store";
-import { takeModelCall } from "../budget";
+import { takeAutopilotCall, takeModelCall } from "../budget";
 import { usd } from "../format";
 import { argueWithModel, argueWithRules, modelAvailable } from "./brief";
 import { mergeFilings, paypalFilings, restoredNote, sellerEvidence, splitFiled, storyFromPayPal, trackerNumber } from "./derive";
@@ -175,7 +175,7 @@ export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<Arg
   }
 
   // The bounded repair step: struck sentences get one re-cite, kept only if the checker keeps it.
-  if (brief.engine === "model" && brief.sentences.some((s) => !s.kept) && (await takeModelCall(opts.ip))) {
+  if (brief.engine === "model" && brief.sentences.some((s) => !s.kept) && (await (opts.autopilot ? takeAutopilotCall() : takeModelCall(opts.ip)))) {
     yield { type: "status", text: "Re-citing the struck sentences once" };
     brief = await repairBrief(ctx.dispute, brief, ctx.exhibits)
       .then((r) => r.brief)

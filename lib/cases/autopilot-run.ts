@@ -51,7 +51,7 @@ async function argueLane(rec: CaseRecord): Promise<string> {
 }
 
 /** Step 1: the hearing on the draft, then the decision under the house rules. */
-async function planLane(rec: CaseRecord): Promise<string> {
+async function planLane(rec: CaseRecord, again = false): Promise<string> {
   const id = rec.disputeId;
   // The read step goes through PayPal's own Agent Toolkit; Exhibit's client is the fallback if it can't answer.
   const read = await readThroughToolkit(id);
@@ -87,7 +87,7 @@ async function planLane(rec: CaseRecord): Promise<string> {
       ...(read.error ? { error: read.error } : {}),
     },
   };
-  await updateCase(id, (r) => (r.house ? null : { ...r, house: plan }));
+  await updateCase(id, (r) => (r.house && !again ? null : { ...r, house: again ? { ...plan, reason: `${plan.reason} (Decided again once a hearing on the draft was on record; the first decision waited for one.)` } : plan }));
   return `${id}: rule ${plan.rule}, ${plan.action === "queue" ? "left for the seller" : `${plan.action === "accept" ? "refund" : "file"} after ${HOUSE_RULES.undoMinutes} min`} (${plan.reason})`;
 }
 
@@ -156,8 +156,11 @@ export async function autopilotTick(deadline: number, opts: { open?: string | nu
   // 2 first: sending a due plan is quick and the most time-critical.
   for (const c of lane.filter((c) => planDue(c.house, now))) await step(`send ${c.disputeId}`, 15_000, () => sendPlan(c));
 
-  // 1: plans for lane cases with the seller and nothing decided.
-  for (const c of lane.filter((c) => !c.house && !isFiled(c.filings)).slice(0, 2)) await step(`plan ${c.disputeId}`, 45_000, () => planLane(c));
+  // 1: plans for lane cases with the seller and nothing decided, and plans that only waited for a hearing on the
+  // draft (the reviewer couldn't be reached) once one is on record: they are decided again.
+  const waitedForHearing = (c: CaseRecord) => c.house?.action === "queue" && !c.house.hearing && !c.house.undone && Boolean(latestOn(hearingsOf(c), "draft"));
+  for (const c of lane.filter((c) => (!c.house || waitedForHearing(c)) && !isFiled(c.filings)).slice(0, 2))
+    await step(`plan ${c.disputeId}`, 45_000, () => planLane(c, Boolean(c.house)));
 
   // 3: rulings, lane cases first, at most two a turn.
   const filed = cases
