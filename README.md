@@ -164,7 +164,7 @@ node scripts/e2e.cjs http://localhost:3600                  # open, argue and fi
 
 | Path | What it is |
 |---|---|
-| [`lib/paypal/`](lib/paypal) | Sandbox REST client (token cache, retries, one plain sentence per PayPal error), Orders, Payments, Tracking and Disputes |
+| [`lib/paypal/`](lib/paypal) | Sandbox REST client (token cache, retries, one plain sentence per PayPal error), Orders v2 (with its /track call for tracking), Payments v2 and Disputes v1 |
 | [`lib/cases/derive.ts`](lib/cases/derive.ts) | Where a case stands, read from PayPal's record; rebuilding a case Exhibit has no note of |
 | [`lib/cases/exhibits.ts`](lib/cases/exhibits.ts) | Turns PayPal, store and mandate records into lettered exhibits |
 | [`lib/cases/brief.ts`](lib/cases/brief.ts) | The model call and its schema, and the rules engine |
