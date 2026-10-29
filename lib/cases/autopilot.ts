@@ -35,6 +35,8 @@ export interface HousePlan {
   decidedAt: string;
   /** Not sent before this time (the undo window). */
   sendAfter: string;
+  /** The seller agent's read step, through PayPal's Agent Toolkit (get_dispute, get_shipment_tracking). */
+  read?: { at: string; status: string | null; due: string | null; tracking: string | null; error?: string };
   /** The draft hearing the decision read. */
   hearing: { side: Side; objections: number; overruled: number; sustained: number; engine: Hearing["engine"] } | null;
   undone?: { at: string };

@@ -30,7 +30,8 @@ import type { CartMandate, IntentMandate, Signed } from "./agentic/types";
 
 export const SERVER_INSTRUCTIONS = `Exhibit is a dispute desk for PayPal sellers, running on the PayPal sandbox for a demo shop, Halden Ceramics.
 Use list_cases to see the disputes on the shop's sandbox account and where each stands (your move, filed, won, lost, refunded). get_case reads one case: the buyer's claim, the lettered exhibits from PayPal and the store, and what PayPal allows now. argue_case has Exhibit write the brief: a recommendation (fight or refund), the evidence balance from a weighted tally (how much of it favours the seller, not a chance of winning), and the response with every sentence citing the exhibits that prove it; sentences the checker can't match to a record are struck. file_response files what the seller approves: the evidence with a Bates-stamped PDF, or an accepted claim (a full refund). Filing is real in the sandbox and can't be undone, so confirm with the user first. cross_examine puts the case before a simulated PayPal reviewer that reads only the PDF and objects sentence by sentence; Exhibit answers from the exhibits, the checker strikes answers it can't back, and the reviewer's verdict is what a later sandbox ruling request follows. Pass an objection of your own to take the reviewer's chair. open_case opens a fresh sandbox dispute from one of the stories.
-PayPal gives a seller ten days to answer a chargeback. Recommend refunding when the records say the seller would lose.
+Each case's seller_response_due_date (shown by get_case) is PayPal's deadline to answer; the sandbox sets ten days. Recommend refunding when the records say the seller would lose.
+PayPal's own Agent Toolkit read tools ride on the same server: paypal_get_dispute, paypal_list_disputes, paypal_get_shipment_tracking and paypal_get_refund call @paypal/agent-toolkit, so one client has PayPal's tools and Exhibit's evidence layer together.
 For buyer agents and agent platforms: preflight_cart checks a cart against a signed intent mandate before anything is signed or paid, and verify_mandate runs Exhibit's full mandate check on a signed intent and cart (and, given a PayPal order id, the order), with who is responsible. Keys are at ${SITE_URL}/.well-known/exhibit-keys.json.`;
 
 /* AP2-style mandates, as Exhibit signs them (lib/agentic/types.ts). */
@@ -316,6 +317,32 @@ function register(server: McpServer) {
   );
 }
 
+/**
+ * PayPal's own Agent Toolkit tools, passed through on the same server (lib/paypal/toolkit.ts): the read side of
+ * PayPal's agent stack next to Exhibit's evidence layer. Read-only, on this demo shop's sandbox account.
+ */
+const TOOLKIT_PASS = [
+  { name: "paypal_get_dispute", tool: "get_dispute", title: "PayPal: read a dispute (Agent Toolkit)", description: "PayPal's own get_dispute tool from @paypal/agent-toolkit: the dispute exactly as PayPal returns it.", schema: z.object({ dispute_id: z.string().regex(CASE_ID) }) },
+  { name: "paypal_list_disputes", tool: "list_disputes", title: "PayPal: list disputes (Agent Toolkit)", description: "PayPal's own list_disputes tool from @paypal/agent-toolkit, newest first.", schema: z.object({ page_size: z.number().int().min(1).max(20).optional() }) },
+  { name: "paypal_get_shipment_tracking", tool: "get_shipment_tracking", title: "PayPal: tracking for a payment (Agent Toolkit)", description: "PayPal's own get_shipment_tracking tool from @paypal/agent-toolkit: the trackers PayPal holds for a payment (a dispute's seller_transaction_id).", schema: z.object({ transaction_id: z.string().regex(/^[A-Za-z0-9_-]{12,40}$/) }) },
+  { name: "paypal_get_refund", tool: "get_refund", title: "PayPal: read a refund (Agent Toolkit)", description: "PayPal's own get_refund tool from @paypal/agent-toolkit: a refund and the capture it credited.", schema: z.object({ refund_id: z.string().regex(/^[A-Za-z0-9_-]{15,32}$/) }) },
+] as const;
+
+function registerPayPalToolkit(server: McpServer) {
+  for (const t of TOOLKIT_PASS) {
+    server.registerTool(t.name, { title: t.title, description: t.description, inputSchema: t.schema, annotations: { readOnlyHint: true, openWorldHint: true } }, async (args: Record<string, unknown>) => {
+      if (!allow("mcp-toolkit", await ipKey(), 60, 10 * MINUTE)) return text("That's a lot of PayPal reads in ten minutes from one place. Try again in a few minutes.");
+      try {
+        const { toolkitCall } = await import("./paypal/toolkit");
+        const a = t.tool === "list_disputes" ? { page_size: (args.page_size as number | undefined) ?? 10 } : args;
+        return text(JSON.stringify(await toolkitCall(t.tool, a)).slice(0, 12_000));
+      } catch (e) {
+        return text(`PayPal's Agent Toolkit couldn't answer ${t.tool}: ${(e as Error).message}`);
+      }
+    });
+  }
+}
+
 export const CORS: Record<string, string> = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
@@ -324,7 +351,10 @@ export const CORS: Record<string, string> = {
   "access-control-max-age": "86400",
 };
 
-const inner = createMcpHandler(register, { serverInfo: { name: "Exhibit", version: "1.0.0" }, instructions: SERVER_INSTRUCTIONS });
+const inner = createMcpHandler((server) => {
+  register(server);
+  registerPayPalToolkit(server);
+}, { serverInfo: { name: "Exhibit", version: "1.0.0" }, instructions: SERVER_INSTRUCTIONS });
 
 export async function mcpHandler(req: Request): Promise<Response> {
   const res = await inner(req);

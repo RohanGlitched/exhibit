@@ -122,6 +122,7 @@ function houseView(ctx: CaseContext): HouseView | null {
   if (rec?.autopilot) audit.push({ at: rec.autopilot.arguedAt, text: `Argued by the autopilot${after(rec.autopilot.arguedAt)}, with the ${rec.autopilot.engine === "model" ? "model" : "rules engine"}` });
   const p = rec?.house;
   if (p) {
+    if (p.read) audit.push({ at: p.read.at, text: p.read.error ? `Couldn't read the case through PayPal's Agent Toolkit (${p.read.error}); read it with Exhibit's own client` : `Read through PayPal's Agent Toolkit: get_dispute (${(p.read.status ?? "unknown").toLowerCase().replace(/_/g, " ")}${p.read.due ? `, due ${day(p.read.due)}` : ""})${p.read.tracking ? ` and get_shipment_tracking (${p.read.tracking})` : ""}` });
     if (p.hearing) audit.push({ at: p.decidedAt, text: `Heard on the draft: ${p.hearing.objections} objection${p.hearing.objections === 1 ? "" : "s"}, ${p.hearing.overruled} overruled, ${p.hearing.sustained} sustained; the reviewer found for the ${p.hearing.side}` });
     audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${p.reason}` });
     if (p.undone) audit.push({ at: p.undone.at, text: "Stopped in the undo window; the case waits for the seller" });

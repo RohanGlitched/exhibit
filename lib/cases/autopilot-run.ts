@@ -8,7 +8,8 @@ import { argue, fileAction } from "./service";
 import { reviewCase } from "./cross";
 import { openCase } from "./open";
 import { isFiled } from "./guard";
-import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue } from "./autopilot";
+import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue, type HousePlan } from "./autopilot";
+import { readThroughToolkit } from "../paypal/toolkit";
 import type { Brief, CaseRecord } from "./types";
 
 /**
@@ -51,8 +52,11 @@ async function argueLane(rec: CaseRecord): Promise<string> {
 /** Step 1: the hearing on the draft, then the decision under the house rules. */
 async function planLane(rec: CaseRecord): Promise<string> {
   const id = rec.disputeId;
+  // The read step goes through PayPal's own Agent Toolkit; Exhibit's client is the fallback if it can't answer.
+  const read = await readThroughToolkit(id);
   const d = await getDispute(id);
-  if (d.status !== "WAITING_FOR_SELLER_RESPONSE") return `${id}: not with the seller yet (${d.status.toLowerCase()})`;
+  const status = read.dispute?.status ?? d.status;
+  if (status !== "WAITING_FOR_SELLER_RESPONSE") return `${id}: not with the seller yet (${status.toLowerCase()})`;
   if (!rec.brief) return `${id}: ${await argueLane(rec)}`;
   let hearing = rec.hearing && rec.hearing.source === "draft" ? rec.hearing : null;
   let brief = rec.brief;
@@ -67,7 +71,16 @@ async function planLane(rec: CaseRecord): Promise<string> {
       console.error("autopilot hearing", id, (e as Error).message);
     }
   }
-  const plan = planFor({ brief, hearing, amount: Number(d.dispute_amount.value), due: d.seller_response_due_date ?? null, now: Date.now() });
+  const plan: HousePlan = {
+    ...planFor({ brief, hearing, amount: Number(d.dispute_amount.value), due: read.dispute?.due ?? d.seller_response_due_date ?? null, now: Date.now() }),
+    read: {
+      at: read.at,
+      status: read.dispute?.status ?? null,
+      due: read.dispute?.due ?? null,
+      tracking: read.tracking ? `${read.tracking.carrier} ${read.tracking.number}, ${read.tracking.status.toLowerCase()}` : null,
+      ...(read.error ? { error: read.error } : {}),
+    },
+  };
   await updateCase(id, (r) => (r.house ? null : { ...r, house: plan }));
   return `${id}: rule ${plan.rule}, ${plan.action === "queue" ? "left for the seller" : `${plan.action === "accept" ? "refund" : "file"} after ${HOUSE_RULES.undoMinutes} min`} (${plan.reason})`;
 }

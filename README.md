@@ -106,7 +106,7 @@ Every case on the desk was opened with three sandbox calls and no human:
 | "Charged twice" only: the double click and its refund | a second order, then `POST /v2/payments/captures/{id}/refund` |
 | The issuer files a chargeback | `POST /v2/customer-support/process-chargeback` (sandbox only), with Visa or Mastercard reason codes that PayPal maps to *not received* (13.1, 4855), *not as described* (C2), *unauthorised* (4837) and *duplicate* (4834) |
 
-PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`/api/pool`), and a visitor is handed one that's ready. A seller has ten days to answer, so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place, emptiest stories first. `GET /api/health` reports the stock per story (a case counts as ready only with 36 hours or more to answer), when the refill last ran, a model ping, the webhook log, and every case near or past a deadline.
+PayPal reviews a new chargeback for five to eight minutes before the seller can respond, so a scheduled job keeps two cases per story opened ahead of time (`/api/pool`), and a visitor is handed one that's ready. Each case carries PayPal's response date (seller_response_due_date; ten days on these sandbox chargebacks), so the refill also retires pooled cases PayPal has closed or whose deadline is near, and opens fresh ones in their place, emptiest stories first. `GET /api/health` reports the stock per story (a case counts as ready only with 36 hours or more to answer), when the refill last ran, a model ping, the webhook log, and every case near or past a deadline.
 
 ### PayPal webhooks and the autopilot
 

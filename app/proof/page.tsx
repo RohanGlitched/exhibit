@@ -870,6 +870,49 @@ export default function ProofPage() {
         </p>
       </section>
 
+      <section className={styles.section} id="agent-stack">
+        <div className={styles.sectionHead}>
+          <h2>PayPal&apos;s agent stack, and the layer Exhibit adds</h2>
+          <p>
+            Exhibit runs PayPal&apos;s own Agent Toolkit (<code>@paypal/agent-toolkit</code> 1.11.0) for the seller agent&apos;s reads, and adds what the
+            toolkit doesn&apos;t have: evidence, cross-examination and signed mandates. Its MCP server at <code>/api/mcp</code> carries both, so one MCP
+            client gets PayPal&apos;s tools and Exhibit&apos;s in one session.
+          </p>
+        </div>
+        <div className={`sheet ${styles.compare}`}>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">PayPal Agent Toolkit tool</th>
+                <th scope="col">Where Exhibit uses it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">get_dispute, get_shipment_tracking</th>
+                <td>The autopilot&apos;s read step on the seller&apos;s lane, before it decides under the house rules; written on the case as an audit line. Also on MCP as paypal_get_dispute and paypal_get_shipment_tracking.</td>
+              </tr>
+              <tr>
+                <th scope="row">list_disputes, get_refund</th>
+                <td>On MCP as paypal_list_disputes and paypal_get_refund, read-only.</td>
+              </tr>
+              <tr>
+                <th scope="row">accept_dispute_claim</th>
+                <td>Not used. Its note must match <code>^[A-Za-z0-9_-]{"{1,255}"}$</code> (no spaces), so the seller&apos;s cited reason for refunding can&apos;t be sent; Exhibit accepts through its own Disputes client.</td>
+              </tr>
+              <tr>
+                <th scope="row">create_order</th>
+                <td>Not used. It makes an order for a buyer to approve through a PayPal link, with no card payment source and no custom_id, so a buyer agent can&apos;t pay against the cart it signed. Exhibit&apos;s buyer agent pays through Orders v2 directly, with <code>ap2:</code> and the cart&apos;s SHA-256 in custom_id.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className={styles.note}>
+          Exhibit&apos;s own MCP tools: list_cases, get_case, argue_case, file_response, cross_examine, open_case, preflight_cart and verify_mandate. A
+          client config for both servers is in the README.
+        </p>
+      </section>
+
       <section className={`${styles.section} ${styles.final}`}>
         <h2>Run it yourself</h2>
         <p>

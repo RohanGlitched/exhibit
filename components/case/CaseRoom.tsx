@@ -342,7 +342,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           closed ? (
             <div className={styles.empty}>
               <p>PayPal closed this case before anyone answered it. {view.whereLine}.</p>
-              <p>A seller has ten days to respond to a chargeback; after that the bank keeps the money with the buyer.</p>
+              <p>{view.due ? `PayPal's deadline to answer this case was ${dayTime(view.due).split(",")[0]}` : "PayPal sets a response date on every case"}; a chargeback nobody answers by then can't be won.</p>
               <Link className="btn btnPrimary" href="/new">
                 Open a case you can answer
               </Link>
