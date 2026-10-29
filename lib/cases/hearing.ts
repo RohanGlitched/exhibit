@@ -64,6 +64,8 @@ export interface Verdict {
   side: Side;
   reason: string;
   by: "reviewer" | "concession" | "rules";
+  /** The verdict for the seller still rests on a point the hearing sustained against the seller, after one re-ask. */
+  caveat?: string;
 }
 
 export interface Hearing {
@@ -86,6 +88,8 @@ export interface Hearing {
   ms: number;
   calls: number;
   tokens?: { input: number; output: number };
+  /** The reviewer was asked once more: objections it left unruled, and sustained points its verdict leaned on. */
+  reasked?: { unruled: number[]; rests: number[] };
 }
 
 /** One objection a visitor raised from the reviewer's chair. Never saved. */
@@ -187,6 +191,55 @@ export interface SettleInput {
   answers: Answer[];
   rulings?: { objection?: unknown; ruling?: unknown; reason?: unknown }[];
   verdict?: { side?: unknown; reason?: unknown };
+  /** The reviewer was already asked a second time, so an objection still unruled is held against the seller. */
+  reasked?: boolean;
+}
+
+const RULED = (r: { ruling?: unknown }) => r.ruling === "overruled" || r.ruling === "sustained";
+
+/** Objections with an answer the checker kept that the reviewer gave no ruling on: they are asked again, once. */
+export function unruledObjections(objections: Objection[], answers: Answer[], rulings: SettleInput["rulings"]): number[] {
+  return objections
+    .filter((o, k) => answers[k]?.stance === "answer" && answers[k].kept && !(rulings ?? []).some((r) => Number(r.objection) === o.n && RULED(r)))
+    .map((o) => o.n);
+}
+
+/** What a requirements-card item is about, as a verdict's reason would put it. */
+const TOPIC: Record<string, RegExp> = {
+  return: /\breturns?\b|\breturn policy\b/i,
+  returned: /\breturn(?:ed|s)?\b|\bkept\b|\bkeep(?:s|ing)?\b/i,
+  disclosure: /\bdisclos|\bwarn|\bvar(?:y|ies|iation)\b|\bshifts?\b/i,
+  listing: /\blisting\b|\bdescri/i,
+  tracking: /\btracking\b|\btracker\b/i,
+  delivered: /\bdeliver/i,
+  window: /\bbefore the (?:dispute|case|claim)\b|\bin time\b|\bwithin \d+ days\b/i,
+  address: /\baddress\b|\bZIP\b|\bpostal code\b/i,
+  signature: /\bsign(?:ed|ature)\b/i,
+  "avs-cvv": /\baddress check|\bsecurity[- ]code|\bAVS\b|\bCVV\b/i,
+  "3ds": /3-?D[- ]?Secure|\b3DS\b|\bliability shift/i,
+  prior: /\b(?:earlier|prior|previous|past) (?:undisputed )?orders?\b|\border history\b|\breturning customer\b/i,
+  device: /\bdevice\b|\bIP\b/i,
+  "ship-billing": /\bbilling\b/i,
+  admission: /\badmit|\backnowledg|\brecogni[sz]e/i,
+  mandate: /\bmandate\b|\bintent\b/i,
+  credit: /\brefund(?:ed)?\b|\bcredit(?:ed)?\b/i,
+  original: /\boriginal (?:charge|payment)\b/i,
+};
+
+/**
+ * The points a verdict for the seller rests on that the hearing sustained against the seller: an objection on a
+ * requirements-card item, sustained by the reviewer, by the checker striking the answer, or by a concession that
+ * withdrew the sentence, whose subject the verdict's reason names. A concession that changes nothing doesn't count.
+ */
+export function restsOnSustained(verdict: Pick<Verdict, "side" | "reason" | "by">, exchanges: Exchange[]): Exchange[] {
+  if (verdict.side !== "seller" || verdict.by !== "reviewer") return [];
+  return exchanges.filter(
+    (e) =>
+      e.ruling === "sustained" &&
+      !(e.ruledBy === "concession" && e.answer.effect === "none") &&
+      !!e.objection.requirement &&
+      !!TOPIC[e.objection.requirement]?.test(verdict.reason),
+  );
 }
 
 /** Rules every exchange and the case. Only an answer the checker kept can be overruled, and only by the reviewer. */
@@ -209,9 +262,18 @@ export function settle(i: SettleInput): Pick<Hearing, "exchanges" | "after" | "w
       if (o.sentence !== null) withdrawn.add(o.sentence);
       return { objection: o, answer, ruling: "sustained", reason: `The checker struck the answer (${(answer.why ?? "no record").replace(/\.$/, "")}), so the point stands unanswered`, ruledBy: "checker" };
     }
-    const r = (i.rulings ?? []).find((x) => Number(x.objection) === o.n);
+    // The reviewer's ruling on this objection: one that says sustained or overruled (a later, re-asked one wins).
+    const r = (i.rulings ?? []).filter((x) => Number(x.objection) === o.n && RULED(x)).at(-1);
     const word: RulingWord = r?.ruling === "overruled" ? "overruled" : "sustained";
-    const reason = clip(r?.reason, 300) || (r ? (word === "overruled" ? "The answer is backed by the record" : "The answer doesn't meet the objection") : "The reviewer didn't rule on it, so it is held against the seller");
+    const reason =
+      clip(r?.reason, 300) ||
+      (r
+        ? word === "overruled"
+          ? "The answer is backed by the record"
+          : "The answer doesn't meet the objection"
+        : i.reasked
+          ? "The reviewer didn't rule on it, asked twice, so it is held against the seller"
+          : "The reviewer didn't rule on it, so it is held against the seller");
     return { objection: o, answer, ruling: word, reason, ruledBy: "reviewer" };
   });
 
@@ -225,6 +287,13 @@ export function settle(i: SettleInput): Pick<Hearing, "exchanges" | "after" | "w
     const side: Side = i.verdict?.side === "seller" ? "seller" : "buyer";
     const reason = clip(i.verdict?.reason, 300).replace(/\.$/, "") || (side === "seller" ? "The filed records support the seller" : "The filed records don't carry the seller's case");
     verdict = { side, reason, by: "reviewer" };
+    // A verdict for the seller that leans on a point the hearing sustained against the seller is flagged, not hidden.
+    const rests = restsOnSustained(verdict, exchanges);
+    if (rests.length) {
+      const which = rests.map((e) => e.objection.n).join(" and ");
+      verdict.caveat = `It rests on objection ${which}, which the hearing sustained against the seller`;
+      verdict.reason = `${reason} (but objection ${which}, which this rests on, was sustained against the seller)`;
+    }
   }
   return { exchanges, after, withdrawn: [...withdrawn].sort((a, b) => a - b), flipped, verdict, agrees: verdict.side === sideOfCall(i.call) };
 }
@@ -340,7 +409,12 @@ export function transcriptText(h: Hearing): string {
     else lines.push(`A. ${e.answer.text} [${e.answer.cites.join(", ")}]${e.answer.kept ? "" : ` (struck by the checker: ${e.answer.why})`}`);
     lines.push(`${e.ruling.toUpperCase()}. ${e.reason}.`);
   }
-  if (h.withdrawn.length) lines.push(`Withdrawn: sentence ${h.withdrawn.map((w) => w + 1).join(", ")}.`);
+  if (h.withdrawn.length)
+    lines.push(
+      h.source === "paypal"
+        ? `Sentence ${h.withdrawn.map((w) => w + 1).join(", ")} conceded at the hearing; still in the PDF PayPal holds.`
+        : `Withdrawn: sentence ${h.withdrawn.map((w) => w + 1).join(", ")}.`,
+    );
   if (h.flipped) lines.push("Exhibit changed its call to refund.");
   lines.push(`Verdict for the ${h.verdict.side}: ${h.verdict.reason}.`);
   lines.push(h.agrees ? "The reviewer agrees with Exhibit's call." : "The reviewer disagrees with Exhibit's call.");

@@ -153,7 +153,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
                     ? `The reviewer agrees with Exhibit's call to ${hearing.call === "fight" ? "fight" : "refund"}.`
                     : `The reviewer disagrees with Exhibit's call to ${hearing.call === "fight" ? "fight" : "refund"}.`}
                   {hearing.flipped ? " Exhibit conceded and changed its call to refund." : ""}
-                  {hearing.withdrawn.length ? ` Withdrawn: sentence ${hearing.withdrawn.map((w) => w + 1).join(", ")}.` : ""}
+                  {hearing.withdrawn.length ? (hearing.source === "paypal" ? ` Sentence ${hearing.withdrawn.map((w) => w + 1).join(", ")} conceded at the hearing; still in the PDF PayPal holds.` : ` Withdrawn: sentence ${hearing.withdrawn.map((w) => w + 1).join(", ")}.`) : ""}
                   {hearing.source === "draft" && (hearing.flipped || hearing.withdrawn.length) ? " The brief above now reflects it." : ""}
                 </p>
                 {filed && !ruled && view.status !== "RESOLVED" && hearing.source === "paypal" && (

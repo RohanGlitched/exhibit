@@ -7,11 +7,13 @@ import {
   hearingStats,
   normaliseObjections,
   repairLabel,
+  restsOnSustained,
   ruleChair,
   rulesHearing,
   rulingRequest,
   settle,
   transcriptText,
+  unruledObjections,
   type Hearing,
   type Objection,
 } from "../lib/cases/hearing.ts";
@@ -284,4 +286,65 @@ test("stats and transcript", () => {
   assert.match(t, /OBJECTION 1 to sentence 2/);
   assert.match(t, /SUSTAINED\. Exhibit conceded and withdrew the sentence\./);
   assert.match(t, /Verdict for the seller: The tracking is on file\./);
+});
+
+test("re-ask: a kept answer the reviewer left unruled is asked again; still unruled, it says so", () => {
+  const o = [obj(1, 1), obj(2, 0)];
+  const answers = checkAnswers(
+    o,
+    [
+      { objection: 1, stance: "answer", text: "USPS shows it signed for.", cites: ["C"] },
+      { objection: 2, stance: "concede", text: "Fair.", effect: "none" },
+    ],
+    EX,
+    text,
+  );
+  // Only the kept answer with no ruling (or a ruling that is neither word) goes back; the concession doesn't.
+  assert.deepEqual(unruledObjections(o, answers, []), [1]);
+  assert.deepEqual(unruledObjections(o, answers, [{ objection: 1, ruling: "maybe" }]), [1]);
+  assert.deepEqual(unruledObjections(o, answers, [{ objection: 1, ruling: "overruled" }]), []);
+  // The re-asked ruling counts.
+  const again = settle({ call: "fight", response: RESPONSE, objections: o, answers, rulings: [{ objection: 1, ruling: "overruled", reason: "Signed for at the buyer's ZIP." }], verdict: { side: "seller", reason: "Delivered and signed." }, reasked: true });
+  assert.equal(again.exchanges[0].ruling, "overruled");
+  const still = settle({ call: "fight", response: RESPONSE, objections: o, answers, rulings: [], verdict: { side: "seller", reason: "Delivered." }, reasked: true });
+  assert.equal(still.exchanges[0].ruling, "sustained");
+  assert.match(still.exchanges[0].reason, /asked twice/);
+});
+
+test("verdict check: a verdict for the seller that rests on a point the hearing sustained is flagged", () => {
+  // PP-R-GQZ-10195194: objection 2 asked whether a return was offered; the checker struck the answer, and the
+  // verdict for the seller still read "the seller offered a 30-day return".
+  const o: Objection[] = [
+    { n: 1, sentence: null, text: "Where do the pages disclose the colour?", ground: "unsupported", pages: [], requirement: "disclosure" },
+    { n: 2, sentence: null, text: "Did the seller offer this buyer a return?", ground: "unanswered", pages: [], requirement: "return" },
+  ];
+  const answers = checkAnswers(
+    o,
+    [
+      { objection: 1, stance: "answer", text: "USPS shows it signed for.", cites: ["C"] },
+      { objection: 2, stance: "answer", text: "The buyer paid $30 for return shipping.", cites: ["C"] },
+    ],
+    EX,
+    text,
+  );
+  assert.equal(answers[1].kept, false);
+  const rulings = [{ objection: 1, ruling: "overruled", reason: "Disclosed." }];
+  const s = settle({ call: "fight", response: RESPONSE, objections: o, answers, rulings, verdict: { side: "seller", reason: "The listing disclosed the colour and the seller offered a 30-day return." } });
+  assert.deepEqual(restsOnSustained(s.verdict, s.exchanges).map((e) => e.objection.n), [2]);
+  assert.match(s.verdict.caveat!, /objection 2/);
+  assert.match(s.verdict.reason, /but objection 2, which this rests on, was sustained/);
+  // A verdict that doesn't lean on it, or one for the buyer, isn't flagged.
+  const clean = settle({ call: "fight", response: RESPONSE, objections: o, answers, rulings, verdict: { side: "seller", reason: "The listing disclosed the colour shift." } });
+  assert.equal(clean.verdict.caveat, undefined);
+  const buyer = settle({ call: "fight", response: RESPONSE, objections: o, answers, rulings, verdict: { side: "buyer", reason: "No return was offered." } });
+  assert.equal(buyer.verdict.caveat, undefined);
+});
+
+test("transcript: a sentence conceded at a hearing on PayPal's copy is still in the PDF PayPal holds", () => {
+  const o = [obj(1, 1)];
+  const answers = checkAnswers(o, [{ objection: 1, stance: "concede", text: "It says more than the scan.", effect: "withdraw" }], EX, text);
+  const s = settle({ call: "fight", response: RESPONSE, objections: o, answers, verdict: { side: "seller", reason: "Delivered." } });
+  const h = { ...rulesHearing("fight", 80, true, RESPONSE, "paypal"), mode: "cross" as const, engine: "model" as const, ...s };
+  assert.match(transcriptText(h), /Sentence 2 conceded at the hearing; still in the PDF PayPal holds\./);
+  assert.match(transcriptText({ ...h, source: "draft" }), /Withdrawn: sentence 2\./);
 });
