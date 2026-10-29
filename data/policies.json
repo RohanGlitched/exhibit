@@ -1,8 +1,9 @@
 {
- "at": "2026-10-29T19:48:40.672Z",
+ "at": "2026-10-29T22:21:52.532Z",
  "from": {
   "file": "data/proof.json",
-  "measured": "2026-10-25T14:46:14.072Z",
+  "measured": "2026-10-29T22:14:53.156Z",
+  "prompt": "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
   "model": "GPT-5.6 on Azure OpenAI",
   "runs": 56,
   "fightLabels": 24
@@ -19,7 +20,12 @@
    "responses": 100,
    "fightsOnRefundCases": 57,
    "feesUsd": 2000,
-   "netUsd": 2743
+   "netUsd": 2743,
+   "fights": 56,
+   "completeFights": 10,
+   "completePct": 18,
+   "noneMissingFights": 34,
+   "noneMissingPct": 61
   },
   {
    "id": "refund",
@@ -29,7 +35,12 @@
    "responses": 0,
    "fightsOnRefundCases": 0,
    "feesUsd": 2000,
-   "netUsd": -2000
+   "netUsd": -2000,
+   "fights": 0,
+   "completeFights": 0,
+   "completePct": null,
+   "noneMissingFights": 0,
+   "noneMissingPct": null
   },
   {
    "id": "strong",
@@ -39,17 +50,177 @@
    "responses": 46,
    "fightsOnRefundCases": 7,
    "feesUsd": 2000,
-   "netUsd": 2646
+   "netUsd": 2646,
+   "fights": 26,
+   "completeFights": 10,
+   "completePct": 38,
+   "noneMissingFights": 24,
+   "noneMissingPct": 92
   },
   {
    "id": "exhibit",
-   "name": "Exhibit (GPT-5.6, first run)",
-   "keptUsd": 4743,
-   "givenUpUsd": 0,
-   "responses": 43,
+   "name": "Exhibit (GPT-5.6)",
+   "keptUsd": 4325,
+   "givenUpUsd": 418,
+   "responses": 38,
    "fightsOnRefundCases": 0,
    "feesUsd": 2000,
-   "netUsd": 2743
+   "netUsd": 2325,
+   "fights": 21,
+   "completeFights": 10,
+   "completePct": 48,
+   "noneMissingFights": 21,
+   "noneMissingPct": 100
   }
- ]
+ ],
+ "heldoutText": {
+  "measured": "2026-10-29T22:20:53.596Z",
+  "prompt": "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
+  "runs": 18,
+  "fightLabels": 10,
+  "disputedUsdPer100": 11656,
+  "winnableUsdPer100": 5478,
+  "table": [
+   {
+    "id": "fight",
+    "name": "Always fight",
+    "keptUsd": 5478,
+    "givenUpUsd": 0,
+    "responses": 100,
+    "fightsOnRefundCases": 44,
+    "feesUsd": 2000,
+    "netUsd": 3478,
+    "fights": 18,
+    "completeFights": 2,
+    "completePct": 11,
+    "noneMissingFights": 12,
+    "noneMissingPct": 67
+   },
+   {
+    "id": "refund",
+    "name": "Always refund",
+    "keptUsd": 0,
+    "givenUpUsd": 5478,
+    "responses": 0,
+    "fightsOnRefundCases": 0,
+    "feesUsd": 2000,
+    "netUsd": -2000,
+    "fights": 0,
+    "completeFights": 0,
+    "completePct": null,
+    "noneMissingFights": 0,
+    "noneMissingPct": null
+   },
+   {
+    "id": "strong",
+    "name": "Stronger rules",
+    "keptUsd": 1511,
+    "givenUpUsd": 3967,
+    "responses": 56,
+    "fightsOnRefundCases": 44,
+    "feesUsd": 2000,
+    "netUsd": -489,
+    "fights": 10,
+    "completeFights": 2,
+    "completePct": 20,
+    "noneMissingFights": 8,
+    "noneMissingPct": 80
+   },
+   {
+    "id": "exhibit",
+    "name": "Exhibit (GPT-5.6)",
+    "keptUsd": 4178,
+    "givenUpUsd": 1300,
+    "responses": 39,
+    "fightsOnRefundCases": 0,
+    "feesUsd": 2000,
+    "netUsd": 2178,
+    "fights": 7,
+    "completeFights": 0,
+    "completePct": 0,
+    "noneMissingFights": 6,
+    "noneMissingPct": 86
+   }
+  ]
+ },
+ "secondPass": {
+  "threshold": 0.6,
+  "kept": 367,
+  "unverified": 180,
+  "wordingMatched": 110,
+  "neither": 70,
+  "examples": {
+   "matched": [
+    {
+     "key": "delivered-unsigned#0",
+     "text": "The transaction address check confirmed that the street and ZIP matched.",
+     "cites": [
+      "C"
+     ],
+     "share": 0.71
+    },
+    {
+     "key": "delivered-buyer-admits#0",
+     "text": "The buyer later confirmed that she found the order at the front desk.",
+     "cites": [
+      "F"
+     ],
+     "share": 0.67
+    },
+    {
+     "key": "delivered-buyer-admits#2",
+     "text": "The buyer later confirmed that she found the order at the front desk.",
+     "cites": [
+      "F"
+     ],
+     "share": 0.67
+    }
+   ],
+   "unmatched": [
+    {
+     "key": "delivered-base#0",
+     "text": "We ask that the chargeback be denied based on signed proof of delivery.",
+     "cites": [
+      "E"
+     ],
+     "share": 0.33,
+     "missing": [
+      "ask",
+      "denied",
+      "based",
+      "proof"
+     ]
+    },
+    {
+     "key": "delivered-base#2",
+     "text": "We ask that the chargeback be denied based on the carrier’s signed delivery record.",
+     "cites": [
+      "E"
+     ],
+     "share": 0.29,
+     "missing": [
+      "ask",
+      "denied",
+      "based",
+      "carrier's",
+      "record"
+     ]
+    },
+    {
+     "key": "delivered-unsigned#2",
+     "text": "We ask that the chargeback be denied based on the carrier's delivered scan.",
+     "cites": [
+      "E"
+     ],
+     "share": 0.33,
+     "missing": [
+      "ask",
+      "denied",
+      "based",
+      "carrier's"
+     ]
+    }
+   ]
+  }
+ }
 }

@@ -308,7 +308,9 @@ const summary = {
   reasked: hs.filter((h) => h.reasked).length,
   reaskedUnruled: hs.reduce((n, h) => n + (h.reasked?.unruled.length ?? 0), 0),
   reaskedRests: hs.reduce((n, h) => n + (h.reasked?.rests.length ?? 0), 0),
-  stillUnruled: hs.flatMap((h) => h.exchanges).filter((e) => /didn't rule on it/.test(e.reason)).length,
+  // Left unruled where the reviewer's ruling mattered: a hearing Exhibit conceded to a refund never goes back to it.
+  stillUnruled: hs.filter((h) => !h.flipped).flatMap((h) => h.exchanges).filter((e) => /didn't rule on it/.test(e.reason)).length,
+  unruledInConcededCases: hs.filter((h) => h.flipped).flatMap((h) => h.exchanges).filter((e) => /didn't rule on it/.test(e.reason)).length,
   verdictCaveats: hs.filter((h) => h.verdict.caveat).length,
 };
 console.log(summary);

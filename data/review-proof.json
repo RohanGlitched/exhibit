@@ -1,31 +1,32 @@
 {
- "at": "2026-10-29T19:44:38.727Z",
- "instructions": "third version: the requirements card drives the reviewer's objections",
+ "at": "2026-10-29T22:19:24.921Z",
+ "instructions": "fourth version: the cards read whether the cardholder returned the item and when it was delivered, and the reviewer is asked once more about an unruled answer or a verdict resting on a sustained point",
  "repairsAt": "2026-10-25T15:14:22.628Z",
+ "carelessAt": "2026-10-29T19:44:38.727Z",
  "summary": {
   "briefsFrom": "GPT-5.6 on Azure OpenAI",
-  "briefsAt": "2026-10-25T14:46:14.072Z",
+  "briefsAt": "2026-10-29T22:13:32.536Z",
   "reviewer": "GPT-5.6 on Azure OpenAI",
   "pdfRoundTrip": 28,
   "pdfBriefs": 28,
   "hearings": 28,
-  "cross": 12,
-  "objections": 26,
-  "answered": 12,
-  "answersKept": 10,
-  "answersStruck": 2,
-  "conceded": 14,
-  "overruled": 5,
-  "sustained": 21,
-  "withdrawn": 5,
-  "flipped": 2,
+  "cross": 11,
+  "objections": 23,
+  "answered": 11,
+  "answersKept": 11,
+  "answersStruck": 0,
+  "conceded": 12,
+  "overruled": 7,
+  "sustained": 16,
+  "withdrawn": 3,
+  "flipped": 3,
   "agree": 24,
-  "agreeAfter": 26,
-  "fights": 12,
-  "fightsUpheld": 8,
-  "records": 16,
-  "recordsConfirmed": 16,
-  "reviewerMatchesLabel": 24,
+  "agreeAfter": 27,
+  "fights": 11,
+  "fightsUpheld": 7,
+  "records": 17,
+  "recordsConfirmed": 17,
+  "reviewerMatchesLabel": 23,
   "repairTried": 19,
   "repairFixed": 17,
   "plantedTried": 7,
@@ -36,22 +37,31 @@
   "misciteRightExhibit": 11,
   "carelessAnswers": 10,
   "carelessStruck": 5,
-  "medianHearingMs": 3473,
-  "calls": 56,
-  "inputTokens": 122265,
-  "outputTokens": 8397,
+  "medianHearingMs": 2170,
+  "calls": 47,
+  "inputTokens": 112318,
+  "outputTokens": 5847,
   "priceIn": 1.25,
   "priceOut": 10,
-  "spendUsd": 0.2368,
+  "spendUsd": 0.1989,
   "stopped": null,
-  "pressedByCard": 8,
-  "onCard": 24,
-  "fightsWithObjections": 12,
-  "fightsWithOverruled": 5
+  "pressedByCard": 7,
+  "onCard": 22,
+  "fightsWithObjections": 11,
+  "fightsWithOverruled": 5,
+  "reviewerObjections": 16,
+  "fightsWithReviewerObjections": 10,
+  "overruledOnReviewer": 3,
+  "reasked": 0,
+  "reaskedUnruled": 0,
+  "reaskedRests": 0,
+  "stillUnruled": 0,
+  "unruledInConcededCases": 3,
+  "verdictCaveats": 0
  },
  "previous": {
-  "at": "2026-10-25T15:14:22.628Z",
-  "instructions": "second version (25 Oct 2026)",
+  "at": "2026-10-29T19:44:38.727Z",
+  "instructions": "third version: the requirements card drives the reviewer's objections",
   "summary": {
    "briefsFrom": "GPT-5.6 on Azure OpenAI",
    "briefsAt": "2026-10-25T14:46:14.072Z",
@@ -60,22 +70,22 @@
    "pdfBriefs": 28,
    "hearings": 28,
    "cross": 12,
-   "objections": 4,
-   "answered": 0,
-   "answersKept": 0,
-   "answersStruck": 0,
-   "conceded": 4,
-   "overruled": 0,
-   "sustained": 4,
-   "withdrawn": 3,
-   "flipped": 1,
-   "agree": 27,
-   "agreeAfter": 28,
+   "objections": 26,
+   "answered": 12,
+   "answersKept": 10,
+   "answersStruck": 2,
+   "conceded": 14,
+   "overruled": 5,
+   "sustained": 21,
+   "withdrawn": 5,
+   "flipped": 2,
+   "agree": 24,
+   "agreeAfter": 26,
    "fights": 12,
-   "fightsUpheld": 11,
+   "fightsUpheld": 8,
    "records": 16,
    "recordsConfirmed": 16,
-   "reviewerMatchesLabel": 27,
+   "reviewerMatchesLabel": 24,
    "repairTried": 19,
    "repairFixed": 17,
    "plantedTried": 7,
@@ -84,33 +94,81 @@
    "misciteTried": 12,
    "misciteFixed": 12,
    "misciteRightExhibit": 11,
-   "carelessAnswers": 4,
-   "carelessStruck": 2,
-   "medianHearingMs": 2021,
-   "calls": 48,
-   "inputTokens": 79066,
-   "outputTokens": 3980,
+   "carelessAnswers": 10,
+   "carelessStruck": 5,
+   "medianHearingMs": 3473,
+   "calls": 56,
+   "inputTokens": 122265,
+   "outputTokens": 8397,
    "priceIn": 1.25,
    "priceOut": 10,
-   "spendUsd": 0.1386,
-   "stopped": null
+   "spendUsd": 0.2368,
+   "stopped": null,
+   "pressedByCard": 8,
+   "onCard": 24,
+   "fightsWithObjections": 12,
+   "fightsWithOverruled": 5,
+   "reviewerObjections": 18,
+   "fightsWithReviewerObjections": 11
   },
   "recheck": {
-   "carelessAnswers": 4,
-   "carelessStruckAsPublished": 2,
-   "carelessStruckNow": 1,
-   "carelessChanged": [
-    {
-     "key": "fraud-returning-customer#0",
-     "was": false,
-     "now": true,
-     "why": null
-    }
-   ],
-   "hearingAnswers": 0,
-   "hearingAnswersChanged": 0
+   "carelessAnswers": 10,
+   "carelessStruckAsPublished": 5,
+   "carelessStruckNow": 5,
+   "carelessChanged": [],
+   "hearingAnswers": 12,
+   "hearingAnswersChanged": 2
   }
  },
+ "earlier": [
+  {
+   "at": "2026-10-25T15:14:22.628Z",
+   "instructions": "second version (25 Oct 2026)",
+   "summary": {
+    "briefsFrom": "GPT-5.6 on Azure OpenAI",
+    "briefsAt": "2026-10-25T14:46:14.072Z",
+    "reviewer": "GPT-5.6 on Azure OpenAI",
+    "pdfRoundTrip": 28,
+    "pdfBriefs": 28,
+    "hearings": 28,
+    "cross": 12,
+    "objections": 4,
+    "answered": 0,
+    "answersKept": 0,
+    "answersStruck": 0,
+    "conceded": 4,
+    "overruled": 0,
+    "sustained": 4,
+    "withdrawn": 3,
+    "flipped": 1,
+    "agree": 27,
+    "agreeAfter": 28,
+    "fights": 12,
+    "fightsUpheld": 11,
+    "records": 16,
+    "recordsConfirmed": 16,
+    "reviewerMatchesLabel": 27,
+    "repairTried": 19,
+    "repairFixed": 17,
+    "plantedTried": 7,
+    "plantedFixed": 5,
+    "plantedSurvived": 0,
+    "misciteTried": 12,
+    "misciteFixed": 12,
+    "misciteRightExhibit": 11,
+    "carelessAnswers": 4,
+    "carelessStruck": 2,
+    "medianHearingMs": 2021,
+    "calls": 48,
+    "inputTokens": 79066,
+    "outputTokens": 3980,
+    "priceIn": 1.25,
+    "priceOut": 10,
+    "spendUsd": 0.1386,
+    "stopped": null
+   }
+  }
+ ],
  "hearings": [
   {
    "key": "delivered-base#0",
@@ -118,7 +176,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:41:48.479Z",
+    "at": "2026-10-29T22:17:23.561Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -134,33 +192,34 @@
     ],
     "response": [
      {
-      "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "USPS recorded the parcel as delivered and signed in San Francisco, CA 94109.",
+      "text": "USPS tracking 9405511206213859470035 shows the parcel was delivered on 4 Oct 2026.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "USPS states that M LINDQVIST signed for the parcel at the front desk.",
+      "text": "Delivery was in San Francisco, CA 94109, matching the transaction ship-to ZIP.",
       "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The order was addressed to Maya Lindqvist in San Francisco, CA 94109.",
-      "cites": [
+       "E",
        "B"
       ]
      },
      {
-      "text": "We asked Maya to check the building's front desk after the reported nonreceipt.",
+      "text": "The parcel was signed for by M LINDQVIST at the front desk.",
       "cites": [
-       "F"
+       "E"
+      ]
+     },
+     {
+      "text": "The signed delivery occurred before the case opened on 12 Oct 2026.",
+      "cites": [
+       "A"
+      ]
+     },
+     {
+      "text": "We ask that the chargeback be denied based on signed proof of delivery.",
+      "cites": [
+       "E"
       ]
      }
     ],
@@ -173,7 +232,7 @@
       "objection": {
        "n": 1,
        "sentence": 1,
-       "text": "Please identify where the pages show the delivered postal code matches the transaction shipping address.",
+       "text": "Please show where the carrier record identifies the recipient street address, rather than only San Francisco and ZIP 94109.",
        "ground": "unsupported",
        "pages": [
         "HC-000006",
@@ -183,7 +242,7 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "USPS shows delivery in San Francisco, CA 94109, and our transaction ship-to address is also in San Francisco, CA 94109.",
+       "text": "The carrier record identifies San Francisco, CA 94109, matching the order’s ship-to city and ZIP. Carrier scans do not print street addresses, and this match meets the delivery-address standard.",
        "cites": [
         "E",
         "B"
@@ -192,7 +251,7 @@
        "effect": "none"
       },
       "ruling": "overruled",
-      "reason": "Exhibits E and B show delivery and the transaction shipping address share San Francisco, CA 94109.",
+      "reason": "The USPS city and ZIP match the order, satisfying PayPal’s stated delivery-address standard.",
       "ruledBy": "reviewer"
      }
     ],
@@ -201,15 +260,15 @@
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "USPS tracking shows signed delivery on 4 October to the order’s San Francisco 94109 destination",
+     "reason": "USPS shows signed delivery in the order’s city and ZIP before the chargeback opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 7689,
+    "ms": 7412,
     "calls": 3,
     "tokens": {
-     "input": 6357,
-     "output": 255
+     "input": 6711,
+     "output": 260
     }
    }
   },
@@ -219,7 +278,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:41:56.198Z",
+    "at": "2026-10-29T22:17:31.004Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -235,33 +294,33 @@
     ],
     "response": [
      {
-      "text": "We shipped order HC-778347 to Maya Lindqvist at 1418 Larkin Street, Apt 5, San Francisco, CA 94109.",
+      "text": "We shipped the order by USPS under tracking number 9405511206213859470035.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "USPS recorded delivery on 4 Oct 2026 in San Francisco, CA 94109, left at the front door.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The order's shipping address is in San Francisco, CA 94109.",
       "cites": [
        "B"
       ]
      },
      {
-      "text": "USPS tracking 9405511206213859470035 shows the shipment as delivered.",
+      "text": "The delivery occurred before the chargeback opened on 12 Oct 2026.",
       "cites": [
-       "E"
+       "A"
       ]
      },
      {
-      "text": "USPS recorded delivery on 4 Oct 2026, 13:00 in San Francisco, CA 94109, left at the front door.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The payment record reports that the street and ZIP matched.",
+      "text": "The transaction address check confirmed that the street and ZIP matched.",
       "cites": [
        "C"
-      ]
-     },
-     {
-      "text": "We ask that the chargeback be denied because the carrier records delivery in the order's destination ZIP.",
-      "cites": [
-       "E"
       ]
      }
     ],
@@ -273,22 +332,21 @@
      {
       "objection": {
        "n": 1,
-       "sentence": null,
-       "text": "Can you show signed proof of delivery, given the checkout policy promises signature confirmation over $100 but USPS only records delivery at the front door?",
-       "ground": "omits",
+       "sentence": 1,
+       "text": "Can you show signed proof of delivery, which would strengthen delivery evidence, although it is not required for this $104 transaction?",
+       "ground": "unsupported",
        "pages": [
         "HC-000006",
-        "HC-000009"
+        "HC-000008"
        ],
-       "requirement": "signed"
+       "requirement": "signature"
       },
       "answer": {
        "stance": "concede",
-       "text": "We cannot show signed proof; USPS records delivery at the front door despite our checkout policy. The case still stands because this $104.00 transaction is under $750, and USPS shows delivery on 4 Oct 2026 in the order’s 94109 ZIP.",
+       "text": "We do not have signed proof; USPS recorded delivery on 4 Oct 2026 in San Francisco, CA 94109, left at the front door. A signature is not required for this $104.00 transaction, so our delivery evidence still meets the requirement.",
        "cites": [
-        "B",
         "E",
-        "H"
+        "A"
        ],
        "kept": true,
        "effect": "none"
@@ -303,15 +361,15 @@
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "USPS tracking shows delivery on 4 Oct 2026 in San Francisco 94109, matching the order’s shipping destination",
+     "reason": "USPS tracking shows delivery on 4 Oct 2026 in the order’s San Francisco 94109 ZIP before the chargeback opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 9506,
+    "ms": 6296,
     "calls": 3,
     "tokens": {
-     "input": 6255,
-     "output": 506
+     "input": 6536,
+     "output": 293
     }
    }
   },
@@ -321,7 +379,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:05.749Z",
+    "at": "2026-10-29T22:17:37.397Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -337,31 +395,25 @@
     ],
     "response": [
      {
-      "text": "We will refund the $104.00 chargeback in full because the delivery record does not match the order's ship-to address.",
-      "cites": [
-       "A"
-      ]
-     },
-     {
-      "text": "The order was addressed to Maya Lindqvist in San Francisco, CA 94109.",
-      "cites": [
-       "B"
-      ]
-     },
-     {
-      "text": "USPS instead records the shipment as delivered and signed in Reno, NV 89501.",
+      "text": "We accept this chargeback because the carrier recorded delivery in Reno, NV 89501.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "The buyer also told us the order still had not arrived.",
+      "text": "Our order record shows shipment to San Francisco, CA 94109.",
+      "cites": [
+       "B"
+      ]
+     },
+     {
+      "text": "The buyer told us on 9 Oct 2026 that the order had not arrived.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "We therefore accept the chargeback and will close the case with a full refund.",
+      "text": "We will refund the disputed $104.00 in full and close the case.",
       "cites": [
        "A"
       ]
@@ -377,15 +429,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "Tracking shows delivery in Reno 89501, not the order’s San Francisco 94109 destination, so receipt is not proven",
+     "reason": "Tracking shows delivery in Reno 89501, not the buyer’s San Francisco 94109 shipping address",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1649,
+    "ms": 2170,
     "calls": 1,
     "tokens": {
-     "input": 1716,
-     "output": 51
+     "input": 1834,
+     "output": 46
     }
    }
   },
@@ -395,7 +447,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:07.424Z",
+    "at": "2026-10-29T22:17:39.604Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -411,27 +463,21 @@
     ],
     "response": [
      {
-      "text": "We accept the chargeback and will refund the disputed $104.00 in full.",
-      "cites": [
-       "A"
-      ]
-     },
-     {
-      "text": "USPS tracking does not show delivery; its latest status is in transit.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The final recorded scan was at the Sacramento, CA network distribution center.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "We told the buyer the tracking had not moved and asked USPS to investigate.",
+      "text": "The buyer told us on 9 Oct 2026 that the order had not arrived.",
       "cites": [
        "F"
+      ]
+     },
+     {
+      "text": "We confirmed that tracking had not moved since Sacramento and asked USPS to investigate.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We will refund the chargeback in full and close the case.",
+      "cites": [
+       "A"
       ]
      }
     ],
@@ -445,15 +491,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "Tracking shows only in transit, not delivery to the order’s city or postal code",
+     "reason": "Tracking shows only in transit, not delivery to the order’s city or postal code before the case opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1516,
+    "ms": 1421,
     "calls": 1,
     "tokens": {
-     "input": 1657,
-     "output": 42
+     "input": 1719,
+     "output": 46
     }
    }
   },
@@ -461,9 +507,9 @@
    "key": "delivered-buyer-admits#0",
    "label": "fight",
    "brief": "fight",
-   "reviewerMatchesLabel": true,
+   "reviewerMatchesLabel": false,
    "hearing": {
-    "at": "2026-10-29T19:42:08.961Z",
+    "at": "2026-10-29T22:17:41.064Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -479,15 +525,21 @@
     ],
     "response": [
      {
-      "text": "We shipped the order by USPS Ground Advantage with signature confirmation under tracking number 9405511206213859470035.",
+      "text": "USPS tracking 9405511206213859470035 shows the order was delivered on 4 Oct 2026.",
       "cites": [
-       "D"
+       "E"
       ]
      },
      {
-      "text": "USPS records the parcel as delivered and signed for at the front desk in San Francisco, CA 94109.",
+      "text": "The delivery was signed for by M LINDQVIST at the front desk.",
       "cites": [
        "E"
+      ]
+     },
+     {
+      "text": "The delivery ZIP 94109 matches the transaction ship-to ZIP 94109.",
+      "cites": [
+       "B"
       ]
      },
      {
@@ -497,13 +549,7 @@
       ]
      },
      {
-      "text": "We ask that the chargeback be denied because the merchandise was received.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "The disputed amount is $104.00.",
+      "text": "The case opened on 12 Oct 2026, after the recorded delivery.",
       "cites": [
        "A"
       ]
@@ -517,43 +563,69 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 1,
-       "text": "Can you show that the delivery location matches the order’s shipping address at least by city or postal code?",
+       "sentence": 0,
+       "text": "Your response says delivery occurred on 4 Oct 2026; why does the seller rely on a simulated sandbox carrier record rather than independently verifiable USPS tracking?",
+       "ground": "contradicted",
+       "pages": [
+        "HC-000006"
+       ]
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "The carrier record is simulated and is not independently verifiable USPS tracking, so we withdraw sentence 1. The remaining response still includes the buyer’s confirmation that she found the order at the front desk.",
+       "cites": [
+        "E",
+        "F"
+       ],
+       "kept": true,
+       "effect": "withdraw"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded and withdrew the sentence",
+      "ruledBy": "concession"
+     },
+     {
+      "objection": {
+       "n": 2,
+       "sentence": 2,
+       "text": "Can you show verifiable carrier tracking linking this delivery to ZIP 94109, rather than only a simulated sandbox scan?",
        "ground": "unsupported",
        "pages": [
         "HC-000006",
         "HC-568548"
-       ]
+       ],
+       "requirement": "address"
       },
       "answer": {
-       "stance": "answer",
-       "text": "Yes. USPS records delivery in San Francisco, CA 94109, matching the order’s shipping city and postal code of San Francisco, CA 94109.",
+       "stance": "concede",
+       "text": "We cannot show independently verifiable carrier tracking linking delivery to ZIP 94109; the only carrier scan is simulated. Because verifiable tracking is required for this not-received claim, we accept the claim.",
        "cites": [
-        "B",
         "E"
        ],
        "kept": true,
-       "effect": "none"
+       "effect": "refund"
       },
-      "ruling": "overruled",
-      "reason": "Exhibits B and E show delivery in the order’s matching city and postal code.",
-      "ruledBy": "reviewer"
+      "ruling": "sustained",
+      "reason": "Exhibit conceded the case and changed its call to refund",
+      "ruledBy": "concession"
      }
     ],
-    "after": "fight",
-    "withdrawn": [],
-    "flipped": false,
+    "after": "accept",
+    "withdrawn": [
+     0
+    ],
+    "flipped": true,
     "verdict": {
-     "side": "seller",
-     "reason": "USPS tracking shows signed delivery in the order’s city and ZIP, and the buyer confirmed finding it",
-     "by": "reviewer"
+     "side": "buyer",
+     "reason": "Exhibit conceded the case at the hearing: We cannot show independently verifiable carrier tracking linking delivery to ZIP 94109; the only carrier scan is simulated. Because verifiable tracking is required for this not-received claim, we accept the claim",
+     "by": "concession"
     },
-    "agrees": true,
-    "ms": 7427,
-    "calls": 3,
+    "agrees": false,
+    "ms": 4953,
+    "calls": 2,
     "tokens": {
-     "input": 6446,
-     "output": 456
+     "input": 4647,
+     "output": 312
     }
    }
   },
@@ -563,7 +635,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:16.406Z",
+    "at": "2026-10-29T22:17:46.057Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -579,31 +651,25 @@
     ],
     "response": [
      {
-      "text": "We will refund the disputed $104.00 in full because the carrier record does not show delivery.",
-      "cites": [
-       "A"
-      ]
-     },
-     {
-      "text": "USPS lists the shipment's latest status as attempted.",
+      "text": "We accept the chargeback and will refund the disputed amount in full because USPS does not show delivery.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "The delivery attempt ended with a notice left because no authorized recipient was available.",
+      "text": "The latest scan records an attempted delivery in San Francisco, with notice left because no authorized recipient was available.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "The buyer also told us the order had not arrived.",
+      "text": "The buyer told us the order still had not arrived.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "We therefore accept and close this chargeback with a full refund.",
+      "text": "The cardholder disputes $104.00, and we will close the case with a full refund.",
       "cites": [
        "A"
       ]
@@ -619,15 +685,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "USPS shows only an attempted delivery, not delivery to the order’s city and postal code; no signature is required",
+     "reason": "Tracking shows only an attempted delivery, not delivery to the buyer’s address before the case opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1507,
+    "ms": 1494,
     "calls": 1,
     "tokens": {
-     "input": 1708,
-     "output": 49
+     "input": 1770,
+     "output": 44
     }
    }
   },
@@ -637,7 +703,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:17.931Z",
+    "at": "2026-10-29T22:17:47.583Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -652,33 +718,27 @@
     ],
     "response": [
      {
-      "text": "We accept the $27.00 chargeback and will refund it in full.",
+      "text": "We will refund the disputed $27.00 in full because this shipment has no tracking or delivery confirmation.",
       "cites": [
        "A"
       ]
      },
      {
-      "text": "Our records show the order shipped First-Class without tracking.",
+      "text": "Our records state that the order shipped First-Class without tracking.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "The buyer reported that the vase had not arrived and later requested a refund if it was lost.",
+      "text": "The buyer told us the vase had not arrived and asked for a refund if it was lost.",
       "cites": [
        "D"
       ]
      },
      {
-      "text": "We cannot provide tracking or delivery confirmation for this shipment.",
+      "text": "We did not answer the buyer's two emails.",
       "cites": [
        "H"
-      ]
-     },
-     {
-      "text": "Please close the case after the full refund is processed.",
-      "cites": [
-       "A"
       ]
      }
     ],
@@ -692,14 +752,14 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "No tracking, delivered scan, or address-matched delivery proof shows the vase was received",
+     "reason": "No tracking or carrier scan shows delivery to the order’s Dallas address before the case opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1915,
+    "ms": 1307,
     "calls": 1,
     "tokens": {
-     "input": 1429,
+     "input": 1491,
      "output": 43
     }
    }
@@ -710,7 +770,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:19.879Z",
+    "at": "2026-10-29T22:17:48.923Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -727,33 +787,32 @@
     ],
     "response": [
      {
-      "text": "We shipped order HC-224803 to Theo Okafor at 2207 Elm Street, Dallas, TX 75201.",
+      "text": "We shipped the order by USPS under tracking number 9405511206213859470073.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "USPS records delivery to the mailbox in Dallas, TX 75201 on 23 Sep 2026 at 12:00.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "The order's shipping address was 2207 Elm Street, Dallas, TX 75201.",
       "cites": [
        "B"
       ]
      },
      {
-      "text": "USPS tracking number 9405511206213859470073 shows delivery in Dallas, TX 75201.",
+      "text": "The chargeback opened on 12 Oct 2026, after the carrier's recorded delivery.",
       "cites": [
-       "E"
+       "A"
       ]
      },
      {
-      "text": "USPS recorded the parcel as delivered to the mailbox on 23 Sep 2026, 12:00.",
+      "text": "We ask that the chargeback be declined based on the carrier delivery record.",
       "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The payment record confirms that the street and ZIP matched.",
-      "cites": [
-       "C"
-      ]
-     },
-     {
-      "text": "We ask that the $27.00 chargeback be denied because carrier tracking confirms delivery.",
-      "cites": [
-       "A",
        "E"
       ]
      }
@@ -766,26 +825,29 @@
      {
       "objection": {
        "n": 1,
-       "sentence": null,
-       "text": "Show on the pages carrier and tracking number: where exactly is it?",
-       "ground": "unsupported",
+       "sentence": 1,
+       "text": "How do you reconcile the delivered scan with the buyer's later emails saying the vase had not arrived?",
+       "ground": "contradicted",
        "pages": [
-        "HC-000005"
+        "HC-000006",
+        "HC-000007"
        ],
-       "requirement": "tracking",
-       "pressed": true
+       "requirement": "address"
       },
       "answer": {
        "stance": "answer",
-       "text": "Our tracking record identifies the carrier as USPS and the tracking number as 9405511206213859470073.",
+       "text": "The emails report the buyer’s later assertion, but USPS records the parcel delivered to the mailbox in Dallas, TX 75201 on 23 Sep 2026 at 12:00, matching the order’s city and ZIP before the chargeback opened.",
        "cites": [
-        "D"
+        "E",
+        "F",
+        "B",
+        "A"
        ],
        "kept": true,
        "effect": "none"
       },
       "ruling": "overruled",
-      "reason": "Exhibit D identifies USPS and tracking number 9405511206213859470073.",
+      "reason": "The USPS scan shows timely delivery in the order’s matching city and ZIP; the later emails do not disprove it.",
       "ruledBy": "reviewer"
      }
     ],
@@ -794,25 +856,25 @@
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "USPS tracking shows delivery on 23 September 2026 in Dallas 75201, matching the order’s shipping city and ZIP",
+     "reason": "USPS tracking shows delivery in the order’s Dallas ZIP before the chargeback; no signature was required for this $27 transaction",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 8426,
+    "ms": 5992,
     "calls": 3,
     "tokens": {
-     "input": 5915,
-     "output": 384
+     "input": 6309,
+     "output": 295
     }
    }
   },
   {
    "key": "untracked-buyer-confirms#0",
    "label": "fight",
-   "brief": "fight",
-   "reviewerMatchesLabel": true,
+   "brief": "accept",
+   "reviewerMatchesLabel": false,
    "hearing": {
-    "at": "2026-10-29T19:42:28.322Z",
+    "at": "2026-10-29T22:17:54.952Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -827,199 +889,31 @@
     ],
     "response": [
      {
-      "text": "We dispute this not-received chargeback because the buyer confirmed that the vase arrived.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "The buyer sent that confirmation on 10 Oct 2026 at 18:00.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "The order names Theo Okafor as the recipient at 2207 Elm Street, Dallas, TX 75201.",
-      "cites": [
-       "B"
-      ]
-     },
-     {
-      "text": "The payment card was also in the name of Theo Okafor.",
-      "cites": [
-       "B"
-      ]
-     },
-     {
-      "text": "Please deny the chargeback based on the buyer's written acknowledgment of receipt.",
-      "cites": [
-       "D"
-      ]
-     }
-    ],
-    "call": "fight",
-    "engine": "model",
-    "model": "GPT-5.6 on Azure OpenAI",
-    "mode": "cross",
-    "exchanges": [
-     {
-      "objection": {
-       "n": 1,
-       "sentence": null,
-       "text": "What tracking shows this parcel was shipped at all?",
-       "ground": "unanswered",
-       "pages": [],
-       "requirement": "tracking",
-       "pressed": true
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "We have no tracking or carrier proof of shipment. The buyer nevertheless wrote that the vase arrived, so our case rests on the buyer’s acknowledgment rather than tracking.",
-       "cites": [
-        "D",
-        "H"
-       ],
-       "kept": true,
-       "effect": "none"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded the point",
-      "ruledBy": "concession"
-     },
-     {
-      "objection": {
-       "n": 2,
-       "sentence": null,
-       "text": "What carrier record shows the parcel delivered, and on what date?",
-       "ground": "unanswered",
-       "pages": [],
-       "requirement": "delivered",
-       "pressed": true
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "We have no carrier delivery record or scan date. The buyer wrote on 10 Oct 2026 at 18:00 that the vase “just arrived today,” directly acknowledging receipt.",
-       "cites": [
-        "D",
-        "H"
-       ],
-       "kept": true,
-       "effect": "none"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded the point",
-      "ruledBy": "concession"
-     },
-     {
-      "objection": {
-       "n": 3,
-       "sentence": null,
-       "text": "Which page ties the delivery to the address on the order?",
-       "ground": "unanswered",
-       "pages": [
-        "HC-479570"
-       ],
-       "requirement": "address",
-       "pressed": true
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "Nothing ties delivery to 2207 Elm Street, Dallas, TX 75201. The order identifies that shipping address, while the buyer’s message confirms receipt without stating where it arrived.",
-       "cites": [
-        "B",
-        "D"
-       ],
-       "kept": true,
-       "effect": "none"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded the point",
-      "ruledBy": "concession"
-     },
-     {
-      "objection": {
-       "n": 4,
-       "sentence": 0,
-       "text": "Where do the pages provide a carrier and tracking number for this shipment?",
-       "ground": "unsupported",
-       "pages": [
-        "HC-000009"
-       ]
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "The pages provide no carrier or tracking number. We withdraw sentence 1 because it disputes the chargeback without the required tracking proof, although the buyer’s written acknowledgment remains in the record.",
-       "cites": [
-        "D",
-        "H"
-       ],
-       "kept": true,
-       "effect": "withdraw"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded and withdrew the sentence",
-      "ruledBy": "concession"
-     }
-    ],
-    "after": "fight",
-    "withdrawn": [
-     0
-    ],
-    "flipped": false,
-    "verdict": {
-     "side": "seller",
-     "reason": "Exhibit D directly records the buyer saying on 10 October that the vase arrived that day",
-     "by": "reviewer"
-    },
-    "agrees": true,
-    "ms": 14670,
-    "calls": 3,
-    "tokens": {
-     "input": 5625,
-     "output": 775
-    }
-   }
-  },
-  {
-   "key": "untracked-promised-reship#0",
-   "label": "accept",
-   "brief": "accept",
-   "reviewerMatchesLabel": true,
-   "hearing": {
-    "at": "2026-10-29T19:42:43.007Z",
-    "source": "draft",
-    "pages": [
-     "HC-000001",
-     "HC-000002",
-     "HC-301976",
-     "HC-000004",
-     "HC-000005",
-     "HC-000006",
-     "HC-000007",
-     "HC-000008",
-     "HC-000009"
-    ],
-    "response": [
-     {
-      "text": "We accept this chargeback and will refund the disputed $27.00 in full.",
+      "text": "We will accept this chargeback and refund the disputed amount in full.",
       "cites": [
        "A"
       ]
      },
      {
-      "text": "Our records show the order shipped First-Class without tracking.",
+      "text": "Our records show the parcel was shipped First-Class without tracking.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "The buyer reported that the vase had not arrived and asked for a refund if it was lost.",
+      "text": "The buyer later told us the vase arrived on 10 Oct 2026.",
       "cites": [
        "D"
       ]
      },
      {
-      "text": "We promised a replacement, but it was not sent.",
+      "text": "However, we cannot provide carrier tracking or a delivered scan for this shipment.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "We therefore accept the chargeback rather than contest delivery without tracking evidence.",
       "cites": [
        "H"
       ]
@@ -1035,15 +929,82 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "No tracking or delivered scan shows delivery to the order address, and the promised replacement was not sent",
+     "reason": "No tracking or carrier delivery scan shows delivery to the order address before the case opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 2030,
+    "ms": 2133,
     "calls": 1,
     "tokens": {
-     "input": 1462,
-     "output": 45
+     "input": 1521,
+     "output": 42
+    }
+   }
+  },
+  {
+   "key": "untracked-promised-reship#0",
+   "label": "accept",
+   "brief": "accept",
+   "reviewerMatchesLabel": true,
+   "hearing": {
+    "at": "2026-10-29T22:17:57.120Z",
+    "source": "draft",
+    "pages": [
+     "HC-000001",
+     "HC-000002",
+     "HC-301976",
+     "HC-000004",
+     "HC-000005",
+     "HC-000006",
+     "HC-000007",
+     "HC-000008",
+     "HC-000009"
+    ],
+    "response": [
+     {
+      "text": "The buyer reported that the vase had not arrived.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "We told the buyer we would send a replacement.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "Our records confirm that the promised replacement was not sent.",
+      "cites": [
+       "H"
+      ]
+     },
+     {
+      "text": "We will refund the charge in full and close the case.",
+      "cites": [
+       "A"
+      ]
+     }
+    ],
+    "call": "accept",
+    "engine": "model",
+    "model": "GPT-5.6 on Azure OpenAI",
+    "mode": "record",
+    "exchanges": [],
+    "after": "accept",
+    "withdrawn": [],
+    "flipped": false,
+    "verdict": {
+     "side": "buyer",
+     "reason": "No tracking or delivered scan shows delivery; the promised replacement was never sent",
+     "by": "reviewer"
+    },
+    "agrees": true,
+    "ms": 1491,
+    "calls": 1,
+    "tokens": {
+     "input": 1524,
+     "output": 40
     }
    }
   },
@@ -1053,7 +1014,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": false,
    "hearing": {
-    "at": "2026-10-29T19:42:45.055Z",
+    "at": "2026-10-29T22:17:58.640Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1070,33 +1031,34 @@
     ],
     "response": [
      {
-      "text": "We sold a nesting set in tide-blue glaze whose colour can shift from deep blue to green where the glaze pools.",
+      "text": "The cardholder kept the bowls and did not return them because of the expected shipping cost.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We offered the cardholder a return within 30 days for a refund.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The listing disclosed that the tide-blue glaze shifts from deep blue to green where it pools.",
       "cites": [
        "G"
       ]
      },
      {
-      "text": "The buyer confirmed that the bowls arrived safely but said they were greener than the photos.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "Our checkout policy explains that glaze colour varies and listing photos show a representative piece rather than the exact item.",
+      "text": "Our checkout policy disclosed that handmade glaze colour varies and listing photos show a representative piece.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "We offered the buyer a return within 30 days for a refund.",
+      "text": "We ask that this chargeback be denied because the disclosed colour variation was delivered and the offered return was not completed.",
       "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "Our policy states that the buyer pays return shipping unless the piece arrived damaged.",
-      "cites": [
-       "H"
+       "F",
+       "G"
       ]
      }
     ],
@@ -1108,18 +1070,19 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 0,
-       "text": "Where do the pages disclose that an entire delivered set may appear much greener than the listing photos, rather than only turning green where glaze pools?",
+       "sentence": 2,
+       "text": "Where do the pages disclose that the bowls could appear predominantly much greener than the listing photos, rather than green only where glaze pools?",
        "ground": "unsupported",
        "pages": [
         "HC-000007",
-        "HC-000008"
+        "HC-000008",
+        "HC-000009"
        ],
        "requirement": "disclosure"
       },
       "answer": {
        "stance": "answer",
-       "text": "The listing discloses that each set is unique and that its colour shifts from deep blue to green where the glaze pools; our sentence states only that disclosed description, not that an entire set may appear much greener than the photos.",
+       "text": "Sentence 3 says only that the listing disclosed a shift from deep blue to green where the glaze pools; it does not claim the listing warned the bowls could appear predominantly much greener than the photos.",
        "cites": [
         "G"
        ],
@@ -1127,33 +1090,7 @@
        "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "The listing discloses pooled green variation, not that the delivered set may appear substantially greener than the photos.",
-      "ruledBy": "reviewer"
-     },
-     {
-      "objection": {
-       "n": 2,
-       "sentence": 3,
-       "text": "Where do the pages show an offered return would remedy a materially greener set without making the buyer pay the reported $30 return cost?",
-       "ground": "unsupported",
-       "pages": [
-        "HC-000007",
-        "HC-000009"
-       ],
-       "requirement": "return"
-      },
-      "answer": {
-       "stance": "answer",
-       "text": "We offered a return within 30 days for a refund. Our checkout policy requires the buyer to pay return shipping unless the piece arrived damaged, and the buyer reported safe arrival rather than damage; we did not offer to cover the reported $30.",
-       "cites": [
-        "F",
-        "H"
-       ],
-       "kept": true,
-       "effect": "none"
-      },
-      "ruling": "sustained",
-      "reason": "The seller offered only a buyer-paid return and did not remedy the reported material colour difference without added cost.",
+      "reason": "Exhibit G mentions green only where glaze pools, not bowls appearing predominantly greener than the photos.",
       "ruledBy": "reviewer"
      }
     ],
@@ -1162,15 +1099,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The pages do not show that a substantially greener set was disclosed, and the offered return required the buyer to pay shipping",
+     "reason": "The pages do not show disclosure that the bowls could look much greener than the representative photos",
      "by": "reviewer"
     },
     "agrees": false,
-    "ms": 12132,
+    "ms": 8854,
     "calls": 3,
     "tokens": {
-     "input": 6589,
-     "output": 450
+     "input": 6818,
+     "output": 484
     }
    }
   },
@@ -1180,7 +1117,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:57.204Z",
+    "at": "2026-10-29T22:18:07.532Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1197,15 +1134,9 @@
     ],
     "response": [
      {
-      "text": "We will refund the $136.00 disputed amount in full rather than contest this chargeback.",
+      "text": "We will refund the disputed $136.00 in full.",
       "cites": [
        "A"
-      ]
-     },
-     {
-      "text": "Our listing described the set as having a tide-blue glaze.",
-      "cites": [
-       "G"
       ]
      },
      {
@@ -1215,9 +1146,21 @@
       ]
      },
      {
+      "text": "Our listing described the bowls only as having a tide-blue glaze.",
+      "cites": [
+       "G"
+      ]
+     },
+     {
       "text": "We offered a return within 30 days for a refund.",
       "cites": [
        "F"
+      ]
+     },
+     {
+      "text": "Because the listing did not disclose the reported green appearance, we accept the chargeback.",
+      "cites": [
+       "G"
       ]
      }
     ],
@@ -1231,15 +1174,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The listing called the bowls tide-blue but did not disclose green coloring; the offered return does not cure that difference",
+     "reason": "The listing described tide-blue bowls but did not disclose green coloring, the buyer’s stated complaint",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1453,
+    "ms": 1758,
     "calls": 1,
     "tokens": {
-     "input": 1701,
-     "output": 48
+     "input": 1835,
+     "output": 44
     }
    }
   },
@@ -1249,7 +1192,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:42:58.673Z",
+    "at": "2026-10-29T22:18:09.314Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1266,33 +1209,28 @@
     ],
     "response": [
      {
-      "text": "We accept this chargeback because the buyer reported that two of the three bowls arrived cracked.",
+      "text": "We accept this chargeback because the buyer reported that two of the three bowls arrived cracked through.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "Our review of the submitted photos confirms two cracked bowls and damage to the shipping box.",
+      "text": "Our order notes confirm that the buyer's photos show two cracked bowls.",
       "cites": [
        "J"
       ]
      },
      {
-      "text": "The buyer reported the breakage on 3 Oct 2026 and stated that photos of the bowls and box were attached.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "Our damage policy provides replacement or refund for broken pieces reported with photos of the piece and box.",
+      "text": "Our damage policy requires breakage to be reported within 7 days with photos of the piece and box.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "We will refund the disputed $136.00 in full.",
+      "text": "We will refund the disputed $136.00 in full under our policy for broken pieces.",
       "cites": [
-       "A"
+       "A",
+       "H"
       ]
      }
     ],
@@ -1306,14 +1244,14 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "Seller’s notes confirm two bowls arrived cracked, the listing did not disclose damage, and no return, replacement, or refund was offered",
+     "reason": "The seller’s own records show two bowls arrived cracked, a condition not disclosed, with no replacement, refund, or return offer shown",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1498,
+    "ms": 1522,
     "calls": 1,
     "tokens": {
-     "input": 1663,
+     "input": 1760,
      "output": 52
     }
    }
@@ -1324,7 +1262,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:00.186Z",
+    "at": "2026-10-29T22:18:10.876Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1341,33 +1279,33 @@
     ],
     "response": [
      {
-      "text": "We listed the bowls in tide-blue glaze and disclosed that colour shifts from deep blue to green where the glaze pools.",
+      "text": "The cardholder did not return the bowls because return shipping would be about $30.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We offered a return within 30 days for a refund.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "Our listing stated that the colour shifts from deep blue to green where the glaze pools.",
       "cites": [
        "G"
       ]
      },
      {
-      "text": "Our checkout policy states that glaze colour varies and listing photos show a representative piece, not the exact piece received.",
+      "text": "Our checkout policy stated that glaze colour varies and listing photos show a representative piece.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "The buyer confirmed the bowls arrived safely but said they were greener than the photos.",
+      "text": "The buyer confirmed that the bowls arrived safely.",
       "cites": [
        "F"
-      ]
-     },
-     {
-      "text": "We explained the disclosed glaze variation and offered a return within 30 days for a refund.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "Our policy requires the buyer to pay return shipping unless the piece arrived damaged.",
-      "cites": [
-       "H"
       ]
      }
     ],
@@ -1379,71 +1317,46 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 0,
-       "text": "Where does the listing disclose that the bowls could appear predominantly greener than the photos, rather than green only where the glaze pools?",
+       "sentence": 2,
+       "text": "Where do the pages warn that the delivered bowls could appear much greener overall than the representative listing photos, rather than green only where glaze pools?",
        "ground": "unsupported",
        "pages": [
         "HC-000007",
-        "HC-000008"
+        "HC-000008",
+        "HC-000009"
        ],
        "requirement": "disclosure"
       },
       "answer": {
        "stance": "concede",
-       "text": "The listing discloses shifts from deep blue to green where glaze pools, but does not say the bowls may appear predominantly greener than the photos. We withdraw only any broader reading; the sentence accurately quotes the listing.",
+       "text": "The pages do not warn that the bowls could appear much greener overall; they disclose green where glaze pools and kiln-to-kiln colour variation. This does not defeat our response because we offered the policy return, and the buyer did not return the bowls.",
        "cites": [
-        "G"
+        "F",
+        "G",
+        "H"
        ],
        "kept": true,
-       "effect": "withdraw"
+       "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "Exhibit conceded and withdrew the sentence",
-      "ruledBy": "concession"
-     },
-     {
-      "objection": {
-       "n": 2,
-       "sentence": 3,
-       "text": "Where do the pages show the offered refund would be full and that the return remained available when the buyer raised the $30 shipping cost?",
-       "ground": "unsupported",
-       "pages": [
-        "HC-000007",
-        "HC-000009"
-       ],
-       "requirement": "return"
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "Our email offered a refund for a return within 30 days, but does not say “full” or confirm availability after the buyer mentioned shipping cost. We withdraw those implications; the documented return offer remains.",
-       "cites": [
-        "F"
-       ],
-       "kept": true,
-       "effect": "withdraw"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded and withdrew the sentence",
+      "reason": "Exhibit conceded the point",
       "ruledBy": "concession"
      }
     ],
     "after": "fight",
-    "withdrawn": [
-     0,
-     3
-    ],
+    "withdrawn": [],
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "The listing disclosed blue-to-green handmade variation, representative photos, and the seller offered a policy-compliant return for a refund",
+     "reason": "The listing disclosed blue-to-green glaze variation, the checkout policy warned photos were representative, and the buyer kept the bowls despite a return offer",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 7691,
+    "ms": 10719,
     "calls": 3,
     "tokens": {
-     "input": 6567,
-     "output": 436
+     "input": 6741,
+     "output": 700
     }
    }
   },
@@ -1453,7 +1366,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:07.892Z",
+    "at": "2026-10-29T22:18:21.633Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1469,33 +1382,33 @@
     ],
     "response": [
      {
-      "text": "We will refund the disputed transaction in full and close the chargeback.",
+      "text": "We will refund the disputed $180.00 in full and close this chargeback.",
       "cites": [
        "A"
       ]
      },
      {
-      "text": "The cardholder states that they did not authorise this transaction.",
+      "text": "The cardholder says they did not authorise this transaction.",
       "cites": [
        "A"
       ]
      },
      {
-      "text": "This was the customer's first order.",
+      "text": "This was the customer's first order, so there are no earlier orders supporting cardholder participation.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "Our records identify the shipping address as a parcel-forwarding warehouse and the billing address as being in Ohio.",
+      "text": "The shipping address was a parcel-forwarding warehouse, while the billing address was in Ohio.",
       "cites": [
        "I"
       ]
      },
      {
-      "text": "These records do not provide strong proof that the cardholder participated in the purchase.",
+      "text": "The payment record shows that the street, ZIP, and security code matched.",
       "cites": [
-       "I"
+       "C"
       ]
      }
     ],
@@ -1509,15 +1422,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "First order shipped to a forwarding warehouse, not the billing address, with no 3-D Secure, device match, or prior orders",
+     "reason": "First order shipped to a forwarding warehouse away from billing, with no 3-D Secure, matching device/IP, prior orders, or cardholder participation proof",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1696,
+    "ms": 10549,
     "calls": 1,
     "tokens": {
-     "input": 1719,
-     "output": 52
+     "input": 1781,
+     "output": 56
     }
    }
   },
@@ -1527,7 +1440,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": false,
    "hearing": {
-    "at": "2026-10-29T19:43:09.601Z",
+    "at": "2026-10-29T22:18:32.207Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1543,33 +1456,33 @@
     ],
     "response": [
      {
-      "text": "We received a completed $180.00 payment with matching street address, ZIP, and security code checks.",
-      "cites": [
-       "C"
-      ]
-     },
-     {
-      "text": "We shipped the order to Daniel Brooks at 39 Maple Ridge Road, Columbus, OH 43215.",
+      "text": "We shipped the order to Daniel Brooks at the address provided with the order.",
       "cites": [
        "B"
       ]
      },
      {
-      "text": "Our records show this order was placed from the same device used for the customer's earlier orders.",
+      "text": "USPS records signed delivery in Columbus, OH 43215, with D BROOKS signing for the parcel.",
       "cites": [
-       "I"
+       "E"
       ]
      },
      {
-      "text": "Our customer history shows three earlier orders, each delivered with no issues.",
+      "text": "Our records show Daniel Brooks had three earlier orders delivered without issues.",
       "cites": [
        "H"
       ]
      },
      {
-      "text": "USPS records signed delivery in Columbus, OH 43215, with D BROOKS as the signer.",
+      "text": "Our order notes record that this purchase came from the same device as the customer's earlier orders.",
       "cites": [
-       "E"
+       "I"
+      ]
+     },
+     {
+      "text": "The payment record shows both the street and ZIP and the security code matched.",
+      "cites": [
+       "C"
       ]
      }
     ],
@@ -1592,23 +1505,24 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "USPS records delivery to the cardholder’s order address in Columbus, OH 43215, signed for by D BROOKS; our records also show three earlier orders delivered without issue. This supports participation, though no 3-D Secure result or documented matching device ID/IP is on file.",
+       "text": "USPS records delivery and D BROOKS’s signature at Daniel Brooks’s order address; our history also shows three earlier orders delivered without issues, and our notes record the same device. Together, these facts show participation beyond possession of card details.",
        "cites": [
         "B",
         "E",
-        "H"
+        "H",
+        "I"
        ],
        "kept": true,
        "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "Signed delivery and prior orders do not show authorisation without 3-D Secure or documented compelling evidence.",
+      "reason": "The reviewer didn't rule on it, so it is held against the seller",
       "ruledBy": "reviewer"
      },
      {
       "objection": {
        "n": 2,
-       "sentence": 3,
+       "sentence": 2,
        "text": "Where do the pages link at least two earlier undisputed orders to this transaction through the same documented IP address or device ID?",
        "ground": "unsupported",
        "pages": [
@@ -1619,20 +1533,20 @@
       },
       "answer": {
        "stance": "concede",
-       "text": "The pages do not document an IP address or device ID linking the earlier orders to this transaction. Sentence 4 remains accurate about three earlier orders delivered without issues, but it does not establish Mastercard compelling evidence.",
+       "text": "The pages do not document an IP address or device ID linking the earlier orders to this transaction, so they do not establish Mastercard compelling evidence. Sentence 3 remains accurate as a statement of order history, but this fraud claim is not met.",
        "cites": [],
        "kept": true,
-       "effect": "none"
+       "effect": "refund"
       },
       "ruling": "sustained",
-      "reason": "Exhibit conceded the point",
+      "reason": "Exhibit conceded the case and changed its call to refund",
       "ruledBy": "concession"
      },
      {
       "objection": {
        "n": 3,
-       "sentence": 2,
-       "text": "Where do the pages show a matching device ID or IP address for this transaction and at least two earlier undisputed orders?",
+       "sentence": 3,
+       "text": "Where do the pages show a matching device ID or IP address for this order and at least two earlier undisputed orders?",
        "ground": "unsupported",
        "pages": [
         "HC-000009",
@@ -1642,7 +1556,7 @@
       },
       "answer": {
        "stance": "concede",
-       "text": "Our note says the same device was used, but no matching device ID or IP address is documented, and the note does not identify at least two earlier orders. We withdraw sentence 3.",
+       "text": "Our note says the same device, but the pages provide no matching device ID or IP address for this transaction and at least two earlier orders. We withdraw sentence 4.",
        "cites": [],
        "kept": true,
        "effect": "withdraw"
@@ -1654,8 +1568,8 @@
      {
       "objection": {
        "n": 4,
-       "sentence": 0,
-       "text": "How do matched address and security codes show the cardholder participated, rather than only that someone knew the card details?",
+       "sentence": 4,
+       "text": "How do address and security-code matches show the cardholder participated, rather than only that the card details were known?",
        "ground": "unsupported",
        "pages": [
         "HC-000004"
@@ -1664,37 +1578,36 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "We do not claim the matching checks alone prove participation; they show the street address, ZIP, and security code matched. Participation is instead supported by signed delivery to the cardholder’s order address and the prior undisputed order history.",
+       "text": "They do not by themselves show the cardholder participated; they show only that the correct street, ZIP, and security code were supplied. Participation is instead supported by signed delivery at Daniel Brooks’s order address.",
        "cites": [
         "B",
         "C",
-        "E",
-        "H"
+        "E"
        ],
        "kept": true,
        "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "The seller concedes the matched checks do not prove cardholder participation; the remaining evidence is insufficient.",
+      "reason": "The reviewer didn't rule on it, so it is held against the seller",
       "ruledBy": "reviewer"
      }
     ],
-    "after": "fight",
+    "after": "accept",
     "withdrawn": [
-     2
+     3
     ],
-    "flipped": false,
+    "flipped": true,
     "verdict": {
      "side": "buyer",
-     "reason": "No 3-D Secure result or documented shared device/IP links this transaction to prior undisputed orders",
-     "by": "reviewer"
+     "reason": "Exhibit conceded the case at the hearing: The pages do not document an IP address or device ID linking the earlier orders to this transaction, so they do not establish Mastercard compelling evidence. Sentence 3 remains accurate as a statement of order history, but this fraud claim is not met",
+     "by": "concession"
     },
     "agrees": false,
-    "ms": 14931,
-    "calls": 3,
+    "ms": 8807,
+    "calls": 2,
     "tokens": {
-     "input": 6776,
-     "output": 760
+     "input": 4500,
+     "output": 538
     }
    }
   },
@@ -1704,7 +1617,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:24.547Z",
+    "at": "2026-10-29T22:18:41.031Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1720,27 +1633,27 @@
     ],
     "response": [
      {
-      "text": "We accept the $180.00 card issuer chargeback and will refund it in full.",
+      "text": "We will refund the $180.00 chargeback because the cardholder says they did not authorise this transaction.",
       "cites": [
        "A"
       ]
      },
      {
-      "text": "The payment failed both the address check and the security-code check.",
+      "text": "Our payment record shows neither the street nor ZIP matched.",
       "cites": [
        "C"
       ]
      },
      {
-      "text": "Our notes identify the shipping address as a parcel-forwarding warehouse and the billing address as Ohio.",
+      "text": "Our payment record also shows the security code did not match.",
       "cites": [
-       "I"
+       "C"
       ]
      },
      {
-      "text": "Our order book shows this was the customer's first order.",
+      "text": "This was our first order from this customer, and the shipping address was a parcel-forwarding warehouse.",
       "cites": [
-       "H"
+       "I"
       ]
      }
     ],
@@ -1754,15 +1667,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "No 3-D Secure or compelling evidence; checks failed, and this first order shipped to a forwarder away from billing",
+     "reason": "No 3-D Secure or compelling evidence; first order failed address and security checks and shipped to a forwarding warehouse",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1634,
+    "ms": 1356,
     "calls": 1,
     "tokens": {
-     "input": 1710,
-     "output": 50
+     "input": 1772,
+     "output": 48
     }
    }
   },
@@ -1772,7 +1685,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": false,
    "hearing": {
-    "at": "2026-10-29T19:43:26.195Z",
+    "at": "2026-10-29T22:18:42.403Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1788,31 +1701,31 @@
     ],
     "response": [
      {
-      "text": "We received payment Z1F5F75TPH9C3Y8V9 with completed status for $180.00.",
-      "cites": [
-       "C"
-      ]
-     },
-     {
-      "text": "The payment record shows the street and ZIP matched.",
-      "cites": [
-       "C"
-      ]
-     },
-     {
-      "text": "The payment record also shows the security code matched.",
-      "cites": [
-       "C"
-      ]
-     },
-     {
       "text": "We shipped the order to Daniel Brooks at 39 Maple Ridge Road, Columbus, OH 43215.",
       "cites": [
        "B"
       ]
      },
      {
-      "text": "USPS records delivery in Columbus, OH 43215 with a signature by D BROOKS.",
+      "text": "USPS recorded the parcel as delivered and signed for by D BROOKS on 8 Oct 2026.",
+      "cites": [
+       "E"
+      ]
+     },
+     {
+      "text": "Our order notes confirm that we shipped to the card's billing address.",
+      "cites": [
+       "I"
+      ]
+     },
+     {
+      "text": "The payment record shows that the street, ZIP, and security code matched.",
+      "cites": [
+       "C"
+      ]
+     },
+     {
+      "text": "We contest the unauthorised claim based on the signed delivery record.",
       "cites": [
        "E"
       ]
@@ -1837,34 +1750,34 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "We shipped to the cardholder’s billing address, and USPS records signed delivery there by D BROOKS. This supports participation, but without 3-D Secure or compelling evidence, we cannot defeat the unauthorised claim and accept the refund.",
+       "text": "The order was delivered and signed for by D BROOKS at the order address, which our notes identify as the card’s billing address. That is evidence of participation, but without 3-D Secure, prior orders, or matching device data, it does not defeat this unauthorised claim.",
        "cites": [
         "B",
         "E",
         "I"
        ],
-       "kept": false,
-       "why": "3 isn't in Exhibit B, E, I.",
+       "kept": true,
        "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "The checker struck the answer (3 isn't in Exhibit B, E, I), so the point stands unanswered",
-      "ruledBy": "checker"
+      "reason": "The reviewer didn't rule on it, so it is held against the seller",
+      "ruledBy": "reviewer"
      },
      {
       "objection": {
        "n": 2,
-       "sentence": null,
-       "text": "Where are two earlier undisputed orders when the customer history says this was the first order?",
+       "sentence": 4,
+       "text": "Where are two earlier undisputed orders providing compelling evidence, when your records say this was the customer's first order?",
        "ground": "contradicted",
        "pages": [
-        "HC-000009"
+        "HC-000009",
+        "HC-000010"
        ],
        "requirement": "prior"
       },
       "answer": {
        "stance": "concede",
-       "text": "There were no earlier undisputed orders; this was the customer’s first order. We cannot supply the compelling evidence required for this unauthorised claim and accept the refund.",
+       "text": "There are no earlier undisputed orders; this was the customer’s first order. We withdraw our contest of the unauthorised claim and accept the claim.",
        "cites": [],
        "kept": true,
        "effect": "refund"
@@ -1876,16 +1789,18 @@
      {
       "objection": {
        "n": 3,
-       "sentence": null,
-       "text": "What IP address or device id ties this order to the cardholder?",
+       "sentence": 4,
+       "text": "Where is a matching IP address or device ID linking this transaction to earlier undisputed cardholder activity?",
        "ground": "unanswered",
-       "pages": [],
-       "requirement": "device",
-       "pressed": true
+       "pages": [
+        "HC-000009",
+        "HC-000010"
+       ],
+       "requirement": "device"
       },
       "answer": {
        "stance": "concede",
-       "text": "We have no IP address or device id tying this order to the cardholder. Without that evidence, earlier orders, or 3-D Secure, we cannot meet this unauthorised claim and accept the refund.",
+       "text": "We have no matching IP address or device ID linking this transaction to earlier undisputed activity. The required compelling evidence is absent, so we accept the claim.",
        "cites": [],
        "kept": true,
        "effect": "refund"
@@ -1897,8 +1812,8 @@
      {
       "objection": {
        "n": 4,
-       "sentence": 1,
-       "text": "How do address and security-code matches show the cardholder participated, rather than only that someone knew the card details?",
+       "sentence": 3,
+       "text": "How do address and security-code matches show Daniel Brooks participated, rather than only that the card details were known?",
        "ground": "unsupported",
        "pages": [
         "HC-000004"
@@ -1906,39 +1821,33 @@
        "requirement": "address"
       },
       "answer": {
-       "stance": "answer",
-       "text": "Sentence 2 says only that the street and ZIP matched; it does not claim cardholder participation. The security-code match likewise shows the details were known, while signed delivery at the billing address is the stronger evidence of participation.",
-       "cites": [
-        "B",
-        "C",
-        "E",
-        "I"
-       ],
-       "kept": false,
-       "why": "2 isn't in Exhibit B, C, E, I.",
-       "effect": "none"
+       "stance": "concede",
+       "text": "The street, ZIP, and security-code matches show only that the card details were known; they do not establish that Daniel Brooks participated. We withdraw any implication otherwise, while the payment-match facts themselves remain accurate.",
+       "cites": [],
+       "kept": true,
+       "effect": "withdraw"
       },
       "ruling": "sustained",
-      "reason": "The checker struck the answer (2 isn't in Exhibit B, C, E, I), so the point stands unanswered",
-      "ruledBy": "checker"
+      "reason": "Exhibit conceded and withdrew the sentence",
+      "ruledBy": "concession"
      }
     ],
     "after": "accept",
     "withdrawn": [
-     1
+     3
     ],
     "flipped": true,
     "verdict": {
      "side": "buyer",
-     "reason": "Exhibit conceded the case at the hearing: There were no earlier undisputed orders; this was the customer’s first order. We cannot supply the compelling evidence required for this unauthorised claim and accept the refund",
+     "reason": "Exhibit conceded the case at the hearing: There are no earlier undisputed orders; this was the customer’s first order. We withdraw our contest of the unauthorised claim and accept the claim",
      "by": "concession"
     },
     "agrees": false,
-    "ms": 6187,
+    "ms": 6040,
     "calls": 2,
     "tokens": {
-     "input": 4224,
-     "output": 503
+     "input": 4330,
+     "output": 524
     }
    }
   },
@@ -1948,7 +1857,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:32.398Z",
+    "at": "2026-10-29T22:18:48.481Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -1966,33 +1875,27 @@
     ],
     "response": [
      {
-      "text": "We confirmed that two charges went through for the mug.",
+      "text": "We refunded the duplicate charge in full, and refund TQMHE4YMMK35EYC41 is completed for $46.00.",
+      "cites": [
+       "D"
+      ]
+     },
+     {
+      "text": "Our email on 2 Oct 2026 confirmed that we refunded the second charge.",
       "cites": [
        "G"
       ]
      },
      {
-      "text": "We refunded the second charge in full for $46.00.",
+      "text": "The disputed payment JZUD6WK9RMYLC4MSE was completed for $46.00.",
       "cites": [
-       "K"
+       "C"
       ]
      },
      {
-      "text": "The refund record shows status Completed.",
+      "text": "The order was delivered in Philadelphia, PA 19106 on 5 Oct 2026.",
       "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "The refund note identifies it as a duplicate charge for the same order.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "We ask that the chargeback be denied because the duplicate charge has already been refunded.",
-      "cites": [
-       "D"
+       "F"
       ]
      }
     ],
@@ -2004,26 +1907,26 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 1,
-       "text": "Where do the pages link completed refund TQMHE4YMMK35EYC41 to the duplicate $46 charge rather than merely describing it that way in the note?",
+       "sentence": null,
+       "text": "Show on the pages a credit on the duplicate, or two distinct transactions: where exactly is it?",
        "ground": "unsupported",
        "pages": [
         "HC-000005"
        ],
-       "requirement": "credit"
+       "requirement": "credit",
+       "pressed": true
       },
       "answer": {
        "stance": "answer",
-       "text": "Our contemporaneous email confirms two charges went through and that we refunded the second one; the refund record identifies refund TQMHE4YMMK35EYC41 as Completed for $46.00.",
+       "text": "Our records show refund TQMHE4YMMK35EYC41, completed for $46.00, with the note that it refunded the duplicate charge for the same order.",
        "cites": [
-        "G",
         "D"
        ],
        "kept": true,
        "effect": "none"
       },
       "ruling": "overruled",
-      "reason": "The contemporaneous email and completed $46 refund record together identify the credit as covering the second charge.",
+      "reason": "Exhibit D shows a completed $46 refund expressly identified as the duplicate-charge refund.",
       "ruledBy": "reviewer"
      }
     ],
@@ -2032,15 +1935,15 @@
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "The pages show the admitted duplicate $46 charge was refunded in full with completed status",
+     "reason": "Exhibit D shows the duplicate $46 charge was refunded in full before the chargeback opened",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 7551,
+    "ms": 5859,
     "calls": 3,
     "tokens": {
-     "input": 6313,
-     "output": 453
+     "input": 6578,
+     "output": 295
     }
    }
   },
@@ -2050,7 +1953,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:39.964Z",
+    "at": "2026-10-29T22:18:54.360Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2067,25 +1970,25 @@
     ],
     "response": [
      {
-      "text": "We accept this chargeback and will refund the disputed $46.00 in full.",
-      "cites": [
-       "A"
-      ]
-     },
-     {
-      "text": "Our email confirmed that two charges went through.",
+      "text": "We acknowledged that two charges went through and promised to refund the second one.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "Our records show the second charge has not been refunded.",
+      "text": "Our order notes confirm that checkout took the payment twice.",
       "cites": [
        "J"
       ]
      },
      {
-      "text": "Please close the case after the full refund is processed.",
+      "text": "The second charge has not been refunded.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "We will refund the disputed $46.00 in full and close the case.",
       "cites": [
        "A"
       ]
@@ -2101,15 +2004,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The pages admit a duplicate charge and show no refund of the second charge",
+     "reason": "The seller admits a duplicate charge and the pages show no refund or credit for it",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1493,
+    "ms": 2273,
     "calls": 1,
     "tokens": {
-     "input": 1610,
-     "output": 40
+     "input": 1672,
+     "output": 42
     }
    }
   },
@@ -2117,9 +2020,9 @@
    "key": "agent-mandate-base#0",
    "label": "fight",
    "brief": "fight",
-   "reviewerMatchesLabel": false,
+   "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:41.494Z",
+    "at": "2026-10-29T22:18:56.674Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2139,33 +2042,33 @@
     ],
     "response": [
      {
-      "text": "We contest this unauthorised claim because the cardholder's signed intent covers this exact cart and PayPal order.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "The cardholder allowed dinner plates, set a $200.00 limit, and specified the Seattle delivery address.",
+      "text": "We received the cardholder's signed instruction allowing dinner plates up to $200.00 for delivery to her stated home address.",
       "cites": [
        "D"
       ]
      },
      {
-      "text": "The agent signed a $180.00 cart for one set of four dinner plates to that approved address.",
+      "text": "The agent signed a cart for dinner plates totaling $180.00 and shipping to that same address.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "All mandate checks passed, including both signatures, the limit, item, address, validity window, and PayPal order match.",
+      "text": "The verification passed 8 of 8 checks and found that the PayPal order matched the signed cart.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "USPS then recorded the shipment as delivered and signed for by N PETROVA.",
+      "text": "USPS delivered the parcel with a signature by N PETROVA in Seattle, WA 98122.",
       "cites": [
        "I"
+      ]
+     },
+     {
+      "text": "The payment record also shows matching street, ZIP, and security-code checks.",
+      "cites": [
+       "C"
       ]
      }
     ],
@@ -2177,8 +2080,37 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 0,
-       "text": "How can this establish compelling evidence when the order book shows no two earlier undisputed orders from this customer?",
+       "sentence": null,
+       "text": "Matching address and security-code checks show someone had the card details. What shows the cardholder took part?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000004"
+       ],
+       "requirement": "avs-cvv",
+       "pressed": true
+      },
+      "answer": {
+       "stance": "answer",
+       "text": "The parcel was delivered and signed for by N PETROVA at the order address in Seattle, WA 98122. That is the network-recognised evidence tying the cardholder to this order, alongside the signed instruction covering the exact cart.",
+       "cites": [
+        "B",
+        "D",
+        "E",
+        "F",
+        "I"
+       ],
+       "kept": true,
+       "effect": "none"
+      },
+      "ruling": "overruled",
+      "reason": "Signed intent covers the exact cart, and delivery was signed by N PETROVA at the matching address.",
+      "ruledBy": "reviewer"
+     },
+     {
+      "objection": {
+       "n": 2,
+       "sentence": 2,
+       "text": "Where are two earlier undisputed orders needed for compelling evidence? The order history says this was the customer's first order.",
        "ground": "contradicted",
        "pages": [
         "HC-000007",
@@ -2188,46 +2120,48 @@
       },
       "answer": {
        "stance": "concede",
-       "text": "We have no earlier orders from this customer, so we cannot establish the required compelling-evidence history and accept the unauthorised claim.",
+       "text": "We have no earlier undisputed orders; this was the customer's first order. Sentence 3 only reports the mandate verification and order-to-cart match, so it remains accurate, but we do not claim the two-order compelling-evidence route.",
        "cites": [
+        "F",
         "L"
        ],
        "kept": true,
-       "effect": "refund"
+       "effect": "none"
       },
       "ruling": "sustained",
-      "reason": "Exhibit conceded the case and changed its call to refund",
-      "ruledBy": "concession"
-     },
-     {
-      "objection": {
-       "n": 2,
-       "sentence": 0,
-       "text": "Where do the exhibits show a matching IP address or device ID linking this transaction to the cardholder?",
-       "ground": "unsupported",
-       "pages": [
-        "HC-000005",
-        "HC-000006",
-        "HC-000007"
-       ],
-       "requirement": "device"
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "We have no matching IP address or device ID on file linking this transaction to the cardholder, so we accept the unauthorised claim.",
-       "cites": [
-        "L"
-       ],
-       "kept": true,
-       "effect": "refund"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded the case and changed its call to refund",
+      "reason": "Exhibit conceded the point",
       "ruledBy": "concession"
      },
      {
       "objection": {
        "n": 3,
+       "sentence": null,
+       "text": "What IP address or device id ties this order to the cardholder?",
+       "ground": "unanswered",
+       "pages": [],
+       "requirement": "device",
+       "pressed": true
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "We have no matching IP address or device id on file. The case instead relies on delivery signed by N PETROVA at the order address, together with the signed instruction covering the matching cart.",
+       "cites": [
+        "B",
+        "D",
+        "E",
+        "F",
+        "I"
+       ],
+       "kept": true,
+       "effect": "none"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded the point",
+      "ruledBy": "concession"
+     },
+     {
+      "objection": {
+       "n": 4,
        "sentence": null,
        "text": "A signed mandate isn't authorisation evidence the networks recognise. What network-recognised evidence ties the cardholder to this order?",
        "ground": "unsupported",
@@ -2241,59 +2175,36 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "The network-recognised evidence is shipment to the cardholder’s billing address: the order used Nina Petrova’s address, and USPS recorded delivery there, signed for by N PETROVA. We acknowledge this strengthens but does not independently establish authorisation.",
+       "text": "The network-recognised evidence is delivery signed by N PETROVA in Seattle, WA 98122, matching the order address. We do not present the mandate alone; it shows the signed instruction covered the exact cart and matching PayPal order.",
        "cites": [
         "B",
+        "D",
+        "E",
+        "F",
         "I"
        ],
        "kept": true,
        "effect": "none"
       },
-      "ruling": "sustained",
-      "reason": "The reviewer didn't rule on it, so it is held against the seller",
+      "ruling": "overruled",
+      "reason": "The signed intent and matched cart show participation; signed delivery at the order address independently corroborates it.",
       "ruledBy": "reviewer"
-     },
-     {
-      "objection": {
-       "n": 4,
-       "sentence": 3,
-       "text": "Where is the 3-D Secure authentication result or liability shift showing issuer-recognised cardholder authentication?",
-       "ground": "unsupported",
-       "pages": [
-        "HC-000004",
-        "HC-000007"
-       ],
-       "requirement": "3ds"
-      },
-      "answer": {
-       "stance": "concede",
-       "text": "No 3-D Secure authentication result or liability shift is on file. Without that or qualifying compelling evidence, we accept the unauthorised claim.",
-       "cites": [
-        "C",
-        "L"
-       ],
-       "kept": true,
-       "effect": "refund"
-      },
-      "ruling": "sustained",
-      "reason": "Exhibit conceded the case and changed its call to refund",
-      "ruledBy": "concession"
      }
     ],
-    "after": "accept",
+    "after": "fight",
     "withdrawn": [],
-    "flipped": true,
+    "flipped": false,
     "verdict": {
-     "side": "buyer",
-     "reason": "Exhibit conceded the case at the hearing: We have no earlier orders from this customer, so we cannot establish the required compelling-evidence history and accept the unauthorised claim",
-     "by": "concession"
+     "side": "seller",
+     "reason": "The cardholder’s valid signed mandate covered this exact order, which was delivered and signed for at her matching address",
+     "by": "reviewer"
     },
-    "agrees": false,
-    "ms": 9063,
-    "calls": 2,
+    "agrees": true,
+    "ms": 9516,
+    "calls": 3,
     "tokens": {
-     "input": 6920,
-     "output": 732
+     "input": 10613,
+     "output": 747
     }
    }
   },
@@ -2303,7 +2214,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:50.580Z",
+    "at": "2026-10-29T22:19:06.217Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2329,25 +2240,25 @@
       ]
      },
      {
-      "text": "The cardholder's signed intent limited the delivered purchase to $150.00.",
+      "text": "The cardholder's signed instruction limited the delivered purchase to under $150.",
       "cites": [
        "D"
       ]
      },
      {
-      "text": "The agent signed a cart totaling $180.00.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The signed cart was outside the cardholder's intent because it exceeded the limit.",
+      "text": "The agent signed a $180.00 cart outside the cardholder's $150.00 limit.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "The case record assigns responsibility to the buyer's agent platform.",
+      "text": "The mandate check assigns responsibility to the buyer's agent platform.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We will seek recovery from the agent platform rather than contest the cardholder's claim.",
       "cites": [
        "F"
       ]
@@ -2363,15 +2274,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The agent exceeded the cardholder’s signed $150 limit; the $180 cart was outside her authorisation",
+     "reason": "The agent exceeded the cardholder’s signed $150 limit, so the $180 cart was not authorised",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 3473,
+    "ms": 1410,
     "calls": 1,
     "tokens": {
-     "input": 2980,
-     "output": 47
+     "input": 3059,
+     "output": 46
     }
    }
   },
@@ -2381,7 +2292,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:54.074Z",
+    "at": "2026-10-29T22:19:07.651Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2401,25 +2312,25 @@
     ],
     "response": [
      {
-      "text": "We accept the chargeback because the agent signed a cart outside the cardholder's shipping instructions.",
+      "text": "We will refund the disputed $180.00 in full because the agent signed a cart outside the cardholder's shipping instruction.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "The cardholder's signed mandate required shipment to 88 Harbor View Drive, Sausalito, CA 94965.",
+      "text": "The cardholder's signed intent required shipment to 88 Harbor View Drive, Sausalito, CA 94965.",
       "cites": [
        "D"
       ]
      },
      {
-      "text": "The signed cart instead directed shipment to 1520 East Pine Street, Apt 402, Seattle, WA 98122.",
+      "text": "The agent's signed cart instead directed shipment to 1520 East Pine Street, Apt 402, Seattle, WA 98122.",
       "cites": [
        "E"
       ]
      },
      {
-      "text": "The mandate check therefore directs us to refund the cardholder.",
+      "text": "The mandate check assigns responsibility to the buyer's agent platform.",
       "cites": [
        "F"
       ]
@@ -2435,15 +2346,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The agent shipped to an address outside the cardholder’s signed mandate, so the signed cart does not prove authorisation",
+     "reason": "The agent shipped outside the cardholder’s signed mandate, and no 3-D Secure or qualifying compelling evidence proves authorisation",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1583,
+    "ms": 1328,
     "calls": 1,
     "tokens": {
-     "input": 2985,
-     "output": 49
+     "input": 3038,
+     "output": 50
     }
    }
   },
@@ -2453,7 +2364,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:55.677Z",
+    "at": "2026-10-29T22:19:09.009Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2473,25 +2384,25 @@
     ],
     "response": [
      {
-      "text": "We accept the $180.00 chargeback because the shopping agent signed the cart outside the cardholder's valid intent window.",
+      "text": "We accept the chargeback and will refund the disputed transaction in full.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "The cardholder's intent expired at 4 Oct 2026, 10:20.",
+      "text": "The agent platform signed the cart outside the cardholder's authorised window.",
       "cites": [
-       "D"
+       "F"
       ]
      },
      {
-      "text": "The agent signed the cart at 4 Oct 2026, 10:28.",
+      "text": "The mandate check assigns responsibility to the buyer's agent platform.",
       "cites": [
-       "E"
+       "F"
       ]
      },
      {
-      "text": "The mandate check identifies the buyer's agent platform as responsible and directs us to refund the cardholder.",
+      "text": "We will recover the loss from the agent platform rather than contest the cardholder's claim.",
       "cites": [
        "F"
       ]
@@ -2507,15 +2418,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The agent bought after the cardholder’s signed mandate expired, so the signed cart does not prove authorisation",
+     "reason": "The agent purchased after the cardholder’s signed mandate expired, so the pages do not prove authorisation for this transaction",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1670,
+    "ms": 1667,
     "calls": 1,
     "tokens": {
-     "input": 2985,
-     "output": 75
+     "input": 3049,
+     "output": 71
     }
    }
   },
@@ -2525,7 +2436,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:57.373Z",
+    "at": "2026-10-29T22:19:10.706Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2545,29 +2456,34 @@
     ],
     "response": [
      {
-      "text": "We will refund the $180.00 chargeback in full because the cardholder's intent signature does not verify.",
+      "text": "We will refund the $180.00 charge in full because the cardholder's intent signature does not verify.",
       "cites": [
        "A",
-       "F"
+       "D"
       ]
      },
      {
-      "text": "The mandate check states that nothing shows the cardholder allowed this purchase.",
+      "text": "The mandate check says nothing shows the cardholder allowed this purchase and assigns responsibility to the merchant.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "It assigns responsibility for the order to us as the merchant.",
+      "text": "This was the customer's first order, so we have no earlier undisputed purchase history supporting participation.",
       "cites": [
-       "F"
+       "L"
       ]
      },
      {
-      "text": "We therefore accept the chargeback rather than contest the unauthorised claim.",
+      "text": "Although the parcel was delivered and signed for by N PETROVA, that does not cure the failed authorisation evidence.",
       "cites": [
-       "A",
-       "F"
+       "I"
+      ]
+     },
+     {
+      "text": "We accept the chargeback and will close the case with a full refund.",
+      "cites": [
+       "A"
       ]
      }
     ],
@@ -2581,15 +2497,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The cardholder’s mandate signature does not verify, and no 3-D Secure or qualifying compelling evidence proves authorisation",
+     "reason": "The cardholder mandate signature fails verification, and no 3-D Secure, prior-order compelling evidence, matching IP, or device proves authorisation",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1574,
+    "ms": 1602,
     "calls": 1,
     "tokens": {
-     "input": 2960,
-     "output": 49
+     "input": 3024,
+     "output": 54
     }
    }
   },
@@ -2599,7 +2515,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:43:58.971Z",
+    "at": "2026-10-29T22:19:12.338Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2620,33 +2536,33 @@
     ],
     "response": [
      {
-      "text": "We will refund the disputed $104.00 in full.",
+      "text": "We will refund the disputed $104.00 in full because the shopping agent bought outside the cardholder's signed instruction.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The signed cart totaled $104.00 against the cardholder's $60.00 limit.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The cart also added a carafe although the cardholder allowed only a dripper.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "The mandate check assigns responsibility to the buyer's agent platform.",
+      "cites": [
+       "F"
+      ]
+     },
+     {
+      "text": "We will close the chargeback by accepting the full refund.",
       "cites": [
        "A"
-      ]
-     },
-     {
-      "text": "The cardholder's signed mandate allowed a dripper with a $60.00 limit.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "The shopping agent instead signed a cart totaling $104.00 for a pour-over set, dripper and carafe.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The mandate check confirms the agent signed a cart outside the cardholder's intent.",
-      "cites": [
-       "F"
-      ]
-     },
-     {
-      "text": "We therefore accept the chargeback and will close the case with a full refund.",
-      "cites": [
-       "F"
       ]
      }
     ],
@@ -2660,15 +2576,15 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The signed intent allowed a dripper under $60, but the agent bought a $104 set with a carafe",
+     "reason": "The signed intent allowed a dripper under $60, but the agent bought a $104 set; the pages do not show cardholder agreement",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 10764,
+    "ms": 1365,
     "calls": 1,
     "tokens": {
-     "input": 3201,
-     "output": 49
+     "input": 3336,
+     "output": 54
     }
    }
   },
@@ -2678,7 +2594,7 @@
    "brief": "accept",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:44:09.767Z",
+    "at": "2026-10-29T22:19:13.739Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2699,33 +2615,27 @@
     ],
     "response": [
      {
-      "text": "We accept this chargeback and will refund the cardholder in full.",
+      "text": "We will refund the cardholder in full because the shopping agent bought an item outside the cardholder's signed instruction.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "The cardholder's signed intent allowed a dripper.",
-      "cites": [
-       "D"
-      ]
-     },
-     {
-      "text": "The agent signed a cart for a pour-over set containing a dripper and carafe.",
-      "cites": [
-       "E"
-      ]
-     },
-     {
-      "text": "The mandate check found that the cart did not match the item the cardholder allowed.",
+      "text": "The cardholder allowed a dripper, but the agent signed for a pour-over set that added a carafe.",
       "cites": [
        "F"
       ]
      },
      {
-      "text": "The buyer's agent platform is identified as responsible for signing outside the cardholder's intent.",
+      "text": "The mandate check assigns responsibility to the buyer's agent platform and directs a refund to the cardholder.",
       "cites": [
        "F"
+      ]
+     },
+     {
+      "text": "We had offered a return within 30 days for unused pieces, with return shipping paid by the buyer.",
+      "cites": [
+       "J"
       ]
      }
     ],
@@ -2739,14 +2649,14 @@
     "flipped": false,
     "verdict": {
      "side": "buyer",
-     "reason": "The signed intent allowed a dripper, but the agent bought a set with a carafe; the listing did not disclose buyer agreement",
+     "reason": "The signed intent allowed a dripper, but the agent bought a set with a carafe; the pages do not show buyer agreement",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 1704,
+    "ms": 1560,
     "calls": 1,
     "tokens": {
-     "input": 3216,
+     "input": 3312,
      "output": 52
     }
    }
@@ -2757,7 +2667,7 @@
    "brief": "fight",
    "reviewerMatchesLabel": true,
    "hearing": {
-    "at": "2026-10-29T19:44:11.493Z",
+    "at": "2026-10-29T22:19:15.359Z",
     "source": "draft",
     "pages": [
      "HC-000001",
@@ -2778,33 +2688,33 @@
     ],
     "response": [
      {
-      "text": "We listed the product as a hand-thrown ceramic dripper that fits #2 filters with a 600 ml carafe.",
+      "text": "The buyer said they decided they did not need the carafe and asked us to take the set back.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "We responded that unused pieces could be returned within 30 days, with return shipping paid by the buyer.",
+      "cites": [
+       "J"
+      ]
+     },
+     {
+      "text": "Our listing described the product as a ceramic dripper with a 600 ml carafe.",
       "cites": [
        "K"
       ]
      },
      {
-      "text": "The buyer wrote that her agent ordered the set and that she later decided she did not need the carafe.",
-      "cites": [
-       "J"
-      ]
-     },
-     {
-      "text": "We told the buyer that returns are accepted within 30 days for unused pieces and that return shipping is her responsibility.",
-      "cites": [
-       "J"
-      ]
-     },
-     {
-      "text": "Our checkout policy likewise permits returns within 30 days of delivery for unused pieces in original packaging.",
-      "cites": [
-       "L"
-      ]
-     },
-     {
-      "text": "The verified mandate check confirms the signed cart matched the allowed item, total, shipping address, and PayPal order.",
+      "text": "The mandate check confirms the cardholder's signed intent covered this exact cart and the PayPal order matched it.",
       "cites": [
        "F"
+      ]
+     },
+     {
+      "text": "USPS records that the shipment was delivered with a signature by L GOLDBERG.",
+      "cites": [
+       "I"
       ]
      }
     ],
@@ -2816,8 +2726,33 @@
      {
       "objection": {
        "n": 1,
-       "sentence": 0,
-       "text": "Where do the pages show any undisclosed difference? The buyer only says she later decided she did not need the disclosed carafe.",
+       "sentence": null,
+       "text": "Did the buyer return the item, or try to?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000011"
+       ],
+       "requirement": "returned",
+       "pressed": true
+      },
+      "answer": {
+       "stance": "answer",
+       "text": "The buyer asked whether we could take the set back, and we offered a return within 30 days for unused pieces. Nothing on file shows that the item was returned or that the buyer took steps to return it.",
+       "cites": [
+        "J"
+       ],
+       "kept": true,
+       "effect": "none"
+      },
+      "ruling": "overruled",
+      "reason": "Exhibit J shows a return inquiry and offer, but no return or attempted return.",
+      "ruledBy": "reviewer"
+     },
+     {
+      "objection": {
+       "n": 2,
+       "sentence": 2,
+       "text": "What alleged difference from the listing required disclosure? The buyer's message says only that she no longer needed the disclosed carafe.",
        "ground": "unsupported",
        "pages": [
         "HC-000011",
@@ -2828,7 +2763,7 @@
       },
       "answer": {
        "stance": "answer",
-       "text": "The pages show no undisclosed difference. Our listing expressly described a hand-thrown ceramic dripper that fits #2 filters with a 600 ml carafe, and the buyer said only that she later decided she did not need the carafe.",
+       "text": "No alleged difference required disclosure: the listing expressly described a ceramic dripper with a 600 ml carafe, and the buyer said only that she had decided she did not need the carafe.",
        "cites": [
         "J",
         "K"
@@ -2837,8 +2772,30 @@
        "effect": "none"
       },
       "ruling": "overruled",
-      "reason": "Exhibits J and K show the carafe was disclosed and the buyer merely no longer wanted it.",
+      "reason": "Exhibits J and K show the carafe was disclosed; the buyer complained only that it was no longer needed.",
       "ruledBy": "reviewer"
+     },
+     {
+      "objection": {
+       "n": 3,
+       "sentence": 0,
+       "text": "Where do the pages show the item was returned or that the buyer tried to return it, rather than merely asking whether you could take it back?",
+       "ground": "unsupported",
+       "pages": [
+        "HC-000011"
+       ],
+       "requirement": "prior"
+      },
+      "answer": {
+       "stance": "concede",
+       "text": "We concede the message shows only that the buyer asked whether we could take the set back; it does not show a return or an attempted return. Our sentence says only that she asked, so nothing is withdrawn.",
+       "cites": [],
+       "kept": true,
+       "effect": "none"
+      },
+      "ruling": "sustained",
+      "reason": "Exhibit conceded the point",
+      "ruledBy": "concession"
      }
     ],
     "after": "fight",
@@ -2846,15 +2803,15 @@
     "flipped": false,
     "verdict": {
      "side": "seller",
-     "reason": "The listing disclosed the carafe, the buyer only changed her mind, and the seller offered the stated return",
+     "reason": "The disclosed set matched the complaint, the seller offered a policy return, and the buyer neither returned nor tried to return it",
      "by": "reviewer"
     },
     "agrees": true,
-    "ms": 7047,
+    "ms": 8997,
     "calls": 3,
     "tokens": {
-     "input": 10487,
-     "output": 291
+     "input": 11038,
+     "output": 569
     }
    }
   }
@@ -3235,14 +3192,5 @@
    "kept": false,
    "why": "two isn't in Exhibit F, H, E, J."
   }
- ],
- "recheck": {
-  "at": "2026-10-29T19:45:47.030Z",
-  "carelessAnswers": 10,
-  "carelessStruckAsPublished": 5,
-  "carelessStruckNow": 5,
-  "carelessChanged": [],
-  "hearingAnswers": 12,
-  "hearingAnswersChanged": 2
- }
+ ]
 }
