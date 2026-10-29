@@ -43,6 +43,7 @@ const NAME_PART = String.raw`(?:(?:Mr|Mrs|Ms|Dr)\.|[A-Z]\.|[A-Z][A-Za-z'’-]*)`
 const SIGNER = new RegExp(String.raw`\bsign(?:ed|ature)(?: for)? by (${NAME_PART}(?: ${NAME_PART}){0,3})`, "g");
 const CARRIER = /\b(USPS|UPS|FedEx|Fed Ex|DHL|Royal Mail|Canada Post|OnTrac|LaserShip|Amazon Logistics|Purolator|Evri|Parcelforce|DPD|GLS)\b/g;
 const NUMBER = /(?<![\w.$])\d+(?:\.\d+)?(?![\w]|\.\d)/g;
+const NOT_A_COUNT = /\b3-?D[- ]?Secure\b|\b3DS\b|\b(?:sentences?|objections?) \d+(?:(?:,| and) \d+)*\b/gi;
 const WORDS: Record<string, string | null> = {
   two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10", eleven: "11", twelve: "12",
   twenty: "20", thirty: "30", forty: "40", fifty: "50", sixty: "60", seventy: "70", eighty: "80", ninety: "90",
@@ -142,6 +143,8 @@ export function tokens(text: string): Token[] {
   take(PLACE, "place", (m) => norm(`${m[1]}, ${m[2]}`));
   take(SIGNER, "signer", (m) => norm(m[1].replace(/[.,'’]+$/, "")), 1);
   take(CARRIER, "carrier", (m) => norm(m[0]));
+  // Names, not counts: "3-D Secure", and a hearing answer pointing at "sentence 2" or "objection 3".
+  rest = rest.replace(NOT_A_COUNT, (m) => " ".repeat(m.length));
   take(NUMBER, "number", (m) => m[0]);
   take(WORD, "word", (m) => m[0].toLowerCase());
   return out.sort((a, b) => a.at - b.at);

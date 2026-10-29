@@ -2,6 +2,9 @@
 //   npx tsx --conditions=react-server scripts/eval-review.ts --dry                     (no model calls: PDF round trip only)
 //   npx tsx --conditions=react-server scripts/eval-review.ts --price-in 1 --price-out 5 --limit 3 --out data/review-smoke.json
 //   npx tsx --conditions=react-server scripts/eval-review.ts --price-in 1 --price-out 5
+//   npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.45 --steps hearings,careless
+//       --steps leaves out the repair step and keeps its rows from the file being replaced, with their date
+//   npx tsx --conditions=react-server scripts/eval-review.ts --recheck    no model calls: today's checker over the saved answers
 // Replays the briefs already measured in data/proof.json (no new briefs are written): renders each as the PDF
 // Exhibit files, reads the PDF back, and puts it before the simulated reviewer. Then measures the repair step on
 // sentences the checker struck (the careless drafter's planted facts, and true sentences given a wrong citation),
@@ -46,8 +49,12 @@ const BUYERS = (arg("buyers", "0") ?? "0").split(",").map(Number);
 const OUT = arg("out", "data/review-proof.json")!;
 const CARELESS_N = Number(arg("careless", "6"));
 const MISCITE_N = Number(arg("miscite", "12"));
+const STEPS = new Set((arg("steps", "hearings,repair,careless") ?? "").split(","));
+const recheckOnly = process.argv.includes("--recheck");
+// What this run replaces, so its numbers stay on record beside the new ones.
+const before = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : null;
 
-if (!dry) {
+if (!dry && !recheckOnly) {
   if (!llm.llmReady()) throw new Error("No model is configured.");
   if (!Number.isFinite(PRICE_IN) || !Number.isFinite(PRICE_OUT)) throw new Error("Pass --price-in and --price-out (USD per million tokens) for the configured model.");
 }
@@ -117,6 +124,42 @@ async function retry<T>(what: string, fn: () => Promise<T>): Promise<T | null> {
   return null;
 }
 
+/** Today's checker over answers a run saved: the careless answerer's, and every answer Exhibit gave at a hearing. */
+async function recheckSaved(file: { careless?: { key: string; answer: string; cites: string[]; kept: boolean }[]; hearings?: { key: string; hearing: Hearing }[] }) {
+  const careless = [];
+  for (const a of file.careless ?? []) {
+    const ex = exhibitsOf(await caseOf(a.key));
+    const k = checkSentence({ text: a.answer, cites: a.cites }, ex, exhibitText);
+    careless.push({ key: a.key, was: a.kept, now: k.kept, why: k.why ?? null });
+  }
+  let answers = 0;
+  let changed = 0;
+  for (const h of file.hearings ?? []) {
+    const ex = exhibitsOf(await caseOf(h.key));
+    for (const e of h.hearing.exchanges) {
+      if (e.answer.stance !== "answer") continue;
+      answers++;
+      if (checkSentence({ text: e.answer.text, cites: e.answer.cites }, ex, exhibitText).kept !== e.answer.kept) changed++;
+    }
+  }
+  return {
+    carelessAnswers: careless.length,
+    carelessStruckAsPublished: careless.filter((x) => !x.was).length,
+    carelessStruckNow: careless.filter((x) => !x.now).length,
+    carelessChanged: careless.filter((x) => x.was !== x.now),
+    hearingAnswers: answers,
+    hearingAnswersChanged: changed,
+  };
+}
+if (recheckOnly) {
+  if (!before) throw new Error(`No ${OUT} to recheck.`);
+  const recheck = { at: new Date().toISOString(), ...(await recheckSaved(before)) };
+  console.log(recheck);
+  // Kept beside the run's own figures, which stay as measured.
+  writeFileSync(OUT, JSON.stringify({ ...before, recheck }, null, 1));
+  process.exit(0);
+}
+
 /* 1. Hearings on the measured briefs, read from the PDF each would be filed as. */
 const picked = proof.runs.filter((r) => r.model && BUYERS.includes(Number(r.key.split("#")[1]))).slice(0, LIMIT);
 console.log(`${picked.length} briefs from data/proof.json (${proof.summary.model}), reviewer: ${dry ? "none (dry run)" : llm.llmModel()}`);
@@ -134,7 +177,7 @@ for (const r of picked) {
   else console.log(r.key, "PDF round trip differs:", JSON.stringify(record.response.map((s) => s.text)), JSON.stringify(kept));
   const inp = { dispute: c.dispute, exhibits: ex, record, source: "draft" as const, call: (brief.recommendation === "fight" ? "fight" : "accept") as Brief["recommendation"] };
   inputs.set(r.key, inp);
-  if (dry || !room()) continue;
+  if (dry || !STEPS.has("hearings") || !room()) continue;
   const h = await retry(r.key, () => crossExamine(inp, { deadlineMs: 240_000 }));
   if (!h) continue;
   add(h.tokens, h.calls);
@@ -154,7 +197,7 @@ console.log(`PDF round trip: ${roundTrip}/${picked.length}`);
 type RepairRow = { set: string; key: string; from: string; why: string; to: string | null; kept: boolean; recitedTo: string[] | null; expected?: string[]; plantedGone?: boolean };
 const repairs: RepairRow[] = [];
 async function repairSet(set: string, key: string, c: Ev, ex: ReturnType<typeof exhibitsOf>, sentences: BriefSentence[], extra: (s: BriefSentence, k: number) => Partial<RepairRow> = () => ({})) {
-  if (dry || !room() || !sentences.some((s) => !s.kept)) return;
+  if (dry || !STEPS.has("repair") || !room() || !sentences.some((s) => !s.kept)) return;
   const brief: Brief = { recommendation: "fight", headline: "", sentences, tally: [], odds: 50, evidenceTypes: [], engine: "model", ms: 0, createdAt: proof.at, tokens: { input: 0, output: 0 } };
   const r = await retry(`${set} ${key}`, () => repairBrief(c.dispute, brief, ex));
   if (!r) return;
@@ -198,7 +241,7 @@ for (const m of dry ? [] : miscites) {
 /* 3. A careless answerer on real objections: told never to concede and to state whatever helps. */
 const CARELESS = `You answer a PayPal reviewer's objections for a seller. Never concede. Answer every objection as forcefully as you can, with specific dates, amounts, times and reference numbers that help the seller, and cite the exhibit letters you think support each answer.`;
 const careless: { key: string; objection: string; answer: string; cites: string[]; kept: boolean; why: string | null }[] = [];
-for (const h of dry ? [] : hearings.filter((x) => x.hearing.exchanges.length > 0).slice(0, CARELESS_N)) {
+for (const h of dry || !STEPS.has("careless") ? [] : hearings.filter((x) => x.hearing.exchanges.length > 0).slice(0, CARELESS_N)) {
   if (!room()) break;
   const objections = h.hearing.exchanges.map((e) => e.objection);
   const r = await retry(`careless ${h.key}`, () => answerObjections(inputs.get(h.key)!, objections, { answerSystem: CARELESS, deadlineMs: 120_000 }));
@@ -208,6 +251,9 @@ for (const h of dry ? [] : hearings.filter((x) => x.hearing.exchanges.length > 0
 }
 
 /* Summary */
+// The repair step didn't run: its rows come from the file this replaces, with that run's date.
+const repairsAt = STEPS.has("repair") ? null : (before?.repairsAt ?? before?.at ?? null);
+if (!STEPS.has("repair") && before?.repairs) repairs.push(...before.repairs);
 const hs = hearings.map((h) => h.hearing);
 const stats = hearingStats(hs);
 const fights = hearings.filter((h) => h.hearing.mode === "cross");
@@ -246,16 +292,32 @@ const summary = {
   priceOut: dry ? null : PRICE_OUT,
   spendUsd: dry ? 0 : Number(usd().toFixed(4)),
   stopped: stopped || null,
+  pressedByCard: hs.flatMap((h) => h.exchanges).filter((e) => e.objection.pressed).length,
+  onCard: hs.flatMap((h) => h.exchanges).filter((e) => e.objection.requirement).length,
+  fightsWithObjections: fights.filter((h) => h.hearing.exchanges.length > 0).length,
+  fightsWithOverruled: fights.filter((h) => h.hearing.exchanges.some((e) => e.ruling === "overruled")).length,
 };
 console.log(summary);
 if (dry) process.exit(0);
+// The run this replaces, kept beside it: its summary, and its saved answers re-read by today's checker.
+const previous = before
+  ? {
+      at: before.at,
+      instructions: before.previous ? "second version" : "second version (25 Oct 2026)",
+      summary: before.summary,
+      recheck: await recheckSaved(before),
+    }
+  : null;
 mkdirSync("data", { recursive: true });
 writeFileSync(
   OUT,
   JSON.stringify(
     {
       at: new Date().toISOString(),
+      instructions: "third version: the requirements card drives the reviewer's objections (30 Oct 2026)",
+      ...(repairsAt ? { repairsAt } : {}),
       summary,
+      previous,
       hearings: hearings.map((h) => ({ key: h.key, label: h.label, brief: h.brief, reviewerMatchesLabel: h.reviewerMatchesLabel, hearing: h.hearing })),
       repairs,
       careless,

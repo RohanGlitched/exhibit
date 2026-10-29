@@ -242,12 +242,17 @@ function duplicate(exhibits: Exhibit[]): Requirement[] {
   const notes = exhibits.find((e) => e.kind === "note");
   const noted = notes?.lines?.find((l) => /refund/i.test(l));
   const done = refund && /Completed/i.test(fact(refund, "Status") ?? "");
+  // A second order in the store's own records: two purchases, though PayPal's record of it isn't on file.
+  const history = exhibits.find((e) => e.kind === "history");
+  const second = [history, notes].find((e) => e?.lines?.some((l) => /\b(?:separate|second|two) orders?\b|\bsame box as this order\b/i.test(l)));
   return [
     done
       ? item("credit", "A credit on the duplicate, or two distinct transactions", "on file", `Refund ${fact(refund, "Refund")} of ${fact(refund, "Amount") ?? "the duplicate"}, completed`, letters(refund), true, "")
       : payments.length >= 2
         ? item("credit", "A credit on the duplicate, or two distinct transactions", "on file", `${payments.length} separate payments on file`, letters(...payments), true, "")
-        : noted
+        : second
+          ? item("credit", "A credit on the duplicate, or two distinct transactions", "weak", "The store's records show a second, separate order; its PayPal payment isn't on file", letters(history, notes), true, "Where is the second transaction, and what shows the buyer placed it?")
+          : noted
           ? item("credit", "A credit on the duplicate, or two distinct transactions", "weak", "The seller's note says it was refunded; no refund record", letters(notes), true, "Where is the refund record for the duplicate charge?")
           : item("credit", "A credit on the duplicate, or two distinct transactions", "missing", "No refund and no second transaction on file", [], true, "What shows the duplicate was credited, or that these were two separate purchases?"),
     payments.length >= 2 || refund

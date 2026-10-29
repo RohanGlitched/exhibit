@@ -418,3 +418,10 @@ test("a denial that cites only a record silent on it is struck", () => {
   assert.equal(check("We never shipped it.", ["F"]).kept, true);
   assert.equal(check("We have the receipt but no delivery confirmation for order HC-622449.", ["B"]).kept, true);
 });
+
+test("'3-D Secure' and 'sentence 2' are names, not counts", () => {
+  // Two hearing answers were struck as if they claimed the counts 3 and 2.
+  assert.equal(check("No 3-D Secure result is on file, but USPS delivered it in San Francisco, CA 94109.", ["E"]).kept, true);
+  assert.equal(check("Sentence 2 says only that USPS delivered it on 1 Oct 2026.", ["E"]).kept, true);
+  assert.equal(check("The buyer ordered 3 mugs.", ["B"]).kept, false);
+});

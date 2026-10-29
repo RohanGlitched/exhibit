@@ -281,7 +281,9 @@ export async function crossExamine(inp: HearingInput, opts: HearingOpts = {}): P
     OBJECTIONS_TOOL,
   );
   // The card presses what the reviewer left alone: every weak or missing item the case needs gets its objection.
-  const objections = pressObjections(normaliseObjections(raised.objections, record.response.length), card, record.response, (x) => record.exhibitPages.find((p) => p.exhibit === x)?.bates);
+  // Only Bates numbers the PDF carries (a store order number reads like one).
+  const raisedOnPages = normaliseObjections(raised.objections, record.response.length).map((o) => ({ ...o, pages: o.pages.filter((p) => pages.includes(p)) }));
+  const objections = pressObjections(raisedOnPages, card, record.response, (x) => record.exhibitPages.find((p) => p.exhibit === x)?.bates);
   if (!objections.length) {
     const s = settle({ call: inp.call, response: record.response, objections, answers: [], verdict: raised.ruling });
     return { ...base, mode: "cross", ...s, ms: m.ms, calls: m.calls, tokens: m.tokens };
