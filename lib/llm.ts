@@ -1,5 +1,6 @@
 import "server-only";
 import { signRequest, type AwsCredentials } from "./aws/sigv4";
+import { strictSchema } from "./strict";
 
 /**
  * Exhibit asks for one structured answer per case through a single forced tool call, so the brief always arrives
@@ -164,7 +165,8 @@ async function azureConverse(req: ConverseRequest): Promise<ConverseResult> {
     input,
     ...(req.tools?.length
       ? {
-          tools: req.tools.map((t) => ({ type: "function", name: t.name, description: t.description, parameters: t.schema, strict: false })),
+          // Strict where the schema qualifies (the brief, the hearing, the repair): the model can't return another shape.
+          tools: req.tools.map((t) => ({ type: "function", name: t.name, description: t.description, parameters: t.schema, strict: strictSchema(t.schema) })),
           tool_choice: choice === "auto" ? "auto" : choice === "any" ? "required" : { type: "function", name: choice.name },
         }
       : {}),

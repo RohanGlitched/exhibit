@@ -17,12 +17,14 @@ const TOOL = {
   description: "Re-cite the struck sentences to the exhibits that prove them.",
   schema: {
     type: "object",
+    additionalProperties: false,
     required: ["sentences"],
     properties: {
       sentences: {
         type: "array",
         items: {
           type: "object",
+          additionalProperties: false,
           required: ["index", "text", "cites"],
           properties: {
             index: { type: "integer", description: "The struck sentence's number." },
