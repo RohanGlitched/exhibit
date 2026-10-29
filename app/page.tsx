@@ -487,7 +487,7 @@ export default async function Home() {
         <div className={styles.lede}>
           <h2>What a dispute costs a small seller</h2>
           <p>
-            The fee, the ten-day clock and the hour of paperwork land on shops with no one to hand them to. Chargeback services take a quarter of every
+            The fee, the response date and the hour of paperwork land on shops with no one to hand them to. Chargeback services take a quarter of every
             case they win; the Resolution Center is free if you write it yourself. Exhibit is for the seller in between.
           </p>
         </div>

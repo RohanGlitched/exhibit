@@ -29,7 +29,7 @@ const NOTES = [
     title: "An analyst on Studio's agent framework",
     body: (
       <>
-        Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s ten-day window, fight or refund, and the checker, and has five
+        Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s response dates, fight or refund, and the checker, and has five
         tools of its own: <code>deadline_ladder</code>, <code>desk_ledger</code>, <code>turn_to_page</code>, <code>new_widget_slot</code> and{" "}
         <code>check_widget</code>. It hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents, then reads the report back
         so it only reports what changed. Every turn runs on the app&apos;s own model (GPT-5.6 on Azure OpenAI) through this server, which writes the analyst&apos;s
@@ -75,7 +75,7 @@ export default function Analytics() {
           <h1>The desk, by the numbers</h1>
           <p className={styles.lede}>
             Live data from the desk: every dispute on the shop&apos;s PayPal sandbox account, where it stands with PayPal, and the brief Exhibit wrote for it.
-            See what is due before PayPal&apos;s ten-day window closes, what fighting kept against what refunds gave back, and which sentences the checker struck.
+            See what is due before each case&apos;s response date, what fighting kept against what refunds gave back, and which sentences the checker struck.
             Click a rung, a stamp or a bar to filter the page, or ask the analyst.
           </p>
         </div>
