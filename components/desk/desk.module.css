@@ -187,8 +187,18 @@
     height: 44px;
   }
   .missedBox li {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    padding: 10px 0;
+  }
+  .missedBox li > :nth-child(-n + 2) {
+    flex-basis: 100%;
+  }
+  .missedBox li > a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
   .grid {
     display: none;
