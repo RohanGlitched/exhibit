@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import OpenCase from "@/components/OpenCase";
 import { SCENARIOS } from "@/lib/shop/scenarios";
 import { reasonLabel, usd } from "@/lib/format";
@@ -57,6 +58,10 @@ export default function NewCase() {
         </ol>
       </header>
       <OpenCase cases={cases} />
+      <p className={styles.note}>
+        Or <Link href="/import">bring your own case</Link>: paste an order, its tracking and the emails from your own store, and get the exhibits and a
+        checked brief. Nothing is filed.
+      </p>
       <p className={styles.note}>
         Some of these the seller should win and some it should refund. Exhibit doesn&apos;t know which story you picked; it only sees the records.
       </p>

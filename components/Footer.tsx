@@ -5,6 +5,7 @@ import styles from "./chrome.module.css";
 
 const TRY: { href: string; label: string; note: string; external?: boolean }[] = [
   { href: "/new", label: "Open a sandbox case", note: "a real sandbox chargeback, yours to argue" },
+  { href: "/import", label: "Bring your own case", note: "paste an order, tracking and emails; never filed" },
   { href: "/desk", label: "The desk", note: "every dispute on the account" },
   { href: "/desk/analytics", label: "Analytics", note: "the desk in AG Studio" },
   { href: "/proof", label: "Proof", note: "what was measured, and how" },
