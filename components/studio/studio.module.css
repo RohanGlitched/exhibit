@@ -146,3 +146,37 @@
     height: max(640px, calc(100svh - 120px));
   }
 }
+
+/*
+ * While a widget waits on its first query Studio lays a faint spinner and "Loading..." over a white card, which
+ * reads as blank. Exhibit's cards show ruled skeleton lines instead, like the desk's loading sheet.
+ */
+.studio :global(.ag-studio-layout-widget-loading-overlay) {
+  background: var(--sheet, #fbfcfd);
+}
+.studio :global(.ag-studio-layout-widget-loading-overlay .ag-studio-widget-loading) {
+  opacity: 0;
+}
+.studio :global(.ag-studio-layout-widget-loading-overlay)::before {
+  content: "";
+  position: absolute;
+  inset: 12px 18px auto 8px;
+  height: min(70%, 150px);
+  background: repeating-linear-gradient(to bottom, #e3e8f0 0 11px, transparent 11px 28px);
+  border-radius: 2px;
+  animation: cardPulse 1.2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes cardPulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio :global(.ag-studio-layout-widget-loading-overlay)::before {
+    animation: none;
+  }
+}

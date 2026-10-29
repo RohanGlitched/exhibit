@@ -48,7 +48,7 @@ function Days({ value }: CustomCellRendererProps) {
   if (d < 0)
     return (
       <span className={styles.missedCell} title={`PayPal's deadline passed ${-d} day${d === -1 ? "" : "s"} ago with no answer`}>
-        Missed, {-d} d ago
+        {-d} d ago
       </span>
     );
   return (

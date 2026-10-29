@@ -2,6 +2,7 @@
 
 import type { AgWidgetDataFormat, AgWidgetParams } from "ag-studio";
 import { num, usd, useWidgetRows, type Refs } from "./shared";
+import Busy from "./Busy";
 import styles from "./widgets.module.css";
 
 export interface LedgerStyle {
@@ -39,7 +40,7 @@ export default function Ledger(params: AgWidgetParams<LedgerWidget>) {
     ready: !!fields.kept && !!fields.refunded,
   }));
   // Always an element, never null: Studio attaches a React widget only once it has drawn something.
-  if (!data) return <div className={styles.paper} aria-busy="true" />;
+  if (!data) return <Busy lines={5} />;
 
   const row = data.rows[0] ?? {};
   const v = (k: keyof typeof fields) => (fields[k] ? num(row[fields[k]!.key]) : 0);

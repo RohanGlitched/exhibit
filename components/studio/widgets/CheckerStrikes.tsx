@@ -3,6 +3,7 @@
 import type { AgWidgetDataFormat, AgWidgetParams } from "ag-studio";
 import type { ReactNode } from "react";
 import { num, plural, selectedValues, text, useWidgetRows, type Refs } from "./shared";
+import Busy from "./Busy";
 import styles from "./widgets.module.css";
 
 // Pleading paper is numbered to the foot of the page, written on or not.
@@ -37,7 +38,7 @@ export default function CheckerStrikes(params: AgWidgetParams<CheckerStrikesWidg
 
   const data = useWidgetRows(params as AgWidgetParams, () => ({ fields: [verdictField, reasonField, countField], ready: !!verdictField && !!countField }));
   // Always an element, never null: Studio attaches a React widget only once it has drawn something.
-  if (!data || !verdictField || !countField) return <div className={styles.paper} aria-busy="true" />;
+  if (!data || !verdictField || !countField) return <Busy lines={6} />;
 
   const lines = data.rows.map((r) => {
     const verdict = text(r[verdictField.key]);

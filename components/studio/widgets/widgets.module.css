@@ -553,3 +553,33 @@
     display: none;
   }
 }
+
+/* A widget waiting on its first query: ruled lines sweeping like the desk's loading sheet. */
+.busy {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px 6px;
+  overflow: hidden;
+}
+.busyLine {
+  display: block;
+  height: 11px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #e9edf3 0%, #f4f6f9 50%, #e9edf3 100%);
+  background-size: 200% 100%;
+  animation: busySweep 1.4s ease-in-out infinite;
+}
+@keyframes busySweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .busyLine {
+    animation: none;
+  }
+}

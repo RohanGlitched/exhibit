@@ -3,6 +3,7 @@
 import type { AgWidgetDataFormat, AgWidgetParams } from "ag-studio";
 import { useId } from "react";
 import { num, selectedValues, text, useWidgetRows, type Refs } from "./shared";
+import Busy from "./Busy";
 import styles from "./widgets.module.css";
 
 export interface StampsStyle {
@@ -30,10 +31,14 @@ const TONE: Record<string, string> = {
   pending: "respondent",
   "paypal reviewing": "respondent",
   fight: "respondent",
+  "ruled on request": "won",
+  "sandbox closed it": "ink",
+  "deadline passed": "due",
+  "seller refunded": "ink",
 };
 
 // "missed" (a deadline that passed with no answer) stays in plain ink: nothing on it can be filed any more.
-const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "missed", "missed deadline", "lost"];
+const ORDER = ["won", "filed", "your move", "paypal reviewing", "pending", "refunded", "missed", "missed deadline", "lost", "ruled on request", "sandbox closed it", "seller refunded", "deadline passed"];
 
 /**
  * Counts as rubber stamps on the page, the way a clerk marks a file: WON in green, LOST and YOUR MOVE in red,
@@ -50,7 +55,7 @@ export default function StampCounts(params: AgWidgetParams<StampCountsWidget>) {
 
   const data = useWidgetRows(params as AgWidgetParams, () => ({ fields: [categoryField, valueField], ready: !!categoryField && !!valueField }));
   // Always an element, never null: Studio attaches a React widget only once it has drawn something.
-  if (!data || !categoryField || !valueField) return <div className={styles.paper} aria-busy="true" />;
+  if (!data || !categoryField || !valueField) return <Busy lines={4} />;
 
   const picked = selectedValues(params as AgWidgetParams, categoryField);
   const stamps = data.rows
