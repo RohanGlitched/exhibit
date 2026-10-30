@@ -62,3 +62,24 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.when {
+  margin: -4px 0 10px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.at {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+.differ {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--rule);
+  background: var(--respondent-wash);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}

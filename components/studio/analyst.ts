@@ -31,7 +31,7 @@ const obj = (properties: Record<string, JsonSchema>, required: string[] = []): J
   additionalProperties: false,
 });
 
-export const ANALYST_TOOLS: Record<"deadline_ladder" | "desk_ledger" | "turn_to_page" | "new_widget_slot" | "check_widget", AnalystToolSpec> = {
+export const ANALYST_TOOLS: Record<"deadline_ladder" | "desk_ledger" | "turn_to_page" | "new_widget_slot" | "check_widget" | "filter_ladder" | "open_case", AnalystToolSpec> = {
   deadline_ladder: {
     name: "deadline_ladder",
     description:
@@ -62,6 +62,20 @@ export const ANALYST_TOOLS: Record<"deadline_ladder" | "desk_ledger" | "turn_to_
       ["page", "name"],
     ),
   },
+  filter_ladder: {
+    name: "filter_ladder",
+    description:
+      "Cross-filters the Deadlines page from the deadline ladder, as a reader clicking rungs would: the ladder, the stamps, the chart and the case list then show only these cases. Turns to the Deadlines page. Pass an empty list to clear the filter. Returns what the page now shows.",
+    parameters: obj(
+      { caseIds: { type: "array", items: { type: "string" }, description: "Case ids (PP-...) to keep, from deadline_ladder. Empty clears the filter." } },
+      ["caseIds"],
+    ),
+  },
+  open_case: {
+    name: "open_case",
+    description: "Opens one case's page (its brief, hearing and PayPal record) in a new tab, as double-clicking its rung does. Only for a case id the desk holds.",
+    parameters: obj({ caseId: { type: "string", description: "The case id, PP-..." } }, ["caseId"]),
+  },
   check_widget: {
     name: "check_widget",
     description:
@@ -91,6 +105,7 @@ The report's pages: ${PAGES.map((p) => `${p.id} ("${p.title}": ${p.note})`).join
 How to work:
 - For deadlines and what will cost money soon, call deadline_ladder. For the money picture, call desk_ledger. For anything else, call view_schema once, then execute_query. Never guess numbers.
 - When an answer lives on another page, call turn_to_page so the reader sees it.
+- To show the reader a few cases on the ladder, call filter_ladder with their ids (from deadline_ladder); to open one, call open_case. Say which cases the filter kept and which case opened, as the tools report it.
 - To add a widget: call new_widget_slot first. Delegate to "page" with the exact widgetId, widgetType and position it returned, saying "add a new widget; do not reuse or change any existing widget". Then delegate to "widget" with that same widgetId and type to configure it. Then call check_widget. Prefer Exhibit's own widget types where they fit: exhibit-ledger (kept, refunded, lost, at stake), exhibit-deadline-ladder (cases on the seller's move), exhibit-checker-strikes (the checker's verdicts), exhibit-stamps (counts by outcome or stage).
 - Never reconfigure, move or remove a widget that is already on the report unless the reader asked for that widget to change. Use "planning" only for three or more widgets.
 - After a change, say in one line what check_widget confirmed and where. If it found nothing added, or an existing widget changed, say exactly that; never claim an addition check_widget did not confirm.

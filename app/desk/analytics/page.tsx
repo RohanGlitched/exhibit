@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SAVED_RECORDED, SAVED_THREAD } from "@/components/studio/saved";
+import { LADDER_RECORDED } from "@/components/studio/saved-ladder";
 import StudioLoader from "@/components/studio/StudioLoader";
 import { day } from "@/lib/format";
 import styles from "../desk.module.css";
@@ -29,9 +30,9 @@ const NOTES = [
     title: "An analyst on Studio's agent framework",
     body: (
       <>
-        Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s response dates, fight or refund, and the checker, and has five
-        tools of its own: <code>deadline_ladder</code>, <code>desk_ledger</code>, <code>turn_to_page</code>, <code>new_widget_slot</code> and{" "}
-        <code>check_widget</code>. It hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents, then reads the report back
+        Exhibit analyst is a custom agent on Studio&apos;s Agent Framework. It knows PayPal&apos;s response dates, fight or refund, and the checker, and has seven
+        tools of its own: <code>deadline_ladder</code>, <code>desk_ledger</code>, <code>turn_to_page</code>, <code>filter_ladder</code> (cross-filters the page
+        from the ladder, as clicking rungs does), <code>open_case</code>, <code>new_widget_slot</code> and <code>check_widget</code>. It hands anything that changes the dashboard to Studio&apos;s own planning, page and widget agents, then reads the report back
         so it only reports what changed. Every turn runs on the app&apos;s own model (GPT-5.6 on Azure OpenAI) through this server, which writes the analyst&apos;s
         instructions itself; no key reaches the browser.
       </>
@@ -95,6 +96,7 @@ export default function Analytics() {
           {SAVED_THREAD
             ? ` The analyst opens on a conversation recorded on ${SAVED_RECORDED}, saved as it ran: asked for a chart of disputed money by who decided, it built the "Disputed money by who decided" chart at the foot of the Money page. Opening it replays the record; it calls no model. Two things on that chart were set after recording: a legend, and its colours. As recorded, its kept, refunded and lost series came out blue, red and green; the page puts them in the palette's order, with the money still at stake added in front, so lost is red, kept green and refunded plain ink.`
             : ""}
+          {` A second recorded run, from ${LADDER_RECORDED}, is in the analyst's conversation list ("Urgent dispute deadlines"): asked which cases on your move were due within seven days, it read the deadline ladder, cross-filtered the Deadlines page to those cases from the ladder and opened the soonest in a new tab, in four model calls. Opening it calls no model either; it filters the ladder again to the cases it picked that are still on your move, and leaves the tab closed.`}
         </p>
         <ol className={made.notes}>
           {NOTES.map((n) => (

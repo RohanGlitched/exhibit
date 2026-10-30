@@ -8,6 +8,7 @@ import type { Exhibit, Fact } from "../cases/types";
 import { requirementsFor, type RequirementsCard } from "../cases/requirements";
 import { fmtUsd, fmtWhen, itemLine, messageLine, scanLine } from "./parse";
 import { NETWORKS, REASONS, type Clean } from "./input";
+import { amexCard } from "./amex";
 
 export const PASTE = "From your paste, not read from PayPal";
 const NOTE = "From your paste. Exhibit hasn't checked it against PayPal, the carrier or your store.";
@@ -213,7 +214,9 @@ export function buildCase(c: Clean): ImportedCase {
   }
 
   const exhibits = out.map((e, i) => ({ ...e, id: String.fromCharCode(65 + i) }));
-  const card = requirementsFor({ reason: d.reason, amount: d.amount, brand: d.network === "PAYPAL" ? null : d.network }, exhibits);
+  const read = requirementsFor({ reason: d.reason, amount: d.amount, brand: d.network === "PAYPAL" ? null : d.network }, exhibits);
+  // Amex has its own reason codes (C08, C31, F29, P08), not Visa's or Mastercard's.
+  const card = d.network === "AMEX" ? amexCard(read, d.reason) : read;
   // The card reads a tracker exhibit as "on file with PayPal"; here that rests on the seller's word.
   if (card) for (const i of card.items) i.detail = i.detail.replace(/on file with PayPal$/, "on the PayPal transaction, as you say");
   return {

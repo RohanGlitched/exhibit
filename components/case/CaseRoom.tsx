@@ -14,6 +14,7 @@ import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/li
 import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, daysToDue, reasonLabel, usd, utcDay } from "@/lib/format";
 import { utcStamp } from "@/lib/webhooks/paypal";
+import { outcomeMoney } from "@/lib/cases/case-page";
 import styles from "./case.module.css";
 
 const STAMP: Partial<Record<CaseView["where"], { word: string; tone: "due" | "won" | "ink" }>> = {
@@ -214,7 +215,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                 <h2>{rec === "accept" ? "Refund and close it" : rec === "offer" ? "Offer a partial refund" : "File the response"}</h2>
                 <p>
                   {rec === "accept"
-                    ? `Accepting tells PayPal to refund ${amount} to the buyer and closes the case. It saves the fee and the time a losing fight costs.`
+                    ? `Accepting tells PayPal to refund ${amount} to the buyer and closes the case. PayPal's fee is charged either way; refunding saves the time a losing fight costs.`
                     : `Exhibit sends PayPal the response, the evidence types it chose and a PDF with every exhibit, Bates-stamped.`}
                 </p>
               </div>
@@ -371,20 +372,10 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           )
         }
         below={panel}
-        decided={
-          closed
-            ? view.where === "won"
-              ? `won, the seller keeps ${amount}`
-              : view.where === "lost"
-                ? `lost, ${amount} back to the buyer`
-                : view.where === "refunded"
-                  ? `refunded, ${amount} back to the buyer`
-                  : "resolved"
-            : null
-        }
+        decided={closed ? (outcomeMoney(view.where, Number(view.amount.value), view.channel === "EXTERNAL")?.line ?? "resolved") : null}
       />
       </div>
-      <ToolkitCalls calls={view.brief?.toolkit} />
+      <ToolkitCalls calls={view.brief?.toolkit} brief={view.brief} later={view.house?.plan?.read ?? null} />
 
       {phase !== "arguing" && <Hearing view={view} onBrief={(b) => { setSentences(b.sentences); setVerdict(toVerdict(b)); setView((v) => ({ ...v, brief: b })); }} />}
       <CaseLedger view={view} />

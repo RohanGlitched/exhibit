@@ -26,6 +26,17 @@ export interface AuditInput {
   status: string;
   /** PayPal offers a ruling on the case now. */
   adjudicable: boolean;
+  /** Sentences of the brief the checker struck as first written and kept once rewritten from the record. */
+  repaired?: number;
+}
+
+/**
+ * A plan's "Nothing struck" said the way the brief shows it: a sentence the checker struck as first written and
+ * kept once repaired is still a strike, so "nothing left struck; 1 repaired".
+ */
+export function struckWords(reason: string, repaired = 0): string {
+  if (!repaired) return reason;
+  return reason.replace(/^Nothing struck\b/, `Nothing left struck (${repaired} sentence${repaired === 1 ? "" : "s"} repaired: struck as first written, kept once rewritten from the record)`);
 }
 
 /** The side a ruling request asked for, from the line fileAction writes ("Asked the sandbox to rule for the buyer"). */
@@ -63,7 +74,7 @@ export function houseAudit(i: AuditInput): AuditLine[] {
           : { at: p.decidedAt, text, missing: p.decidedAt < KEPT_FROM ? "transcript not kept: recorded before 30 Oct" : "transcript not kept" },
       );
     }
-    audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${p.reason}` });
+    audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${struckWords(p.reason, i.repaired)}` });
     if (p.undone) audit.push({ at: p.undone.at, text: "Stopped in the undo window; the case waits for the seller" });
     if (p.done) audit.push({ at: p.done.at, text: `${p.action === "accept" ? "Refunded" : "Filed"} by the autopilot${after(p.done.at)} under house rule ${p.rule}: ${p.done.summary}` });
     if (p.failed) audit.push({ at: p.failed.at, text: `Couldn't send: ${p.failed.error}` });

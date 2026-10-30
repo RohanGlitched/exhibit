@@ -1,6 +1,7 @@
 import { DISPUTE_FEE } from "@/lib/impact";
 import { usd } from "@/lib/format";
 import type { CaseView } from "@/lib/cases/view";
+import { outcomeMoney } from "@/lib/cases/case-page";
 import styles from "./ledger.module.css";
 
 /** The money on one case, computed from PayPal's record of it and the brief: no estimate, no probability. */
@@ -24,8 +25,10 @@ export function dollars(view: Pick<CaseView, "amount" | "channel" | "brief">) {
 
 const signed = (n: number) => (n < 0 ? `−${usd(-n)}` : usd(n));
 
-export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "channel" | "brief"> }) {
+export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "channel" | "brief"> & Partial<Pick<CaseView, "where" | "status">> }) {
   const d = dollars(view);
+  // Once PayPal has decided, the ledger says what the case came to, in the same words as the brief's outcome.
+  const outcome = view.status === "RESOLVED" && view.where ? outcomeMoney(view.where, d.amount, d.card) : null;
   return (
     <section className={`sheet ${styles.card}`} aria-labelledby="dollars-title">
       <header className={styles.cardHead}>
@@ -46,7 +49,7 @@ export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "
             <td>{signed(-d.fee)}</td>
           </tr>
           <tr data-call={d.call === "fight" || undefined}>
-            <th scope="row">Fight and win: you keep</th>
+            <th scope="row">Fight and win: you keep the {usd(d.amount)}, less the fee</th>
             <td>{signed(d.win)}</td>
           </tr>
           <tr data-call={d.call === "accept" || undefined}>
@@ -57,7 +60,13 @@ export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "
             <th scope="row">{d.offer ? `Partial offer of ${usd(d.offer.amount)}` : "Partial offer"}</th>
             <td>{d.offer ? signed(d.offer.keep) : d.card ? "not possible" : "none advised"}</td>
           </tr>
-          {d.balance !== null && (
+          {outcome && (
+            <tr className={styles.outcome}>
+              <th scope="row">Outcome: {view.where}, after the fee</th>
+              <td>{signed(outcome.net)}</td>
+            </tr>
+          )}
+          {d.balance !== null && !outcome && (
             <tr>
               <th scope="row">Evidence balance for you</th>
               <td>{d.balance}%</td>

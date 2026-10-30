@@ -8,7 +8,7 @@ const STANDING: Record<RequirementsCard["standing"], string> = { met: "Met", par
  * The requirements card on the case page: what the card network asks for on this reason code, each item on
  * file, weak or missing from the exhibits, as code read them. The drafter and the reviewer read the same card.
  */
-export default function Requirements({ card }: { card: RequirementsCard }) {
+export default function Requirements({ card, disclosure }: { card: RequirementsCard; disclosure?: string | null }) {
   return (
     <section className={`sheet ${styles.card}`} aria-labelledby="requirements-title">
       <header className={styles.cardHead}>
@@ -33,6 +33,8 @@ export default function Requirements({ card }: { card: RequirementsCard }) {
               <p className={styles.need}>
                 {i.need}
                 {!i.required && <small> strengthens the case</small>}
+                {/* Signed proof over $750 is PayPal Seller Protection's rule, not the card network's. */}
+                {i.id === "signature" && /750/.test(i.need) && <small> PayPal Seller Protection&apos;s rule, not the network&apos;s</small>}
               </p>
               <p className={styles.detail}>
                 {i.detail}
@@ -42,6 +44,11 @@ export default function Requirements({ card }: { card: RequirementsCard }) {
           </li>
         ))}
       </ul>
+      {disclosure && (
+        <p className={styles.disclose}>
+          <strong>How this history was made in the sandbox.</strong> {disclosure}
+        </p>
+      )}
       <p className={styles.foot}>
         {card.note ? `${card.note} ` : ""}Marked by code from the exhibits; the reviewer at the hearing presses every weak or missing item the case needs.
       </p>

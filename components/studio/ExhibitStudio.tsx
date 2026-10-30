@@ -165,7 +165,11 @@ function Report({ payload, read }: { payload: AnalyticsPayload; read: () => Anal
             onApiReady={(e) => {
               api.current = e.api as unknown as AgStudioApi<ExhibitRegistry>;
               // Development only: lets a recording script read the report back after an analyst run.
-              if (process.env.NODE_ENV !== "production") (window as unknown as { __exhibitState?: () => unknown }).__exhibitState = () => api.current?.getState();
+              if (process.env.NODE_ENV !== "production") {
+                const w = window as unknown as { __exhibitState?: () => unknown; __exhibitSetState?: (s: unknown) => void };
+                w.__exhibitState = () => api.current?.getState();
+                w.__exhibitSetState = (s) => api.current?.setState(s as never);
+              }
             }}
             onStateUpdated={(e) => {
               setPage(e.state.selectedPageId);
@@ -177,7 +181,7 @@ function Report({ payload, read }: { payload: AnalyticsPayload; read: () => Anal
       <p className={styles.foot}>
         {payload.cases.length} cases and {payload.sentences.length} checked sentences, {decided} decided by PayPal. Read{" "}
         {new Date(payload.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC, refreshed every minute. Double-click a case id or a
-        ladder rung to open the case.
+        ladder rung to open the case. The analyst&apos;s conversation list holds two recorded runs; opening one calls no model.
       </p>
     </div>
   );

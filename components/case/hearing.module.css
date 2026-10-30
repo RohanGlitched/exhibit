@@ -139,6 +139,14 @@
   font-size: 13px;
   color: var(--ink-soft);
 }
+.pressed {
+  margin: 0 0 0 30px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 28px;
+  color: var(--ink-soft);
+}
 .quoted {
   font-style: italic;
   color: var(--ink-soft);
@@ -415,4 +423,25 @@
 }
 .anchor {
   scroll-margin-top: 84px;
+}
+/* A hearing held after Exhibit asked PayPal to rule: last, and quieter, so it isn't read as the one the request followed. */
+.tab[data-after="true"] {
+  border-style: dashed;
+  border-bottom-color: transparent;
+  background: transparent;
+}
+.tab[data-after="true"][aria-selected="true"] {
+  background: var(--sheet);
+  border-top-style: solid;
+}
+.tabNote {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+@media (max-width: 560px) {
+  .pressed {
+    margin-left: 24px;
+  }
 }
