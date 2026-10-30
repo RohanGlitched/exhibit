@@ -10,7 +10,7 @@ import type { AgAiChatMessage } from "ag-studio";
 export const LADDER_RECORDED = "30 Oct 2026";
 
 export const LADDER_THREAD: { title: string; messages: AgAiChatMessage[] } = {
-  title: "Recorded 30 Oct 2026: Urgent dispute deadlines",
+  title: "Recorded 30 Oct 2026: Urgent dispute deadlines (DIX, VXA since filed)",
   messages: [
     {
       "id": "msg-3b04129d-25e5-4ddb-a925-4673743c913e",
