@@ -1,4 +1,4 @@
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://exhibit-desk.vercel.app";
 export const REPO_URL = "https://github.com/RohanGlitched/exhibit";
 
-export const VIDEO_URL = "https://youtu.be/TVQXFh42zas";
+export const VIDEO_URL = "https://youtu.be/DDJc1dr0LGQ";
