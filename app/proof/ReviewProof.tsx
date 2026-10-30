@@ -78,7 +78,28 @@ interface ReviewProofFile {
   carelessAt?: string;
   /** Today's checker over this run's saved answers; the figures above stay as measured. */
   recheck?: Recheck;
+  /** The ruling panel measured (scripts/eval-review.ts --steps repeat): each labelled fight heard as a live ruling request hears it. */
+  repeat?: Repeat;
 }
+interface Repeat {
+  at: string;
+  reviewer: string;
+  fights: number;
+  hearings: number;
+  pairs: number;
+  pairsAgree: number;
+  thirdHeard: number;
+  majority: number;
+  noMajority: number;
+  majorityMatchesLabel: number;
+  firstMatchesLabel: number;
+  flaggedVotes: number;
+  calls: number;
+  spendUsd: number;
+  stopped: string | null;
+  rows: { key: string; label: string; votes: ("seller" | "buyer" | "flagged")[]; majority: "seller" | "buyer" | null; majorityMatchesLabel: boolean | null }[];
+}
+const VOTE: Record<string, string> = { seller: "seller", buyer: "buyer", flagged: "seller, on a sustained point" };
 
 /** data/review-proof.json, written by scripts/eval-review.ts; the section is left out until a run exists. */
 function load(): ReviewProofFile | null {
@@ -135,6 +156,9 @@ export default function ReviewProof() {
   if (!p || !p.hearings.length) return null;
   const s = p.summary;
   const pick = pickHearing(p);
+  // The ruling panel measured, and the labelled fights its spend cap left unheard.
+  const rep = p.repeat ?? null;
+  const notHeard = rep ? p.hearings.filter((h) => h.label === "fight" && !rep.rows.some((r) => r.key === h.key)).map((h) => h.key.split("#")[0]) : [];
   // An objection the card added in code, where the reviewer left that item alone, to show beside the reviewer's own.
   const isPressed = (e: Hearing["exchanges"][number]) => !!e.objection.pressed;
   const pressed = p.hearings.find((h) => h !== pick && h.hearing.mode === "cross" && h.hearing.exchanges.some(isPressed));
@@ -280,7 +304,10 @@ export default function ReviewProof() {
             </li>
             <li>
               On a live case the verdict is the outcome Exhibit asks the sandbox ruling for, and the case shows &ldquo;Ruled by the simulated reviewer&rdquo; with
-              the reason.
+              the reason. Since 30 Oct the reviewer hears PayPal&apos;s copy up to three times before Exhibit asks: two hearings at once, a third only when
+              they split, and the ruling follows two that agree (&ldquo;2 of 3 hearings for the seller&rdquo;); a verdict for the seller that still rests on a
+              sustained point counts for neither side, and with no two agreeing the case is left for the seller. The reviewer has its own instructions, not
+              the drafter&apos;s.
             </li>
             <li>
               The repair step: before a brief is final, each sentence the checker struck goes back to the model once with the reason. The new sentence is used only
@@ -296,6 +323,30 @@ export default function ReviewProof() {
               ? ` ${p.recheck.hearingAnswersChanged} of the ${p.recheck.hearingAnswers} answers were struck by a checker misread, "3-D Secure" read as the count 3 and "sentence 2" as a figure; it is fixed since, and today's checker keeps both. The figures above are as measured.`
               : ""}
           </p>
+          {rep && (
+            <>
+              <h3 className={css.h3} style={{ marginTop: "1.75rem" }}>
+                The same PDF, heard again
+              </h3>
+              <p className={styles.note}>
+                Measured {day(rep.at)} with {rep.reviewer}: each of {rep.fights} labelled fights was heard the way a ruling request now hears it. The first
+                two hearings of the same PDF agreed on <strong>{rep.pairsAgree} of {rep.pairs}</strong>; a third was needed on {rep.thirdHeard}, and every
+                one reached a majority, which matched the label on <strong>{rep.majorityMatchesLabel} of {rep.majority}</strong> (the first hearing alone:{" "}
+                {rep.firstMatchesLabel} of {rep.fights}). {rep.flaggedVotes} hearing{rep.flaggedVotes === 1 ? "" : "s"} found for the seller on a point the
+                hearing sustained and counted for neither side. {rep.hearings} hearings, {rep.calls} calls, ${rep.spendUsd.toFixed(2)}
+                {rep.stopped && notHeard.length ? `; the run stopped at its spend cap before ${notHeard.join(", ")} could be heard again` : ""}
+                . {rep.fights} cases is a small base.
+              </p>
+              <ul className={css.rules}>
+                {rep.rows.map((r) => (
+                  <li key={r.key}>
+                    <strong>{r.key.split("#")[0]}</strong> (label {r.label === "fight" ? "fight" : "refund"}): {r.votes.map((v) => VOTE[v]).join("; ")}
+                    {r.majority ? ` → ${r.majority}${r.majorityMatchesLabel ? "" : ", against the label"}` : " → no majority"}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           {careless && (
             <p className={styles.note}>
               Correction: the second version published &ldquo;Invented answers struck {careless.carelessStruckAsPublished}/{careless.carelessAnswers}&rdquo;. One of
@@ -317,7 +368,7 @@ export default function ReviewProof() {
           {pressed && <Transcript h={pressed} caption="an objection the card added in code" only={isPressed} />}
         </div>
       </div>
-      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.235 --steps hearings</pre>
+      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.235 --steps hearings{rep ? "\n" + "npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.30 --steps repeat" : ""}</pre>
     </section>
   );
 }

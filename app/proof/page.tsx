@@ -151,6 +151,8 @@ interface Proof {
       summary: { runs: number; correct: number; textRuns: number; textCorrect: number; recordRuns: number; recordCorrect: number; seedRuns?: SeedRun[]; seedSpread?: Spread | null };
       runs: { key: string; variant: string; label: string; model: Answer | null }[];
     } | null;
+    /** Named main runs re-run alone since (scripts/eval.ts --update main --keys), with the answers they replaced. */
+    rerun?: { at: string; keys: string[]; why: string | null; prompt: string; spend?: { calls: number; usd: number }; previous: { key: string; label: string; model: Answer | null }[] };
   };
   injection?: { variants: { id: string; change: string; label: string; attack: string }[]; runs: (Row & { wrotePlanted: boolean; keptPlanted: number })[] };
   repeats?: { main: { key: string; seed: number; call: string | null; correct: boolean | null }[]; heldout: { key: string; seed: number; call: string | null; correct: boolean | null }[]; injection: { key: string; seed: number; call: string | null; correct: boolean | null }[] };
@@ -260,12 +262,22 @@ export default function ProofPage() {
   // The main set's re-run on today's prompt, and the run it replaced.
   const mainRun = P.main?.previous ? P.main : null;
   const mainPrev = mainRun?.previous ?? null;
+  // Runs re-run alone after the cards changed (30 Oct): the table shows their newer answers; the card run's own count uses the old ones.
+  const rerun = P.main?.rerun ?? null;
+  const rerunNow = rerun ? P.runs.filter((r) => rerun.keys.includes(r.key) && r.model?.correct).length : 0;
+  const rerunBefore = rerun ? rerun.previous.filter((r) => r.model?.correct).length : 0;
+  const cardRunCorrect = s.modelCorrect - rerunNow + rerunBefore;
+  const asCardRun = (r: Row): Row => {
+    const was = rerun?.previous.find((x) => x.key === r.key);
+    return was ? { ...r, model: was.model } : r;
+  };
+  const rerunChanges = rerun ? [...new Set(rerun.keys.map((k) => P.variants.find((v) => v.id === k.split("#")[0])?.change).filter(Boolean))] : [];
   const prevDay = mainPrev ? day(mainPrev.at).replace(/ \d{4}$/, "") : "";
   const beforeOf = (key: string) => mainPrev?.runs.find((r) => r.key === key);
   const mainMoved = mainPrev
     ? P.variants
         .map((v) => {
-          const now = P.runs.filter((r) => r.variant === v.id && r.model);
+          const now = P.runs.map(asCardRun).filter((r) => r.variant === v.id && r.model);
           const was = mainPrev.runs.filter((r) => r.variant === v.id && r.model);
           return { id: v.id, change: v.change, after: now.filter((r) => r.model!.correct).length, before: was.filter((r) => r.model!.correct).length, of: now.length };
         })
@@ -277,6 +289,10 @@ export default function ProofPage() {
   const leadsWithKept = colourFights.filter((r) => /\b(?:kept|keeps|did not return|didn't return|not returned)\b/i.test(r.model?.sentences?.[0]?.text ?? "")).length;
   const fightRow = policies.table.find((t) => t.id === "fight")!;
   const exhibitRow = policies.table.find((t) => t.id === "exhibit")!;
+  const strongRow = policies.table.find((t) => t.id === "strong");
+  const heldExhibit = policies.heldoutText?.table.find((t) => t.id === "exhibit");
+  const heldStrong = policies.heldoutText?.table.find((t) => t.id === "strong");
+  const heldFight = policies.heldoutText?.table.find((t) => t.id === "fight");
   const notRun = [
     !held && "the held-out set",
     !inj && "prompt injection in the buyer's email",
@@ -387,6 +403,7 @@ export default function ProofPage() {
             tally, not a chance of winning.
             {seeds > 1 ? ` Small marks after the model's call are its ${seeds - 1} repeat runs.` : ""}
             {mainPrev ? ` The model's call is the run of ${day(mainRun!.at)} on today's prompt; the small mark after it is the run of ${day(mainPrev.at)} on the prompt before the requirements card.` : ""}
+            {rerun ? ` The ${rerun.keys.length} runs that run missed were re-run alone on ${day(rerun.at)} on the changed cards, and show that answer.` : ""}
           </p>
         </div>
         {stories.map((story) => (
@@ -471,7 +488,7 @@ export default function ProofPage() {
             </p>
             {mainPrev && (
               <p>
-                Re-run once on {day(mainRun!.at)} on today&apos;s prompt, {mainRun!.prompt}: {s.modelCorrect} of {s.modelRuns}, down from{" "}
+                Re-run once on {day(mainRun!.at)} on the prompt {mainRun!.prompt}: {cardRunCorrect} of {s.modelRuns}, down from{" "}
                 {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)}, before the drafter read the requirements card. The card made it
                 warier where a required item is marked missing, and it lost these:
               </p>
@@ -488,6 +505,18 @@ export default function ProofPage() {
                   </li>
                 ))}
               </ul>
+            )}
+            {rerun && (
+              <p>
+                Then on {day(rerun.at)} the cards changed: a not-received card counts the cardholder&apos;s own email that the parcel arrived (Visa 13.1 and
+                Mastercard 4853 take proof the cardholder received the goods), and the fraud card words each network&apos;s own route (Visa&apos;s Compelling
+                Evidence 3.0; Mastercard 4837 without Visa&apos;s day window), noting a delivery signed for in the cardholder&apos;s own name. Only the{" "}
+                {rerun.keys.length} runs it had missed were re-run, once each ({rerunChanges.join(" ")}): {rerunNow} of {rerun.keys.length} now fight, as
+                labelled, so the table above reads {s.modelCorrect} of {s.modelRuns}, with those {rerun.keys.length} answers from {day(rerun.at)} and the other{" "}
+                {s.modelRuns - rerun.keys.length} from {day(mainRun?.at ?? P.at)}. Re-running only the misses can only add right calls, so read {s.modelCorrect}{" "}
+                as the most this prompt has shown; the card change also touches 19 of the other runs, which were not re-run.
+                {rerun.spend ? ` The re-run cost $${rerun.spend.usd.toFixed(4)} for ${rerun.spend.calls} calls.` : ""}
+              </p>
             )}
             {mainPrev && colourFights.length > 0 && (
               <p>
@@ -856,11 +885,14 @@ export default function ProofPage() {
           </li>
           {mainPrev ? (
             <li>
-              The main set was re-run once on {day(mainRun!.at)} on today&apos;s prompt, with the requirements card: {s.modelCorrect} of {s.modelRuns}, against{" "}
+              The main set was re-run once on {day(mainRun!.at)} with the requirements card: {cardRunCorrect} of {s.modelRuns}, against{" "}
               {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)} before the card. Its repeat runs and the rubric ablation are from the{" "}
               {prevDay} prompt and were not re-run. The card makes the drafter warier of fraud and agent cases with no 3-D Secure result or compelling
               evidence: on 29 Oct a live agent case inside the mandate (PP-R-UPI-10195190) was argued as a refund at an evidence balance of 50%.
               {mainRun!.spend ? ` The re-run cost $${mainRun!.spend.usd.toFixed(2)} for ${mainRun!.spend.calls} calls.` : ""}
+              {rerun
+                ? ` On ${day(rerun.at)} only the ${rerun.keys.length} runs it missed were re-run on the changed cards, and ${rerunNow} of them now fight; the other ${s.modelRuns - rerun.keys.length} answers are still the ${day(mainRun!.at)} ones, so ${s.modelCorrect} of ${s.modelRuns} is an upper reading.`
+                : ""}
             </li>
           ) : (
             <li>
@@ -900,12 +932,63 @@ export default function ProofPage() {
         <div className={styles.sectionHead}>
           <h2>What each policy keeps per 100 disputes</h2>
           <p>
-            The {policies.from.runs} labelled runs of the main set above, scaled to 100, each at its own disputed amount (
-            {usd(policies.disputedUsdPer100)} per 100 in all, {usd(policies.winnableUsdPer100)} of it on cases labelled fight). Exhibit is the
-            model&apos;s run on {day(policies.from.measured)}. The last two columns read the requirements card of every case each policy fights: the share
-            with every required network item on file, and the share with none missing.
+            First the held-out runs where the deciding fact sits only in free text, the set written without Exhibit&apos;s prompt, where the model and
+            the rules part ways; then the main set. Each run counts at its own disputed amount, scaled to 100 disputes.
           </p>
         </div>
+        {policies.heldoutText && heldExhibit && heldStrong && heldFight && (
+          <>
+            <h3 className={styles.subhead}>The held-out free-text runs, per 100</h3>
+            <p className={styles.note}>
+              The {policies.heldoutText.runs} held-out runs where the deciding fact is only in an email, a listing or a note (run{" "}
+              {day(policies.heldoutText.measured)}): {usd(policies.heldoutText.disputedUsdPer100)} disputed per 100,{" "}
+              {usd(policies.heldoutText.winnableUsdPer100)} of it on cases labelled fight.
+            </p>
+            <div className={`sheet ${styles.compare}`}>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Per 100 held-out free-text disputes</th>
+                    <th scope="col">Kept, at most</th>
+                    <th scope="col">Given up on cases it should fight</th>
+                    <th scope="col">Responses to write</th>
+                    <th scope="col">Fights on cases it should refund</th>
+                    <th scope="col">After PayPal&apos;s fees</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policies.heldoutText.table.map((t) => (
+                    <tr key={t.id} data-us={t.id === "exhibit"}>
+                      <th scope="row">{t.name}</th>
+                      <td>{usd(t.keptUsd)}</td>
+                      <td>{usd(t.givenUpUsd)}</td>
+                      <td>{t.responses}</td>
+                      <td>{t.fightsOnRefundCases}</td>
+                      <td>{t.netUsd < 0 ? `−${usd(-t.netUsd)}` : usd(t.netUsd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className={styles.note}>
+              Exhibit keeps {usd(heldExhibit.keptUsd)} per 100 here and gives up {usd(heldExhibit.givenUpUsd)}; the stronger rules keep{" "}
+              {usd(heldStrong.keptUsd)} and give up {usd(heldStrong.givenUpUsd)}, because the fact that wins sits where a rule doesn&apos;t read. Always
+              fighting keeps {usd(heldFight.keptUsd)} only by also fighting {heldFight.fightsOnRefundCases} cases per 100 the seller should refund, which a
+              real reviewer would rule against, with {heldFight.responses - heldExhibit.responses} more responses to write. {policies.heldoutText.runs} runs
+              is a small base.
+            </p>
+          </>
+        )}
+        <h3 className={styles.subhead}>The main set, per 100</h3>
+        <p className={styles.note}>
+          The {policies.from.runs} labelled runs of the main set above ({usd(policies.disputedUsdPer100)} per 100 in all, {usd(policies.winnableUsdPer100)}{" "}
+          of it on cases labelled fight). Exhibit is the model&apos;s run on {day(policies.from.measured)}
+          {policies.from.rerun
+            ? `, with the ${policies.from.rerun.keys.length} runs it missed re-run alone on ${day(policies.from.rerun.at)} on the changed cards (an upper reading, as said above)`
+            : ""}
+          . The last two columns read the requirements card of every case each policy fights: the share with every required network item on file, and
+          the share with none missing.
+        </p>
         <div className={`sheet ${styles.compare}`}>
           <table>
             <thead>
@@ -944,55 +1027,15 @@ export default function ProofPage() {
           {fightRow.keptUsd > exhibitRow.keptUsd
             ? `On money alone, always fighting keeps more than Exhibit on this set (${usd(fightRow.keptUsd)} against ${usd(exhibitRow.keptUsd)}): Exhibit refunded ${usd(exhibitRow.givenUpUsd)} per 100 it should have fought. `
             : "On money alone, always fighting keeps as much as Exhibit on this set. "}
+          {strongRow && strongRow.keptUsd !== exhibitRow.keptUsd
+            ? `The stronger rules keep ${usd(strongRow.keptUsd)} (${strongRow.netUsd < 0 ? `−${usd(-strongRow.netUsd)}` : usd(strongRow.netUsd)} after fees), against Exhibit's ${usd(exhibitRow.keptUsd)} (${usd(exhibitRow.netUsd)}). `
+            : ""}
           What Exhibit does instead is file {fightRow.responses - exhibitRow.responses} fewer responses per 100, none of them on a case the seller should
           refund (always fighting files {fightRow.fightsOnRefundCases}), and {exhibitRow.completePct}% of the fights it files have every required item on
           file, against {fightRow.completePct}% for always fighting ({exhibitRow.noneMissingPct}% and {fightRow.noneMissingPct}% with none missing). We
           found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by <code>scripts/policies.ts</code>{" "}
           into <code>data/policies.json</code>.
         </p>
-        {policies.heldoutText && (
-          <>
-            <h3 className={styles.subhead}>The held-out free-text runs, per 100</h3>
-            <p className={styles.note}>
-              The {policies.heldoutText.runs} held-out runs where the deciding fact sits only in an email, a listing or a note (re-run{" "}
-              {day(policies.heldoutText.measured)}), counted the same way: {usd(policies.heldoutText.disputedUsdPer100)} disputed per 100,{" "}
-              {usd(policies.heldoutText.winnableUsdPer100)} of it on cases labelled fight. This is where the model&apos;s right calls and the rules&apos; part
-              ways.
-            </p>
-            <div className={`sheet ${styles.compare}`}>
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Per 100 held-out free-text disputes</th>
-                    <th scope="col">Kept, at most</th>
-                    <th scope="col">Given up on cases it should fight</th>
-                    <th scope="col">Responses to write</th>
-                    <th scope="col">Fights on cases it should refund</th>
-                    <th scope="col">After PayPal&apos;s fees</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {policies.heldoutText.table.map((t) => (
-                    <tr key={t.id} data-us={t.id === "exhibit"}>
-                      <th scope="row">{t.name}</th>
-                      <td>{usd(t.keptUsd)}</td>
-                      <td>{usd(t.givenUpUsd)}</td>
-                      <td>{t.responses}</td>
-                      <td>{t.fightsOnRefundCases}</td>
-                      <td>{t.netUsd < 0 ? `−${usd(-t.netUsd)}` : usd(t.netUsd)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className={styles.note}>
-              Exhibit keeps {usd(policies.heldoutText.table.find((t) => t.id === "exhibit")!.keptUsd)} per 100 here, the stronger rules{" "}
-              {usd(policies.heldoutText.table.find((t) => t.id === "strong")!.keptUsd)}; always fighting keeps the most only by also fighting{" "}
-              {policies.heldoutText.table.find((t) => t.id === "fight")!.fightsOnRefundCases} cases per 100 the seller should refund, which a real reviewer
-              would rule against. {policies.heldoutText.runs} runs is a small base.
-            </p>
-          </>
-        )}
       </section>
 
       <section className={styles.section}>
