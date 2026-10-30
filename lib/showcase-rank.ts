@@ -29,6 +29,22 @@ export interface RankInput {
 export const contested = (h: Pick<Hearing, "mode" | "exchanges"> | null | undefined) =>
   Boolean(h && h.mode === "cross" && h.exchanges.length > 0 && h.exchanges.some((e) => e.ruling === "overruled"));
 
+/**
+ * The flagship case the hero is pinned to, so the home page shows the same case as the video, the cover and the
+ * testing notes. The SHOWCASE_ID environment variable overrides it. The pin holds only while that case is won
+ * at Exhibit's request; otherwise the ranking below picks.
+ */
+export const SHOWCASE_ID = "PP-R-HWG-10195220";
+
+/** The pinned case, when it is among the candidates and PayPal ruled it for the seller at Exhibit's request; else the ranking's first. */
+export function pickShowcase<T extends { id: string; where: Stage | undefined; decidedBy: DecidedBy | null | undefined }>(
+  ranked: T[],
+  pin: string | null | undefined = SHOWCASE_ID,
+): T | null {
+  const pinned = pin ? ranked.find((c) => c.id === pin && c.where === "won" && c.decidedBy === "requested") : undefined;
+  return pinned ?? ranked[0] ?? null;
+}
+
 export function showcaseRank(c: RankInput): number {
   const won = c.where === "won";
   const asked = won && c.decidedBy === "requested";

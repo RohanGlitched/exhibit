@@ -7,7 +7,7 @@ import { checkSentence } from "./cases/verify";
 import { exhibitText } from "./cases/exhibits";
 import { reasonLabel, usd } from "./format";
 import { followedReviewer, ruledAt, rulingRequestOf, type DecidedBy } from "./cases/derive";
-import { showcaseRank } from "./showcase-rank";
+import { SHOWCASE_ID, pickShowcase, showcaseRank } from "./showcase-rank";
 import { untouched } from "./cases/pool";
 import { hearingsOf } from "./cases/hearing-log";
 import { briefCounts } from "./cases/sentence-state";
@@ -36,7 +36,8 @@ function shiftedDates(text: string): string[] {
 }
 
 /**
- * The landing hero replays a real argued case: preferably the "delivered" story, filed with PayPal.
+ * The landing hero replays a real argued case: the pinned flagship (SHOWCASE_ID) while it is won at Exhibit's
+ * request, else the best-ranked one (preferably the "delivered" story, filed with PayPal).
  * Cached for five minutes so the home page doesn't hit the sandbox on every visit.
  */
 export const showcase = unstable_cache(
@@ -68,7 +69,10 @@ export const showcase = unstable_cache(
         hearings: hearingsOf(c),
         checks: c.brief ? briefCounts(c.brief.sentences).checked : 0,
       });
-    const pick = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt))[0];
+    const ranked = cases.sort((a, b) => rank(b) - rank(a) || b.openedAt.localeCompare(a.openedAt));
+    // The flagship (SHOWCASE_ID) when it is won at Exhibit's request, so every first look shows one case; else the ranking's first.
+    const pin = process.env.SHOWCASE_ID?.trim() || SHOWCASE_ID;
+    const pick = pickShowcase(ranked.map((c) => ({ c, id: c.disputeId, where: where.get(c.disputeId), decidedBy: decided.get(c.disputeId) })), pin)?.c;
     if (!pick?.brief) return null;
     const ctx = await caseContext(pick.disputeId);
     const s = ctx.scenario;
@@ -107,7 +111,7 @@ export const showcase = unstable_cache(
       strikeDemo,
     };
   },
-  ["showcase-v6"],
+  ["showcase-v7"],
   { revalidate: 300 },
 );
 
