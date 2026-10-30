@@ -106,6 +106,8 @@ export interface CaseView {
   house: HouseView | null;
   /** Honest notes about this case's record: a brief older than a fix, an agent story's stand-in keys, a sandbox that never rules. */
   notes: string[];
+  /** A returning customer's earlier orders, re-created as sandbox card payments when the case was opened (disclosed on the page). */
+  priorPayments: { ref: string; captureId: string; at: string }[] | null;
 }
 
 export interface HouseView {
@@ -130,7 +132,14 @@ function houseView(ctx: CaseContext): HouseView | null {
     plan: p ?? null,
     rules: { version: HOUSE_RULES.version, rules: HOUSE_RULES.rules.map((r) => ({ n: r.n, text: r.text })) },
     undoable: undoable(p, Date.now()),
-    audit: houseAudit({ rec, filings: ctx.filings, hearings: hearingsOf(rec), status: ctx.dispute.status, adjudicable: allowed(ctx.dispute).has("adjudicate") }),
+    audit: houseAudit({
+      rec,
+      filings: ctx.filings,
+      hearings: hearingsOf(rec),
+      status: ctx.dispute.status,
+      adjudicable: allowed(ctx.dispute).has("adjudicate"),
+      repaired: ctx.brief?.sentences.filter((s) => s.kept && s.repaired).length ?? 0,
+    }),
   };
 }
 
@@ -206,5 +215,6 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     requirements: requirementsFor({ reason: d.reason, amount: d.dispute_amount.value, brand: s?.cardBrand, sandboxCode: s?.reasonCode }, ctx.exhibits),
     house: houseView(ctx),
     notes: caseNotes(ctx, agent),
+    priorPayments: ctx.record?.priorPayments?.map((p) => ({ ref: p.ref, captureId: p.captureId, at: p.at })) ?? null,
   };
 }

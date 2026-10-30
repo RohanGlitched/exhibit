@@ -110,6 +110,26 @@
   font-size: 13px;
   color: var(--ink-faint);
 }
+.disclose {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--claimant);
+  background: var(--respondent-wash);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.disclose strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+.money tr.outcome th,
+.money tr.outcome td {
+  border-top: 2px solid var(--ink);
+  color: var(--ink);
+  font-weight: 650;
+}
 
 .money {
   width: 100%;

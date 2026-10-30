@@ -14,6 +14,7 @@ import type { ArgueEvent, BriefSentence, Exhibit, Filing, TallyItem } from "@/li
 import type { CaseView } from "@/lib/cases/view";
 import { STATUSES, daysToDue, reasonLabel, usd, utcDay } from "@/lib/format";
 import { utcStamp } from "@/lib/webhooks/paypal";
+import { outcomeMoney } from "@/lib/cases/case-page";
 import styles from "./case.module.css";
 
 const STAMP: Partial<Record<CaseView["where"], { word: string; tone: "due" | "won" | "ink" }>> = {
@@ -371,20 +372,10 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
           )
         }
         below={panel}
-        decided={
-          closed
-            ? view.where === "won"
-              ? `won, the seller keeps ${amount}`
-              : view.where === "lost"
-                ? `lost, ${amount} back to the buyer`
-                : view.where === "refunded"
-                  ? `refunded, ${amount} back to the buyer`
-                  : "resolved"
-            : null
-        }
+        decided={closed ? (outcomeMoney(view.where, Number(view.amount.value), view.channel === "EXTERNAL")?.line ?? "resolved") : null}
       />
       </div>
-      <ToolkitCalls calls={view.brief?.toolkit} />
+      <ToolkitCalls calls={view.brief?.toolkit} brief={view.brief} later={view.house?.plan?.read ?? null} />
 
       {phase !== "arguing" && <Hearing view={view} onBrief={(b) => { setSentences(b.sentences); setVerdict(toVerdict(b)); setView((v) => ({ ...v, brief: b })); }} />}
       <CaseLedger view={view} />
