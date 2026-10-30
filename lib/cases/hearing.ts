@@ -226,10 +226,26 @@ const TOPIC: Record<string, RegExp> = {
   original: /\boriginal (?:charge|payment)\b/i,
 };
 
+const topicsIn = (text: string) => Object.keys(TOPIC).filter((k) => TOPIC[k].test(text));
+
 /**
- * The points a verdict for the seller rests on that the hearing sustained against the seller: an objection on a
- * requirements-card item, sustained by the reviewer, by the checker striking the answer, or by a concession that
- * withdrew the sentence, whose subject the verdict's reason names. A concession that changes nothing doesn't count.
+ * What an exchange is about, as TOPIC names it: the requirements-card item it presses, or, when it names none the
+ * card knows, what its question asks about. An objection to the response as a whole is about whatever Exhibit put
+ * up against it too: when the checker struck that answer, the subjects it named ("two earlier undisputed orders...
+ * the same device and IP address") stand unproven at this hearing.
+ */
+export function exchangeTopics(e: Pick<Exchange, "objection" | "answer" | "ruledBy">): string[] {
+  const req = e.objection.requirement;
+  const own = req && TOPIC[req] ? [req] : [];
+  const asked = !own.length || e.objection.sentence === null ? topicsIn(e.objection.text) : [];
+  const struck = e.objection.sentence === null && e.ruledBy === "checker" && e.answer.stance === "answer" && !e.answer.kept ? topicsIn(e.answer.text) : [];
+  return [...new Set([...own, ...asked, ...struck])];
+}
+
+/**
+ * The points a verdict for the seller rests on that the hearing sustained against the seller: an objection
+ * sustained by the reviewer, by the checker striking the answer, or by a concession that withdrew the sentence,
+ * whose subject (exchangeTopics) the verdict's reason names. A concession that changes nothing doesn't count.
  */
 export function restsOnSustained(verdict: Pick<Verdict, "side" | "reason" | "by">, exchanges: Exchange[]): Exchange[] {
   if (verdict.side !== "seller" || verdict.by !== "reviewer") return [];
@@ -237,8 +253,7 @@ export function restsOnSustained(verdict: Pick<Verdict, "side" | "reason" | "by"
     (e) =>
       e.ruling === "sustained" &&
       !(e.ruledBy === "concession" && e.answer.effect === "none") &&
-      !!e.objection.requirement &&
-      !!TOPIC[e.objection.requirement]?.test(verdict.reason),
+      exchangeTopics(e).some((t) => TOPIC[t].test(verdict.reason)),
   );
 }
 
