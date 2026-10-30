@@ -97,6 +97,8 @@ interface Repeat {
   calls: number;
   spendUsd: number;
   stopped: string | null;
+  /** Each run that heard part of the panel (scripts/eval-review.ts --steps repeat --resume adds one). */
+  sessions?: { at: string; fights: number; calls: number; spendUsd: number; cap: number; stopped: string | null }[];
   rows: { key: string; label: string; votes: ("seller" | "buyer" | "flagged")[]; majority: "seller" | "buyer" | null; majorityMatchesLabel: boolean | null }[];
 }
 const VOTE: Record<string, string> = { seller: "seller", buyer: "buyer", flagged: "seller, on a sustained point" };
@@ -330,10 +332,14 @@ export default function ReviewProof() {
               </h3>
               <p className={styles.note}>
                 Measured {day(rep.at)} with {rep.reviewer}: each of {rep.fights} labelled fights was heard the way a ruling request now hears it. The first
-                two hearings of the same PDF agreed on <strong>{rep.pairsAgree} of {rep.pairs}</strong>; a third was needed on {rep.thirdHeard}, and every
-                one reached a majority, which matched the label on <strong>{rep.majorityMatchesLabel} of {rep.majority}</strong> (the first hearing alone:{" "}
-                {rep.firstMatchesLabel} of {rep.fights}). {rep.flaggedVotes} hearing{rep.flaggedVotes === 1 ? "" : "s"} found for the seller on a point the
-                hearing sustained and counted for neither side. {rep.hearings} hearings, {rep.calls} calls, ${rep.spendUsd.toFixed(2)}
+                two hearings of the same PDF agreed on <strong>{rep.pairsAgree} of {rep.pairs}</strong>; a third was needed on {rep.thirdHeard},{" "}
+                {rep.majority === rep.fights ? "and every one reached a majority" : `${rep.majority} of ${rep.fights} reached a majority`}, which matched the
+                label on <strong>{rep.majorityMatchesLabel} of {rep.majority}</strong> (the first hearing alone: {rep.firstMatchesLabel} of {rep.fights}).{" "}
+                {rep.flaggedVotes} hearing{rep.flaggedVotes === 1 ? "" : "s"} found for the seller on a point the hearing sustained and counted for neither
+                side. {rep.hearings} hearings, {rep.calls} calls, ${rep.spendUsd.toFixed(2)}
+                {rep.sessions && rep.sessions.length > 1
+                  ? ` over ${rep.sessions.length} runs on the same briefs (${rep.sessions.map((x) => `${x.fights} fights for $${x.spendUsd.toFixed(2)}`).join(", then ")}; the first stopped at its spend cap and the next heard only the fights it had left)`
+                  : ""}
                 {rep.stopped && notHeard.length ? `; the run stopped at its spend cap before ${notHeard.join(", ")} could be heard again` : ""}
                 . {rep.fights} cases is a small base.
               </p>
@@ -368,7 +374,7 @@ export default function ReviewProof() {
           {pressed && <Transcript h={pressed} caption="an objection the card added in code" only={isPressed} />}
         </div>
       </div>
-      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.235 --steps hearings{rep ? "\n" + "npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.30 --steps repeat" : ""}</pre>
+      <pre className={styles.cmd}>npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.235 --steps hearings{rep ? "\n" + "npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.30 --steps repeat" + (rep.sessions && rep.sessions.length > 1 ? "\n" + "npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.12 --steps repeat --resume" : "") : ""}</pre>
     </section>
   );
 }

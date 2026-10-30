@@ -7,6 +7,7 @@
 //   npx tsx --conditions=react-server scripts/eval-review.ts --recheck    no model calls: today's checker over the saved answers
 //   EXHIBIT_ENV_FILE=.env.local npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.3 --steps repeat
 //       the ruling panel on the labelled fights: two hearings of each PDF at once, a third on a split; written under `repeat`
+//       add --resume to keep the fights a repeat run already finished (on the same briefs) and hear only the rest
 // Replays the briefs already measured in data/proof.json (no new briefs are written): renders each as the PDF
 // Exhibit files, reads the PDF back, and puts it before the simulated reviewer. Then measures the repair step on
 // sentences the checker struck (the careless drafter's planted facts, and true sentences given a wrong citation),
@@ -72,8 +73,10 @@ const add = (t?: { input: number; output: number }, calls = 1) => {
   spent.calls += calls;
 };
 // The most a single step could cost: four calls (objections, answers, rulings, one re-ask) at the run's own cost per
-// call so far, or about 3,500 tokens in and 1,500 out before the first; a step never starts past the cap.
-const STEP_MAX = () => 4 * (spent.calls ? usd() / spent.calls : (3500 * PRICE_IN + 1500 * PRICE_OUT) / 1e6);
+// call so far; before the first, the saved panel's own cost per call when resuming it, else about 3,500 tokens in and
+// 1,500 out; a step never starts past the cap.
+const resumeCall = process.argv.includes("--resume") && before?.repeat?.calls ? before.repeat.spendUsd / before.repeat.calls : 0;
+const STEP_MAX = () => 4 * (spent.calls ? usd() / spent.calls : resumeCall || (3500 * PRICE_IN + 1500 * PRICE_OUT) / 1e6);
 let stopped = "";
 const room = (n = 1) => {
   if (stopped) return false;
@@ -163,6 +166,39 @@ if (recheckOnly) {
   process.exit(0);
 }
 
+/** A repeat run as written to the output file. */
+interface SavedRepeat {
+  at: string;
+  briefsAt: string;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  spendUsd: number;
+  cap: number;
+  stopped: string | null;
+  sessions?: { at: string; fights: number; calls: number; inputTokens: number; outputTokens: number; spendUsd: number; cap: number; stopped: string | null }[];
+  rows: { key: string; label: string; brief: string; votes: (Side | "flagged")[]; majority: Side | null; majorityMatchesLabel: boolean | null; verdicts: unknown[] }[];
+}
+/** The panel's figures over its rows (a row is finished with a majority, or after three hearings). */
+function repeatStats(rows: SavedRepeat["rows"]) {
+  const done = rows.filter((x) => x.majority || x.votes.length >= 3);
+  const pairs = rows.filter((x) => x.votes.length >= 2);
+  return {
+    fights: rows.length,
+    hearings: rows.reduce((n, x) => n + x.votes.length, 0),
+    pairs: pairs.length,
+    pairsAgree: pairs.filter((x) => x.votes[0] === x.votes[1]).length,
+    thirdHeard: rows.filter((x) => x.votes.length >= 3).length,
+    complete: done.length,
+    majority: rows.filter((x) => x.majority).length,
+    noMajority: done.filter((x) => !x.majority).length,
+    majorityMatchesLabel: rows.filter((x) => x.majorityMatchesLabel).length,
+    // The first hearing alone, as a ruling request followed it before the panel: how often it matched the label.
+    firstMatchesLabel: rows.filter((x) => x.votes[0] === sideOfCall(x.label as Brief["recommendation"])).length,
+    flaggedVotes: rows.reduce((n, x) => n + x.votes.filter((v) => v === "flagged").length, 0),
+  };
+}
+
 /*
  * --steps repeat: the ruling panel, measured. Each labelled fight's brief is heard the way a live ruling request
  * hears PayPal's copy (lib/cases/cross.ts hearingForRuling): two hearings at once, a third only when they split.
@@ -171,8 +207,15 @@ if (recheckOnly) {
  */
 if (STEPS.has("repeat")) {
   if (!before) throw new Error(`No ${OUT} to add the repeat hearings to.`);
-  const fights = proof.runs.filter((r) => r.model && r.label === "fight" && BUYERS.includes(Number(r.key.split("#")[1]))).slice(0, LIMIT);
-  console.log(`${fights.length} labelled fights, heard two at a time, a third on a split; cap $${CAP}`);
+  // --resume: keep the fights an earlier repeat run finished and hear only the rest, on the same briefs.
+  const resume = process.argv.includes("--resume") && before.repeat ? (before.repeat as SavedRepeat) : null;
+  if (resume && resume.briefsAt !== proof.at) throw new Error(`The saved panel heard the briefs of ${resume.briefsAt}; data/proof.json is now ${proof.at}. Run the whole panel again.`);
+  const kept = (resume?.rows ?? []).filter((x) => x.majority || x.votes.length >= 3);
+  const fights = proof.runs
+    .filter((r) => r.model && r.label === "fight" && BUYERS.includes(Number(r.key.split("#")[1])))
+    .filter((r) => !kept.some((x) => x.key === r.key))
+    .slice(0, LIMIT);
+  console.log(`${fights.length} labelled fights${resume ? ` (${kept.length} kept from ${resume.at})` : ""}, heard two at a time, a third on a split; cap $${CAP}`);
   const rows: { key: string; label: string; brief: string; votes: (Side | "flagged")[]; panel: Panel; majorityMatchesLabel: boolean | null; hearings: Hearing[] }[] = [];
   for (const r of fights) {
     const c = await caseOf(r.key);
@@ -197,34 +240,32 @@ if (STEPS.has("repeat")) {
     rows.push({ key: r.key, label: r.label, brief: brief.recommendation, votes: held.map(panelVote), panel, majorityMatchesLabel: panel.majority ? panel.majority === sideOfCall(r.label) : null, hearings: held });
     console.log(r.key.padEnd(34), `brief ${brief.recommendation.padEnd(6)}`, held.map(panelVote).join(" "), `majority ${panel.majority ?? "none"}`, `$${usd().toFixed(3)}`);
   }
-  const done = rows.filter((x) => x.panel.majority || x.panel.heard >= 3);
-  const pairs = rows.filter((x) => x.votes.length >= 2);
+  const fresh: SavedRepeat["rows"] = rows.map((x) => ({ key: x.key, label: x.label, brief: x.brief, votes: x.votes, majority: x.panel.majority, majorityMatchesLabel: x.majorityMatchesLabel, verdicts: x.hearings.map((h) => ({ side: h.verdict.side, reason: h.verdict.reason, caveat: h.verdict.caveat ?? null, objections: h.exchanges.length, overruled: h.exchanges.filter((e) => e.ruling === "overruled").length })) }));
+  // The earlier run's finished fights and this run's, in the order of data/proof.json.
+  const order = proof.runs.map((r) => r.key);
+  const all = [...kept, ...fresh].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  const now = { at: new Date().toISOString(), fights: fresh.length, calls: spent.calls, inputTokens: spent.input, outputTokens: spent.output, spendUsd: Number(usd().toFixed(4)), cap: CAP, stopped: stopped || null };
+  const earlier = resume
+    ? (resume.sessions ?? [{ at: resume.at, fights: resume.rows.length, calls: resume.calls, inputTokens: resume.inputTokens, outputTokens: resume.outputTokens, spendUsd: resume.spendUsd, cap: resume.cap, stopped: resume.stopped }])
+    : [];
+  const sessions = [...earlier, now];
   const repeat = {
-    at: new Date().toISOString(),
+    at: now.at,
     reviewer: llm.llmModel(),
     briefsAt: proof.at,
     rule: "two hearings of the same PDF at once, a third only when they split; a ruling follows two that agree; a verdict for the seller resting on a sustained point counts for neither side",
-    fights: rows.length,
-    hearings: rows.reduce((n, x) => n + x.votes.length, 0),
-    pairs: pairs.length,
-    pairsAgree: pairs.filter((x) => x.votes[0] === x.votes[1]).length,
-    thirdHeard: rows.filter((x) => x.votes.length >= 3).length,
-    complete: done.length,
-    majority: rows.filter((x) => x.panel.majority).length,
-    noMajority: done.filter((x) => !x.panel.majority).length,
-    majorityMatchesLabel: rows.filter((x) => x.majorityMatchesLabel).length,
-    // The first hearing alone, as a ruling request followed it before the panel: how often it matched the label.
-    firstMatchesLabel: rows.filter((x) => x.votes[0] === sideOfCall(x.label as Brief["recommendation"])).length,
-    flaggedVotes: rows.reduce((n, x) => n + x.votes.filter((v) => v === "flagged").length, 0),
-    calls: spent.calls,
-    inputTokens: spent.input,
-    outputTokens: spent.output,
+    ...repeatStats(all),
+    calls: sessions.reduce((n, x) => n + x.calls, 0),
+    inputTokens: sessions.reduce((n, x) => n + x.inputTokens, 0),
+    outputTokens: sessions.reduce((n, x) => n + x.outputTokens, 0),
     priceIn: PRICE_IN,
     priceOut: PRICE_OUT,
-    spendUsd: Number(usd().toFixed(4)),
+    spendUsd: Number(sessions.reduce((n, x) => n + x.spendUsd, 0).toFixed(4)),
     cap: CAP,
     stopped: stopped || null,
-    rows: rows.map((x) => ({ key: x.key, label: x.label, brief: x.brief, votes: x.votes, majority: x.panel.majority, majorityMatchesLabel: x.majorityMatchesLabel, verdicts: x.hearings.map((h) => ({ side: h.verdict.side, reason: h.verdict.reason, caveat: h.verdict.caveat ?? null, objections: h.exchanges.length, overruled: h.exchanges.filter((e) => e.ruling === "overruled").length })) })),
+    // Each run that heard part of the panel, with its own spend and cap (a --resume run adds one).
+    sessions,
+    rows: all,
   };
   console.log({ ...repeat, rows: repeat.rows.length });
   writeFileSync(OUT, JSON.stringify({ ...before, repeat }, null, 1));

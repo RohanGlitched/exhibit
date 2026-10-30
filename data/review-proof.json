@@ -3194,29 +3194,51 @@
   }
  ],
  "repeat": {
-  "at": "2026-10-30T00:32:51.455Z",
+  "at": "2026-10-30T02:16:50.836Z",
   "reviewer": "GPT-5.6 on Azure OpenAI",
   "briefsAt": "2026-10-29T22:13:32.536Z",
   "rule": "two hearings of the same PDF at once, a third only when they split; a ruling follows two that agree; a verdict for the seller resting on a sustained point counts for neither side",
-  "fights": 9,
-  "hearings": 20,
-  "pairs": 9,
-  "pairsAgree": 7,
+  "fights": 12,
+  "hearings": 26,
+  "pairs": 12,
+  "pairsAgree": 10,
   "thirdHeard": 2,
-  "complete": 9,
-  "majority": 9,
+  "complete": 12,
+  "majority": 12,
   "noMajority": 0,
-  "majorityMatchesLabel": 8,
-  "firstMatchesLabel": 7,
+  "majorityMatchesLabel": 11,
+  "firstMatchesLabel": 10,
   "flaggedVotes": 2,
-  "calls": 62,
-  "inputTokens": 138449,
-  "outputTokens": 10713,
+  "calls": 81,
+  "inputTokens": 197736,
+  "outputTokens": 14664,
   "priceIn": 1.25,
   "priceOut": 10,
-  "spendUsd": 0.2802,
-  "cap": 0.3,
-  "stopped": "stopped at $0.280 to stay under the $0.3 cap",
+  "spendUsd": 0.3938,
+  "cap": 0.12,
+  "stopped": null,
+  "sessions": [
+   {
+    "at": "2026-10-30T00:32:51.455Z",
+    "fights": 9,
+    "calls": 62,
+    "inputTokens": 138449,
+    "outputTokens": 10713,
+    "spendUsd": 0.2802,
+    "cap": 0.3,
+    "stopped": "stopped at $0.280 to stay under the $0.3 cap"
+   },
+   {
+    "at": "2026-10-30T02:16:50.836Z",
+    "fights": 3,
+    "calls": 19,
+    "inputTokens": 59287,
+    "outputTokens": 3951,
+    "spendUsd": 0.1136,
+    "cap": 0.12,
+    "stopped": null
+   }
+  ],
   "rows": [
    {
     "key": "delivered-base#0",
@@ -3474,6 +3496,87 @@
       "caveat": null,
       "objections": 4,
       "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "duplicate-base#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "The pages show the duplicate $46.00 charge was fully refunded by completed refund TQMHE4YMMK35EYC41",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "Exhibit D shows the duplicate $46.00 charge was refunded in full before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "agent-mandate-base#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "The cardholder’s signed mandate covers the exact cart, and delivery was signed in her name at her stated home",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 3
+     },
+     {
+      "side": "seller",
+      "reason": "The signed intent covers the exact agent cart, and delivery was signed by N PETROVA at the matching address",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 2
+     }
+    ]
+   },
+   {
+    "key": "agent-overreach-within-limit#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "The listing disclosed the carafe, the buyer merely no longer wanted it, and accepted return terms were offered but unused",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 3
+     },
+     {
+      "side": "seller",
+      "reason": "The listing disclosed the carafe, and the buyer’s email says only that they later decided they did not need it",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 2
      }
     ]
    }
