@@ -1,6 +1,6 @@
 {
  "at": "2026-10-29T22:13:32.536Z",
- "recheckedAt": "2026-10-29T22:21:40.077Z",
+ "recheckedAt": "2026-10-30T00:23:57.990Z",
  "reasoning": "low",
  "summary": {
   "runs": 56,
@@ -30,8 +30,8 @@
   "carelessPlantedStruck": 6,
   "carelessSentencesStruck": 7,
   "carelessSentences": 35,
-  "mutations": 1038,
-  "mutationsStruck": 1020,
+  "mutations": 1060,
+  "mutationsStruck": 1042,
   "keptSentences": 367,
   "figurelessSentences": 180,
   "strongCorrect": 50,
@@ -46,7 +46,7 @@
   "unverifiedSentences": 180,
   "quotedSentences": 369,
   "struckForQuote": 0,
-  "templateSentences": 254,
+  "templateSentences": 276,
   "templateStruck": 0,
   "seeds": 1,
   "seedRuns": [
@@ -8206,6 +8206,25 @@
      "from": "The buyer paid with a VISA card ending 1881.",
      "to": "The buyer paid with a VISA card ending 1882.",
      "why": "1882 isn't in Exhibit B."
+    }
+   ],
+   "survived": []
+  },
+  "span moved off the record": {
+   "n": 22,
+   "struck": 22,
+   "fromModel": 0,
+   "fromTemplate": 22,
+   "examples": [
+    {
+     "from": "Order #1019 was placed 135 to 145 days before this case.",
+     "to": "Order #1019 was placed 170 to 230 days before this case.",
+     "why": "A span of 170 to 230 days isn't in Exhibit I."
+    },
+    {
+     "from": "Order #1019 was placed 135 to 145 days before this case.",
+     "to": "Order #1019 was placed 170 to 230 days before this case.",
+     "why": "A span of 170 to 230 days isn't in Exhibit I."
     }
    ],
    "survived": []

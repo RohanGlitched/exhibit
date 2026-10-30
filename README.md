@@ -154,7 +154,7 @@ The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/ref
 | Prompt without its "how cases are usually decided" rubric, 25 Oct prompt | 54 of 56 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One thing changed in a true sentence (10 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4) | 1,020 of 1,038 struck, on the re-run's sentences (1,026 of 1,038 on the 25 Oct ones); what gets through is a real amount with no role word near it and a denial inside reported speech |
+| One thing changed in a true sentence (11 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4, a stated span moved off the record) | 1,042 of 1,060 struck, on the re-run's sentences (all 22 moved spans struck; 1,026 of 1,038 on the 25 Oct ones); what gets through is a real amount with no role word near it and a denial inside reported speech |
 | The model's own sentences struck | 2 of 369: both state the disputed amount while citing only the record that holds the reason (a scan, a note), not the amount |
 | Kept sentences with nothing to check, marked unverified | 180 of 367 (201 of 377 on 25 Oct) |
 | A second pass on those, their own words against only the text they cite ([lib/cases/wording.ts](lib/cases/wording.ts), at least 60% of content words) | 110 of 180 match; 70 of 367 kept sentences have neither a figure nor their wording matched |

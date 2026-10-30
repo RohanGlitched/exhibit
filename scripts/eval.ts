@@ -496,6 +496,15 @@ function mutants(t: string, cites: string[], ex: Exhibit[]): Mutant[] {
   if (zip) same(t.replace(zip.raw, zip.raw.slice(0, 4) + bump(zip.raw[4])), "ZIP changed");
   const last4 = t.match(/\bending (?:in )?(\d{4})\b/);
   if (last4) same(t.replace(last4[0], last4[0].slice(0, -1) + bump(last4[0].at(-1)!)), "card last-4 changed");
+  // A stated span ("135 to 145 days") moved past every value of its unit in the cited records: the checker reads a
+  // range as a window, so this one holds nothing and has to go.
+  const span = toks.find((x) => x.kind === "range");
+  if (span) {
+    const unit = span.key.split(" ")[1];
+    const held = ex.filter((e) => cites.includes(e.id)).flatMap((e) => [...exhibitText(e).matchAll(new RegExp(`\\b(\\d+) ${unit}s?\\b`, "g"))].map((x) => Number(x[1])));
+    const top = Math.max(0, ...held);
+    same(t.replace(span.raw, `${top + 30} to ${top + 90} ${unit}s`), "span moved off the record");
+  }
   return out;
 }
 
@@ -521,6 +530,10 @@ function templates(ex: Exhibit[]): { text: string; cites: string[] }[] {
   const tc = tracking?.facts.find((f) => f.label === "Carrier")?.value;
   const tn = tracking?.facts.find((f) => f.label === "Tracking number")?.value;
   if (tracking && tc && tc !== "—" && tn) out.push({ text: `We shipped it with ${tc}, tracking number ${tn}.`, cites: [tracking.id] });
+  // A customer's earlier order, said as a span its age falls in (as a card's rule window would be quoted).
+  const history = ex.find((e) => e.kind === "history");
+  const earlier = history?.lines?.map((l) => l.match(/^(#\d+), (\d+) days ago:/)).find((m) => m && Number(m[2]) > 10);
+  if (history && earlier) out.push({ text: `Order ${earlier[1]} was placed ${Number(earlier[2]) - 5} to ${Number(earlier[2]) + 5} days before this case.`, cites: [history.id] });
   return out;
 }
 
@@ -568,6 +581,7 @@ const ORDER = [
   "signer changed",
   "ZIP changed",
   "card last-4 changed",
+  "span moved off the record",
 ];
 const mutations = Object.fromEntries(ORDER.filter((k) => byKind[k]).map((k) => [k, byKind[k]]));
 

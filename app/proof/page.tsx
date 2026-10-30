@@ -12,7 +12,7 @@ import ReviewProof from "./ReviewProof";
 export const metadata: Metadata = {
   title: "Proof",
   description:
-    "Exhibit measured: the right call on labelled dispute variants against a rules baseline that reads every record, a held-out set, prompt injection, the checker against ten kinds of false statement, latency and tokens, and the sourced cost of a dispute.",
+    "Exhibit measured: the right call on labelled dispute variants against a rules baseline that reads every record, a held-out set, prompt injection, the checker against eleven kinds of false statement, latency and tokens, and the sourced cost of a dispute.",
 };
 
 /* The shapes this page reads from data/proof.json (scripts/eval.ts writes it). */
