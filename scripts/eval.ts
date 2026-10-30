@@ -321,6 +321,10 @@ if (recheck || update) {
       runs: (saved.runs ?? []).map((r: Row) => ({ key: r.key, variant: r.variant, label: r.label, model: r.model ? { call: r.model.call, odds: r.model.odds, correct: r.model.correct } : null })),
       repeats: saved.repeats?.main ?? [],
       spend: saved.main?.spend ?? saved.spend ?? null,
+      // The run's own history goes with it: the named runs re-run alone since (their earlier answers under
+      // rerun.previous), and the run before it, so every main-set reading stays on record.
+      rerun: saved.main?.rerun ?? null,
+      previous: saved.main?.previous ?? null,
     };
     console.log(`main only: ${mainCases.length} calls planned, about ${(nextCost() * mainCases.length).toFixed(2)}, cap ${CAP}`);
     runs = await pool(mainCases, PARALLEL, async (c) => {
@@ -766,7 +770,8 @@ writeFileSync(
             main: {
               at: new Date().toISOString(),
               reasoning,
-              prompt: "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
+              prompt:
+                "the 30 Oct prompt and cards: the requirements card reads the cardholder's own email of receipt (13.1/4853), each network's own fraud wording (Visa CE 3.0, Mastercard 4837), the return attempt and the 13.1 delivery window; the AP2 line and the agent-log consent check",
               spend: runSpend,
               previous: mainPrevious,
             },
