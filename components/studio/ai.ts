@@ -2,8 +2,10 @@ import { createAiHarness, directLlmRunner, type AgAiHarnessSetup, type AgAiPromp
 import { openaiAdapter } from "./adapter";
 import { ANALYST_ID, ANALYST_TOOLS, type AnalystContext } from "./analyst";
 import type { AnalyticsPayload } from "./data";
-import { seededHistory } from "./history";
+import { LADDER_THREAD_ID, seededHistory } from "./history";
+import { LADDER_THREAD } from "./saved-ladder";
 import { PAGES, type PageId } from "./pages";
+import { knownCases, ladderCrossFilter, ladderSelection, replayIds } from "./ladder-filter";
 
 /**
  * The analyst behind the analytics page, on Studio's agent framework.
@@ -112,6 +114,52 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
         },
       });
 
+      const filterLadder: AgAiTool = api.defineAiTool({
+        name: ANALYST_TOOLS.filter_ladder.name,
+        description: ANALYST_TOOLS.filter_ladder.description,
+        params: (s) => s.object({ caseIds: s.array(s.string(), { description: "Case ids (PP-...) to keep, from deadline_ladder. Empty clears the filter." }) }),
+        execute: (args: { caseIds: string[] }, ctx) => {
+          const data = read();
+          if (!data) return ctx.error("The desk's data hasn't loaded yet. Try again in a moment.");
+          const { kept, unknown } = knownCases(args.caseIds ?? [], data.cases);
+          if (args.caseIds?.length && !kept.length) return ctx.error(`None of ${unknown.join(", ")} is on the desk; nothing was filtered.`);
+          const state = api.getState();
+          const pages = state.pages.map((p) => (p.id === "deadlines" ? { ...p, crossFilter: ladderCrossFilter(p.crossFilter, kept) } : p));
+          api.setState({ ...state, pages, selectedPageId: "deadlines" });
+          // Read the page back: report only the selection Studio now holds.
+          const now = ladderSelection(api.getState().pages.find((p) => p.id === "deadlines")?.crossFilter);
+          if (!kept.length) return ctx.success(now.length ? `The ladder still holds a filter on ${now.join(", ")}.` : "Cleared the ladder's filter: the Deadlines page shows every case again.");
+          const rows = data.cases.filter((c) => now.includes(c.caseId));
+          const money = rows.reduce((n, c) => n + c.amount, 0);
+          return ctx.success(
+            now.length
+              ? `The Deadlines page is cross-filtered from the ladder to ${now.join(", ")} (${usd(money)} between them): the ladder, the stamps, the chart and the case list show only these.${unknown.length ? ` Not on the desk, left out: ${unknown.join(", ")}.` : ""}`
+              : "Studio didn't take the filter; the page still shows every case. Say so.",
+            { kept: now, unknown },
+          );
+        },
+      });
+
+      const openCaseTool: AgAiTool = api.defineAiTool({
+        name: ANALYST_TOOLS.open_case.name,
+        description: ANALYST_TOOLS.open_case.description,
+        params: (s) => s.object({ caseId: s.string({ description: "The case id, PP-..." }) }),
+        execute: (args: { caseId: string }, ctx) => {
+          const data = read();
+          if (!data) return ctx.error("The desk's data hasn't loaded yet. Try again in a moment.");
+          const { kept } = knownCases([args.caseId], data.cases);
+          if (!kept.length) return ctx.error(`${args.caseId} isn't on the desk; nothing was opened.`);
+          const id = kept[0];
+          const url = `/case/${encodeURIComponent(id)}`;
+          // A new tab, so the conversation stays where it is; a browser that blocks it gets the address instead.
+          const tab = window.open(url, "_blank");
+          if (tab) tab.opener = null;
+          return tab
+            ? ctx.success(`Opened ${id} in a new tab (${url}).`, { caseId: id, url, opened: true })
+            : ctx.success(`The browser didn't open a new tab. ${id} is at ${url}; give the reader that link.`, { caseId: id, url, opened: false });
+        },
+      });
+
       const newWidgetSlot: AgAiTool = api.defineAiTool({
         name: ANALYST_TOOLS.new_widget_slot.name,
         description: ANALYST_TOOLS.new_widget_slot.description,
@@ -182,6 +230,8 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
           deadlineLadder,
           deskLedger,
           turnToPage,
+          filterLadder,
+          openCaseTool,
           newWidgetSlot,
           checkWidget,
           studio.viewSchema(),
@@ -201,6 +251,17 @@ export function exhibitAi(read: () => AnalyticsPayload | null): AgAiHarnessSetup
         directLlmRunner({ ...builtIn[id], adapter: openaiAdapter({ endpoint: "/api/studio-agent", agent: id }) }),
       );
 
-      return { agents: [analyst, ...team], primary: ANALYST_ID, promptStarters: PROMPTS, history: seededHistory() };
+      // Opening the recorded ladder conversation shows what that run did on the page: the ladder cross-filtered to
+      // the cases it picked that are still on the seller's move. No model is called; the tab it opened stays closed.
+      const replay = (threadId: string) => {
+        if (threadId !== LADDER_THREAD_ID) return;
+        const data = read();
+        const ids = data ? replayIds(LADDER_THREAD.messages as never, data.cases) : [];
+        if (!ids.length) return;
+        const state = api.getState();
+        api.setState({ ...state, pages: state.pages.map((p) => (p.id === "deadlines" ? { ...p, crossFilter: ladderCrossFilter(p.crossFilter, ids) } : p)), selectedPageId: "deadlines" });
+      };
+
+      return { agents: [analyst, ...team], primary: ANALYST_ID, promptStarters: PROMPTS, history: seededHistory(replay) };
     });
 }
