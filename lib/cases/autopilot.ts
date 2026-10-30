@@ -129,7 +129,7 @@ export function sinceWords(fromIso: string, toIso: string): string {
 }
 
 /** The stories the seller's lane opens, one a day in turn. */
-export const LANE_STORIES = ["delivered", "agent-mandate", "untracked", "colour", "agent-overreach", "duplicate", "fraud"] as const;
+export const LANE_STORIES = ["delivered", "agent-mandate", "untracked", "colour", "agent-delivered", "agent-overreach", "duplicate", "fraud"] as const;
 export const laneStoryFor = (now: number) => LANE_STORIES[Math.floor(now / 86_400_000) % LANE_STORIES.length];
 
 /** Why the toolkit's read and Exhibit's record disagree, or null when they agree (or the toolkit didn't answer). */

@@ -411,6 +411,57 @@ const STORIES: Story[] = [
     expected: "fight",
   },
   {
+    // An agent purchase the sandbox does rule on: the buyer's agent bought within its signed mandate, and the
+    // cardholder says the parcel never came, while USPS shows it delivered and signed for at the order's address.
+    // Not-received is a reason the sandbox simulator rules on after a ruling request, so the agent story can end.
+    id: "agent-delivered",
+    title: "“It never arrived”, on an order their own shopping agent placed",
+    blurb: "Pour-over set, $104. The buyer's AI agent ordered it within the mandate the cardholder signed; USPS shows it delivered and signed for at their address.",
+    reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+    reasonCode: "13.1",
+    cardBrand: "VISA",
+    buyers: [
+      home("Ravi Deshpande", addr("1720 Capitol Avenue, Apt 210", "Sacramento", "CA", "95811")),
+      home("Sofia Marchetti", addr("845 Alma Street, Unit 12", "Palo Alto", "CA", "94301")),
+      home("Elena Vasquez", addr("63 North First Street, Apt 704", "San Jose", "CA", "95113")),
+    ],
+    items: [item("HC-SET-POUR")],
+    shipping: "8.00",
+    orderDaysAgo: 12,
+    carrier: {
+      code: "USPS",
+      name: "USPS",
+      number: "9405511206213859470097",
+      service: "Ground Advantage, signature confirmation",
+      scans: [
+        { day: 1, hour: 16, status: "Label created", place: "Portland, OR 97214" },
+        { day: 1, hour: 18, status: "Accepted", place: "Portland, OR 97214" },
+        { day: 2, hour: 23, status: "In transit", place: "Sacramento, CA network distribution center" },
+        { day: 4, hour: 7, status: "Out for delivery", place: "{city}" },
+        { day: 4, hour: 13, status: "Delivered, signed", place: "{city}", detail: "Signed for by {signature} at front desk" },
+      ],
+    },
+    inbox: [],
+    history: [],
+    laneOnly: true,
+    claim: "Cardholder says the merchandise was not received.",
+    notes: ["Ordered through the buyer's shopping agent. The PayPal order carries a reference to the cart the agent signed."],
+    agent: {
+      name: "Personal shopping agent",
+      request: "Find me a pour-over coffee set, ceramic, handmade if possible, under $120 delivered to my home.",
+      item: "pour-over set",
+      maxTotal: "120.00",
+      transcript: [
+        "Searched 5 shops for a handmade ceramic pour-over set.",
+        "Shortlisted Halden Ceramics: Pour-over set, $96.00 plus $8.00 shipping.",
+        "Checked the cart against the signed intent: a pour-over set, $104.00 total, under the $120.00 limit, shipping to the cardholder's home.",
+        "Signed the cart mandate and paid with the cardholder's card through PayPal.",
+        "Told the cardholder: ordered the pour-over set from Halden Ceramics, $104.00, arriving in about four days.",
+      ],
+    },
+    expected: "fight",
+  },
+  {
     id: "agent-overreach",
     title: "“My agent bought the wrong thing”",
     blurb: "Pour-over set, $104. The cardholder told their agent to buy a dripper under $60; it bought the $104 set with the carafe.",
