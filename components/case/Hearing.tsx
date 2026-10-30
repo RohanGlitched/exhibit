@@ -137,6 +137,16 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
             ? "Exhibit advised refunding, so there is no response to object to. A second model, playing PayPal's dispute reviewer, reads the exhibit pages alone and says how it would rule if the seller fought."
             : "A second model plays PayPal's dispute reviewer. It reads only the PDF, the response and the Bates-stamped exhibits, and objects where the requirements card is weak or missing, up to four objections. Exhibit answers each objection from the exhibits or concedes; the same checker strikes any answer it can't back. When you ask the sandbox to rule, Exhibit asks for the reviewer's verdict, not its own."}
         </p>
+        {view.priorPayments?.length ? (
+          <p>
+            The reviewer reads the store&apos;s history as given, the way a reviewer reads a real seller&apos;s order book: the test is whether the
+            response proves what the network asks for from that record. The sandbox note on how the earlier payments were re-created sits beside the
+            requirements card, not in the PDF
+            {view.filings.some((f) => f.action === "evidence" && f.at < "2026-10-30T00:50:00Z")
+              ? ". The PDF PayPal holds on this case was filed before that change, so the note is still inside it, and a hearing on PayPal's copy reads it."
+              : "."}
+          </p>
+        ) : null}
         <div className={styles.call}>
           {!latest || stale ? (
             <button className="btn btnPrimary" onClick={run} disabled={busy || Boolean(view.locked)} title={view.locked ?? undefined}>
@@ -247,10 +257,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
                   <strong>For the {hearing.verdict.side}:</strong> {hearing.verdict.reason.replace(/\.$/, "")}.
                 </p>
                 <p>
-                  {hearing.agrees
-                    ? `The reviewer agrees with Exhibit's call to ${hearing.call === "fight" ? "fight" : "refund"}.`
-                    : `The reviewer disagrees with Exhibit's call to ${hearing.call === "fight" ? "fight" : "refund"}.`}
-                  {hearing.flipped ? " Exhibit conceded and changed its call to refund." : ""}
+                  {verdictLine(hearing, view.brief?.recommendation)}
                   {hearing.withdrawn.length
                     ? hearing.source === "paypal"
                       ? ` Conceded at the hearing: sentence ${hearing.withdrawn.map((w) => w + 1).join(", ")}; still in the PDF PayPal holds.`
@@ -280,4 +287,19 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
       <ReviewerChair id={view.id} reason={view.reason} response={response} />
     </section>
   );
+}
+
+/**
+ * The verdict against Exhibit's own advice. When the brief advised a refund and the seller filed a response anyway,
+ * the hearing's call is the seller's fight, not Exhibit's, so the line says so instead of "Exhibit's call to fight".
+ */
+export function verdictLine(h: { agrees: boolean; call?: string; flipped?: boolean; verdict: { side: string } }, advised: string | undefined): string {
+  const sellerFought = h.call === "fight" && advised !== undefined && advised !== "fight";
+  if (sellerFought) {
+    return h.verdict.side === "buyer"
+      ? "The reviewer finds for the buyer, as Exhibit advised: its call was to refund, and the seller filed a response anyway." + (h.flipped ? " Exhibit conceded at the hearing." : "")
+      : "The reviewer finds for the seller, though Exhibit advised a refund; the seller filed a response anyway.";
+  }
+  const call = h.call === "fight" ? "fight" : "refund";
+  return (h.agrees ? `The reviewer agrees with Exhibit's call to ${call}.` : `The reviewer disagrees with Exhibit's call to ${call}.`) + (h.flipped ? " Exhibit conceded and changed its call to refund." : "");
 }

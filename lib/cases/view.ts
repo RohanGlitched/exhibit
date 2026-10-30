@@ -125,6 +125,8 @@ export interface HouseView {
 const FIX_DUPLICATE = "2026-10-29T20:13:00Z";
 /** UNAUTHORISED agent cases the sandbox never opened for a ruling, and when Exhibit tried to move them. */
 const STUCK_TRIED: Record<string, string> = { "PP-R-YTQ-10191473": "30 Oct 2026", "PP-R-OMG-10191469": "30 Oct 2026" };
+// Rule 5 has asked for a ruling only when two hearings on PayPal's copy agree since this deploy (30 Oct 2026).
+const PANEL_SINCE = "2026-10-30T01:00:00Z";
 
 function houseView(ctx: CaseContext): HouseView | null {
   const rec = ctx.record;
@@ -174,6 +176,26 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
         ? `Exhibit asked the sandbox to rule${side ? ` for the ${side}` : ""} on ${utcTime(asked.at)}, and PayPal took the request, but its sandbox hasn't ruled on this unauthorised-transaction chargeback since it was filed on ${utcDay(filed)}. It hasn't ruled on any unauthorised-transaction chargeback Exhibit asked about; the requested rulings it has given were on not-received, not-as-described and charged-twice cases. This is a sandbox limit, not a verdict.`
         : `PayPal's sandbox hasn't opened this unauthorised-transaction chargeback for a ruling since it was filed on ${utcDay(filed)}. Exhibit will ask for the ruling the hearing on PayPal's copy reaches once PayPal opens it.`) +
         (tried ? ` On ${tried} Exhibit asked again through provide-supporting-info; the sandbox refused the call (HTTP 400, invalid request). The case stays under review.` : ""),
+    );
+  }
+  // A ruling asked for on one hearing, before the two-of-three rule, whose seller verdict stood on sustained points only.
+  const ask = ctx.filings.filter((f) => f.action === "ruling" && f.ok !== false).at(-1);
+  if (ask && ask.at < PANEL_SINCE && d.status !== "RESOLVED") {
+    const followed = hearingsOf(ctx.record)
+      .filter((h) => h.source === "paypal" && h.at <= ask.at)
+      .sort((a, b) => a.at.localeCompare(b.at))
+      .at(-1);
+    if (followed && followed.verdict.side === "seller" && followed.exchanges.length && followed.exchanges.every((e) => e.ruling === "sustained")) {
+      notes.push(
+        `The ruling was asked for on ${utcTime(ask.at)} on one hearing of PayPal's copy, before the two-of-three rule of 30 Oct 2026. That hearing found for the seller with every objection sustained (${followed.exchanges.length} of ${followed.exchanges.length}); under today's rule a seller's verdict resting on sustained points counts for neither side, and no ruling would be asked until two hearings agree.`,
+      );
+    }
+  }
+  // Filed as proof of refund with no refund on record: what went to PayPal was a concession letter.
+  const ev = ctx.filings.find((f) => f.action === "evidence");
+  if (ev && /as proof of refund$/.test(ev.summary) && !ctx.refundId && ctx.brief && ctx.brief.recommendation !== "fight") {
+    notes.push(
+      "Exhibit advised a refund, and the seller filed its response anyway. That response concedes the claim and no refund is on record, so it was a concession letter, though PayPal received it under the evidence type 'proof of refund'. Since 30 Oct 2026 such a filing goes to PayPal as a concession letter.",
     );
   }
   return notes;

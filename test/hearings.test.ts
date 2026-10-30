@@ -83,7 +83,7 @@ test("GQZ: the draft hearing the PDF hearing overwrote says its transcript wasn'
   });
   const heard = audit.find((a) => a.text.startsWith("Heard on the draft"))!;
   assert.equal(heard.hearing, undefined);
-  assert.equal(heard.missing, "transcript not kept: recorded before 30 Oct");
+  assert.equal(heard.missing, "draft hearing summary; the full transcript is on the PDF hearing below");
   const ruling = audit.find((a) => a.text.startsWith("Ruling asked for"))!;
   assert.equal(ruling.hearing, hearingAnchor(pdf));
   assert.match(ruling.text, /under house rule 5: Ruled by the simulated reviewer/);

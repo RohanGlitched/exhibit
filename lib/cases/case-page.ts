@@ -59,6 +59,17 @@ export function hearingTabs(i: TabInput): { tabs: HearingTab[]; open: string | n
           : "On the draft";
     return { at: h.at, label, afterRuling, again };
   });
+  // Two or more tabs with the same name (a 2-of-3 panel on PayPal's copy, a repeated draft hearing) are numbered.
+  const named = new Map<string, number>();
+  for (const t of tabs) named.set(t.label, (named.get(t.label) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  for (const t of tabs) {
+    const n = named.get(t.label)!;
+    if (n < 2) continue;
+    const k = (seen.get(t.label) ?? 0) + 1;
+    seen.set(t.label, k);
+    t.label = `${t.label}, hearing ${k} of ${n}`;
+  }
   const before = tabs.filter((t) => !t.afterRuling).reverse();
   const after = tabs.filter((t) => t.afterRuling);
   const followed = i.rulingAt ? list.filter((h) => h.source === "paypal" && h.at <= i.rulingAt!).at(-1) : null;

@@ -72,7 +72,16 @@ export function houseAudit(i: AuditInput): AuditLine[] {
       audit.push(
         h
           ? { at: p.decidedAt, text, hearing: hearingAnchor(h) }
-          : { at: p.decidedAt, text, missing: p.decidedAt < KEPT_FROM ? "transcript not kept: recorded before 30 Oct" : "transcript not kept" },
+          : {
+              at: p.decidedAt,
+              text,
+              // Before 30 Oct only the latest hearing was kept; the draft's is this summary line.
+              missing: i.hearings.some((x) => x.source === "paypal")
+                ? "draft hearing summary; the full transcript is on the PDF hearing below"
+                : p.decidedAt < KEPT_FROM
+                  ? "draft hearing summary, recorded before 30 Oct"
+                  : "draft hearing summary",
+            },
       );
     }
     audit.push({ at: p.decidedAt, text: `Decided${after(p.decidedAt)} under house rule ${p.rule}: ${p.action === "queue" ? "left for the seller" : p.action === "accept" ? "refund" : "file the response"}. ${struckWords(p.reason, i.repaired)}` });

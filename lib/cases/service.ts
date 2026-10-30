@@ -269,13 +269,24 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
     // PayPal takes one evidence entry per call unless each names an item, so file the strongest type with
     // everything attached: the response as notes, tracking or refund details, and the PDF of all exhibits.
     const types = brief.evidenceTypes.length ? brief.evidenceTypes : ["OTHER"];
-    const primary = types.find((t) => t === "PROOF_OF_FULFILLMENT" || t === "PROOF_OF_REFUND") ?? types[0];
+    const chosen = types.find((t) => t === "PROOF_OF_FULFILLMENT" || t === "PROOF_OF_REFUND") ?? types[0];
+    // A refund-advised brief filed anyway, with no refund on record, is a concession letter, not proof of a refund.
+    const concession = chosen === "PROOF_OF_REFUND" && !ctx.refundId;
+    const primary = concession ? "OTHER" : chosen;
     const evidence: EvidenceInput = { evidence_type: primary, notes: response.slice(0, 2000), documents: [{ name: "response.pdf" }] };
     if (number && carrier && primary !== "PROOF_OF_REFUND") evidence.evidence_info = { tracking_info: [{ carrier_name: carrier, tracking_number: number }] };
     if (primary === "PROOF_OF_REFUND" && ctx.refundId) evidence.evidence_info = { refund_ids: [ctx.refundId] };
     const evidences = [evidence];
     await provideEvidence(id, evidences, [{ field: "file1", name: "response.pdf", type: "application/pdf", data: pdf }]);
-    filing = { at: new Date().toISOString(), action, ok: true, by, summary: `Filed the response (${kept.length} sentences) and ${ctx.exhibits.length} exhibits as ${primary.toLowerCase().replace(/_/g, " ")}` };
+    filing = {
+      at: new Date().toISOString(),
+      action,
+      ok: true,
+      by,
+      summary: concession
+        ? `Filed a concession letter (${kept.length} sentences: the brief advised a refund and no refund is on record) and ${ctx.exhibits.length} exhibits`
+        : `Filed the response (${kept.length} sentences) and ${ctx.exhibits.length} exhibits as ${primary.toLowerCase().replace(/_/g, " ")}`,
+    };
   } else if (action === "accept") {
     if (!can.has("accept_claim")) throw new Error("PayPal isn't taking an acceptance on this case right now.");
     const note = kept.map((s) => s.text).join(" ").slice(0, 2000) || "We accept the claim and refund in full.";

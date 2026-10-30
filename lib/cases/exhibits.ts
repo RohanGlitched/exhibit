@@ -3,7 +3,7 @@ import type { Dispute } from "../paypal/disputes";
 import { refundedCaptureId, type Capture, type Order, type Refund } from "../paypal/orders";
 import type { Scenario } from "../shop/scenarios";
 import { SHOP, listingFor, product } from "../shop/catalog";
-import { day, dayTime, reasonLabel, usd, zonedToUtc } from "../format";
+import { day, dayTime, reasonLabel, usd, utcTime, zonedToUtc } from "../format";
 
 const STAGES: Record<string, string> = { INQUIRY: "Inquiry", CHARGEBACK: "Chargeback", PRE_ARBITRATION: "Pre-arbitration", ARBITRATION: "Arbitration" };
 import type { Exhibit, Fact } from "./types";
@@ -91,7 +91,7 @@ export interface Sources {
   /** The capture the refund was made against, when it isn't the disputed one (the duplicate charge). */
   refundedCapture?: Capture | null;
   /** A returning customer's earlier orders, as real sandbox payments (CaseRecord.priorPayments). */
-  priorPayments?: { ref: string; captureId: string }[];
+  priorPayments?: { ref: string; captureId: string; at?: string }[];
   /** The trackers were written and read through PayPal's Agent Toolkit (PayPal's shipping trackers). */
   trackerSource?: "toolkit";
   agent?: AgentRun; // an agent story's purchase, signed and kept on the case record
@@ -391,7 +391,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
           )
         : ["First order from this customer."],
       sandbox: paid.size
-        ? `The earlier orders' PayPal payments were made in the sandbox when this case was opened, with the same card, and never disputed; the order book dates them on the store's day. Device ids and IP addresses are the store's checkout log.`
+        ? `The earlier orders' PayPal payments were made in the sandbox when this case was opened, with the same card, and never disputed; the order book dates them on the store's day. Device ids and IP addresses are the store's checkout log.${(src.priorPayments ?? []).some((p) => p.at) ? ` Created in PayPal: ${(src.priorPayments ?? []).filter((p) => p.at).map((p) => `${p.ref}, capture ${p.captureId}, ${utcTime(p.at!)}`).join("; ")}.` : ""}`
         : undefined,
     });
     const notes = src.agent?.injection ? [...s.notes, INJECTION_NOTE] : s.notes;
