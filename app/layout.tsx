@@ -1,12 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Public_Sans, Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const sans = Public_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
-const serif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"], style: ["normal", "italic"], variable: "--font-serif", display: "swap" });
+// Self-hosted (SIL OFL, app/fonts): next/font/google fetched these from Google at build time, and CI failed whenever
+// that fetch did.
+const sans = localFont({ src: "./fonts/public-sans-latin-wght-normal.woff2", weight: "100 900", variable: "--font-sans", display: "swap" });
+const serif = localFont({
+  src: [
+    { path: "./fonts/source-serif-4-latin-wght-normal.woff2", weight: "200 900", style: "normal" },
+    { path: "./fonts/source-serif-4-latin-wght-italic.woff2", weight: "200 900", style: "italic" },
+  ],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
