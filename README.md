@@ -17,7 +17,7 @@
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20v2%20%C2%B7%20Payments%20v2%20%C2%B7%20Disputes%20%C2%B7%20Webhooks%20%C2%B7%20Agent%20Toolkit-2b63e8">
   <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20OpenAI-13203a">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-226-17845a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-242-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
@@ -187,7 +187,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 226 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
+npm test                                                   # 242 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
 npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
