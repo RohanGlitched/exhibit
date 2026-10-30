@@ -82,6 +82,20 @@ function item(id: string, need: string, status: Status, detail: string, exhibits
 
 /* ───────────── Delivery: tracking, a delivered scan, at the transaction's address ───────────── */
 
+// "the vase just arrived today", "Found it at the front desk", "I got it": a parcel that reached the buyer. Not when
+// a negation sits just before it ("still hasn't arrived", "never came"); "Never mind" is no negation.
+const ARRIVED = /\b(?:arrived|turned up|showed up|came (?:today|yesterday|this morning|in the end))\b|\bfound (?:it|them|the (?:parcel|package|box|order))\b|\b(?:I|we)(?:'ve| have)? (?:got|received|picked up) (?:it|them|the (?:parcel|package|box|order)|my (?:parcel|package|order))\b/i;
+const NEGATED = /^(?:not|never|no|hasn'?t|haven'?t|hadn'?t|didn'?t|isn'?t|wasn'?t|nothing)$/;
+export function saysArrived(text: string): boolean {
+  const t = text.replace(/[’]/g, "'").replace(/\bnever mind\b/gi, "");
+  const m = ARRIVED.exec(t);
+  if (!m) return false;
+  const before = t.slice(0, m.index).toLowerCase().split(/[\s,.!?]+/).filter(Boolean).slice(-3);
+  return !before.some((w) => NEGATED.test(w));
+}
+/** A short message quoted whole, a long one cut at 110 characters. */
+const quote = (t: string) => `“${t.length > 110 ? `${t.slice(0, 109).trimEnd()}…` : t}”`;
+
 function delivery(exhibits: Exhibit[], amount: number): Requirement[] {
   const by = (k: Exhibit["kind"]) => exhibits.find((e) => e.kind === k);
   const order = by("order");
@@ -95,26 +109,45 @@ function delivery(exhibits: Exhibit[], amount: number): Requirement[] {
   const deliveredZip = zipOf(delivered);
   const date = delivered?.match(/^\d{1,2} \w{3} \d{4}/)?.[0];
   const signed = delivered && /\bsigned\b/i.test(delivered);
+  // The cardholder's own email saying the parcel arrived ("Never mind, the vase just arrived today"). Visa 13.1 and
+  // Mastercard 4853 both take documentation that the cardholder received the goods (Visa Core Rules, dispute
+  // condition 13.1 response; Mastercard Chargeback Guide, 4853 goods-not-received second presentment), so with no
+  // carrier record it stands in for the scans: tracking, the delivered scan and the address only strengthen it.
+  const inbox = by("inbox");
+  const receipt = said(inbox, buyerName(exhibits)).find((l) => l.from === "buyer" && saysArrived(l.text));
+  const viaReceipt = Boolean(receipt && !delivered);
   const out: Requirement[] = [];
   out.push(
     tracking && carrier && carrier !== "—" && number
       ? item("tracking", "Carrier and tracking number", "on file", `${carrier} ${number}, on file with PayPal`, letters(tracking), true, "")
       : scans
-        ? item("tracking", "Carrier and tracking number", "weak", "Carrier scans, but no tracker on file with PayPal", letters(scans), true, "Where is the tracking number on file with PayPal for this parcel?")
-        : item("tracking", "Carrier and tracking number", "missing", "No tracking on file", [], true, "What tracking shows this parcel was shipped at all?"),
+        ? item("tracking", "Carrier and tracking number", "weak", "Carrier scans, but no tracker on file with PayPal", letters(scans), !viaReceipt, "Where is the tracking number on file with PayPal for this parcel?")
+        : item("tracking", "Carrier and tracking number", "missing", viaReceipt ? "No tracking on file; the cardholder's own email confirms receipt" : "No tracking on file", [], !viaReceipt, "What tracking shows this parcel was shipped at all?"),
   );
   out.push(
     delivered && date
       ? item("delivered", "A delivered scan with its date", "on file", `Delivered ${date}`, letters(scans), true, "")
-      : item("delivered", "A delivered scan with its date", "missing", returned ? "The only delivered scan is back at the sender" : scans ? "No delivered scan" : "No carrier scans", letters(scans), true, "What carrier record shows the parcel delivered, and on what date?"),
+      : item("delivered", "A delivered scan with its date", "missing", returned ? "The only delivered scan is back at the sender" : scans ? "No delivered scan" : "No carrier scans", letters(scans), !viaReceipt, "What carrier record shows the parcel delivered, and on what date?"),
   );
   out.push(
     delivered && shipZip && deliveredZip === shipZip
       ? item("address", "Delivered to the address on the transaction", "on file", `Delivered in ${deliveredZip}, the order's ship-to ZIP`, letters(scans, order), true, "")
       : delivered && shipZip && deliveredZip
         ? item("address", "Delivered to the address on the transaction", "missing", `Delivered in ${deliveredZip}; the order ships to ${shipZip}`, letters(scans, order), true, `The delivery scan is in ${deliveredZip} and the order ships to ${shipZip}: how was it delivered to the buyer's address?`)
-        : item("address", "Delivered to the address on the transaction", delivered ? "weak" : "missing", delivered ? "The scan's ZIP can't be matched to the ship-to" : "Nothing shows where it was delivered", letters(scans, order), true, "Which page ties the delivery to the address on the order?"),
+        : item("address", "Delivered to the address on the transaction", delivered ? "weak" : "missing", delivered ? "The scan's ZIP can't be matched to the ship-to" : "Nothing shows where it was delivered", letters(scans, order), !viaReceipt, "Which page ties the delivery to the address on the order?"),
   );
+  if (receipt)
+    out.push(
+      item(
+        "admission",
+        "The cardholder confirming receipt in writing",
+        "on file",
+        `The cardholder wrote that it arrived: ${quote(receipt.text)}`,
+        letters(inbox),
+        viaReceipt,
+        "",
+      ),
+    );
   // Visa 13.1: delivered before the dispute, and within the delivery time; with no date agreed, Visa has the
   // cardholder wait 15 calendar days from the purchase before disputing non-receipt.
   const deliveredOn = dateOf(date);

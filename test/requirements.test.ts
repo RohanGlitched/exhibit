@@ -221,3 +221,28 @@ test("a first-order fraud case signed for in the cardholder's own name at the bi
   assert.doesNotMatch(card2.items.find((i) => i.id === "ship-billing")!.detail, /cardholder's name/);
   assert.doesNotMatch(card2.note!, /own name/);
 });
+
+test("not received: the cardholder's own email that it arrived meets the delivery requirement without tracking", () => {
+  const o = order("VISA ending 1881", "Maya Lindqvist, 1418 Larkin Street, San Francisco, CA 94109");
+  const inbox = (...lines: string[]): Exhibit => ({ id: "F", kind: "inbox", title: "Emails with the buyer", source: "Store inbox", facts: [], lines });
+  const arrived = inbox("9 Oct 2026, 10:00, Maya Lindqvist: Hi, my order still hasn't come.", "22 Oct 2026, 18:00, Maya Lindqvist: Never mind, the vase just arrived today. Thanks!");
+  const card = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", amount: "34.00" }, [o, arrived])!;
+  assert.equal(card.standing, "met");
+  const admission = card.items.find((i) => i.id === "admission")!;
+  assert.equal(admission.status, "on file");
+  assert.equal(admission.required, true);
+  assert.match(admission.detail, /Never mind, the vase just arrived today/);
+  assert.deepEqual(admission.exhibits, ["F"]);
+  // Tracking, the scan and the address only strengthen it now.
+  for (const id of ["tracking", "delivered", "address"]) assert.equal(card.items.find((i) => i.id === id)!.required, false, id);
+  // "still hasn't come" is no admission; nor is the shop's own email, nor the buyer saying it never arrived.
+  for (const ex of [inbox("9 Oct 2026, 10:00, Maya Lindqvist: Hi, my order still hasn't come."), inbox("9 Oct 2026, 10:00, Ines Halden: It arrived at your building on Friday."), inbox("9 Oct 2026, 10:00, Maya Lindqvist: It never arrived.")]) {
+    const c = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", amount: "34.00" }, [o, ex])!;
+    assert.equal(c.standing, "not met");
+    assert.equal(c.items.find((i) => i.id === "admission"), undefined);
+  }
+  // With a delivered scan on file the admission is extra support, not the requirement.
+  const both = requirementsFor({ reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", amount: "34.00" }, [o, tracking, scans("4 Oct 2026, 13:00  Delivered, San Francisco, CA 94109"), inbox("10 Oct 2026, 09:00, Maya Lindqvist: Found it at the front desk, sorry for the trouble!")])!;
+  assert.equal(both.items.find((i) => i.id === "admission")!.required, false);
+  assert.equal(both.items.find((i) => i.id === "tracking")!.required, true);
+});
