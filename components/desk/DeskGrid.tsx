@@ -15,14 +15,16 @@ import {
 import { AgGridReact } from "ag-grid-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import type { DeskRow } from "@/lib/desk";
+import { pickGridLicence } from "@/lib/ag-licence";
 import { deskTotals } from "@/lib/desk-counts";
 import type { BriefSentence, Exhibit } from "@/lib/cases/types";
 import { sentenceState } from "@/lib/cases/sentence-state";
 import { reasonLabel, usd, utcShortDay } from "@/lib/format";
 import {
   DECIDED_TINY,
+  arguedBy,
   arrange,
   callCell,
   callWords,
@@ -31,6 +33,7 @@ import {
   isMissed,
   lateWord,
   matchesQuick,
+  sentenceWord,
   shortFiled,
   stakeByDay,
   type DetailRow,
@@ -38,9 +41,18 @@ import {
   type GroupHead,
 } from "./rows";
 import DeskStrip from "./DeskStrip";
+import type { EnterpriseGridProps } from "./EnterpriseGrid";
 import styles from "./desk.module.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
+
+// AG Grid Enterprise, only behind a licence key (lib/ag-licence.ts says which keys AG Grid takes). With none,
+// the desk is the Community grid below and EnterpriseGrid.tsx (with AG Grid Enterprise) is never fetched.
+// What to check once the key is set is listed at the top of EnterpriseGrid.tsx.
+const LICENCE = pickGridLicence({ grid: process.env.NEXT_PUBLIC_AG_GRID_LICENSE_KEY, studio: process.env.NEXT_PUBLIC_AG_STUDIO_LICENSE_KEY });
+// The enterprise grid with no key, for checking it before the key arrives: honoured on localhost only.
+const PREVIEW = process.env.NEXT_PUBLIC_AG_GRID_ENTERPRISE_PREVIEW === "1";
+const isLocal = (host: string) => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 
 const theme = themeQuartz.withParams({
   fontFamily: "var(--font-sans)",
@@ -168,8 +180,6 @@ function loadBrief(id: string): Promise<LoadedBrief> {
   return p;
 }
 
-const BADGE: Record<string, string> = { struck: "Struck", withdrawn: "Withdrawn at the hearing", unverified: "Unverified", kept: "Kept" };
-
 /**
  * A case's brief opened under its row: every sentence with the exhibits it cites (as Bates marks) and what the
  * checker made of it. Read from the case on first open; the row grows to fit what it holds.
@@ -204,7 +214,7 @@ function BriefDetail(p: ICellRendererParams<DetailRow>) {
     return () => ro.disconnect();
   }, [id, brief, error, p.node, p.api]);
   const title = (c: string) => brief?.exhibits.find((e) => e.id === c)?.title;
-  const by = brief ? (brief.engine === "model" ? "argued by the model" : brief.engine === "rules" ? "argued by the rules engine" : "read back from PayPal") : "";
+  const by = brief ? arguedBy(brief.engine) : "";
   return (
     <div className={styles.detail} ref={box}>
       <p className={styles.detailHead}>
@@ -222,14 +232,7 @@ function BriefDetail(p: ICellRendererParams<DetailRow>) {
         <ol className={styles.sentences}>
           {brief.sentences.map((s, i) => {
             const st = sentenceState(s, brief.exhibits);
-            const badge =
-              st.kind === "checked"
-                ? `Checked: ${(s.checked ?? []).join(", ")}`
-                : st.kind === "quoted"
-                  ? `Quote matched in Exhibit ${st.exhibit ?? s.cites.join(" or ")}`
-                  : st.kind === "struck" && s.why
-                    ? `Struck: ${s.why}`
-                    : BADGE[st.kind];
+            const badge = sentenceWord(s, st);
             return (
               <li key={i} data-kind={st.kind}>
                 <span className={styles.sNum}>{i + 1}</span>
@@ -403,6 +406,24 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
   const [scripts, setScripts] = useState(true);
   // AG Grid paints only once its script has run; until then the same rows show as plain paper rows.
   const [painted, setPainted] = useState(false);
+  // With a licence key: "pending" while AG Grid Enterprise loads, then its grid, or null (Community) if AG
+  // refuses the key. With no key it is null from the start and nothing else is loaded.
+  const [Enterprise, setEnterprise] = useState<ComponentType<EnterpriseGridProps> | null | "pending">(LICENCE || PREVIEW ? "pending" : null);
+  const [chartSlot, setChartSlot] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!LICENCE && !PREVIEW) return;
+    if (!LICENCE && !isLocal(window.location.hostname)) {
+      setEnterprise(null);
+      return;
+    }
+    let live = true;
+    import("./EnterpriseGrid")
+      .then((m) => live && setEnterprise(() => (m.prepareEnterprise(LICENCE?.key ?? null) ? m.default : null)))
+      .catch(() => live && setEnterprise(null));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     const t = setInterval(async () => {
@@ -487,6 +508,10 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
   const key = ordered.map((r) => `${r.id}:${r.updated}:${r.where}`).join(",");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const gridRows = useMemo(() => arrange(ordered, groupBy, open) as GridRow[], [key, groupBy, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enterpriseRows = useMemo(() => ordered, [key]);
+  const openCase = useCallback((id: string) => router.push(`/case/${id}`), [router]);
+  const ready = useCallback(() => setPainted(true), []);
   const cardRows = arrange(ordered, groupBy, new Set<string>());
 
   return (
@@ -524,6 +549,7 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
         </div>
       </div>
       <StakeSpark rows={desk} />
+      {Enterprise && Enterprise !== "pending" && <div className={styles.chartSlot} ref={setChartSlot} />}
       <div className={styles.filters} role="group" aria-label="Show cases">
         {FILTERS.map((f) => {
           const n = f.test ? live.filter(f.test).length : live.length;
@@ -590,54 +616,67 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
       <div className={`sheet ${styles.grid}`} data-painted={painted}>
         {!painted && <PaperRows rows={ordered} />}
         <div className={styles.gridLayer}>
-          <AgGridReact<DeskRow>
-            theme={theme}
-            rowData={gridRows as DeskRow[]}
-            columnDefs={cols}
-            context={context}
-            getRowId={(p) => p.data.id}
-            // Group headers and opened briefs are full-width rows (AG Grid Community); after every sort each group
-            // stays together under its header and each brief under its case.
-            isFullWidthRow={(p) => Boolean(kindOf(p.rowNode.data))}
-            fullWidthCellRenderer={FullWidth}
-            getRowHeight={(p: RowHeightParams<DeskRow>) => {
-              const k = kindOf(p.data);
-              if (k === "group") return 44;
-              if (k === "detail") return heights.get((p.data as unknown as DetailRow).caseId) ?? 120;
-              return undefined;
-            }}
-            postSortRows={(p: PostSortRowsParams<DeskRow>) => {
-              const { by, open: opened } = arrangeBy.current;
-              const byId = new Map(p.nodes.map((n) => [n.id, n]));
-              const cases = p.nodes.filter((n) => !kindOf(n.data)).map((n) => n.data as DeskRow);
-              const order = arrange(cases, by, opened)
-                .map((r) => byId.get(r.id))
-                .filter((n): n is IRowNode<DeskRow> => Boolean(n));
-              if (order.length === p.nodes.length) p.nodes.splice(0, p.nodes.length, ...order);
-            }}
-            onFirstDataRendered={() => setPainted(true)}
-            onGridReady={(e) => {
-              api.current = e.api;
-              if (!e.api.getDisplayedRowCount()) setPainted(true);
-            }}
-            onRowClicked={(e) => {
-              // The case id is a link of its own and the +/- opens the brief; a click anywhere else on a case row opens the case.
-              if ((e.event?.target as HTMLElement | null)?.closest?.("a, button")) return;
-              if (e.data && !kindOf(e.data)) router.push(`/case/${e.data.id}`);
-            }}
-            rowClass={styles.row}
-            getRowClass={(p: RowClassParams<DeskRow>) => {
-              const k = kindOf(p.data);
-              if (k === "group") return styles.groupRow;
-              if (k === "detail") return styles.detailRow;
-              return p.data?.mine ? styles.mine : undefined;
-            }}
-            domLayout="autoHeight"
-            suppressCellFocus
-            tooltipShowDelay={300}
-            overlayNoRowsTemplate="No cases yet. Open one and it lands here."
-            defaultColDef={{ sortable: true, resizable: true }}
-          />
+          {Enterprise === null ? (
+            <AgGridReact<DeskRow>
+              theme={theme}
+              rowData={gridRows as DeskRow[]}
+              columnDefs={cols}
+              context={context}
+              getRowId={(p) => p.data.id}
+              // Group headers and opened briefs are full-width rows (AG Grid Community); after every sort each group
+              // stays together under its header and each brief under its case.
+              isFullWidthRow={(p) => Boolean(kindOf(p.rowNode.data))}
+              fullWidthCellRenderer={FullWidth}
+              getRowHeight={(p: RowHeightParams<DeskRow>) => {
+                const k = kindOf(p.data);
+                if (k === "group") return 44;
+                if (k === "detail") return heights.get((p.data as unknown as DetailRow).caseId) ?? 120;
+                return undefined;
+              }}
+              postSortRows={(p: PostSortRowsParams<DeskRow>) => {
+                const { by, open: opened } = arrangeBy.current;
+                const byId = new Map(p.nodes.map((n) => [n.id, n]));
+                const cases = p.nodes.filter((n) => !kindOf(n.data)).map((n) => n.data as DeskRow);
+                const order = arrange(cases, by, opened)
+                  .map((r) => byId.get(r.id))
+                  .filter((n): n is IRowNode<DeskRow> => Boolean(n));
+                if (order.length === p.nodes.length) p.nodes.splice(0, p.nodes.length, ...order);
+              }}
+              onFirstDataRendered={() => setPainted(true)}
+              onGridReady={(e) => {
+                api.current = e.api;
+                if (!e.api.getDisplayedRowCount()) setPainted(true);
+              }}
+              onRowClicked={(e) => {
+                // The case id is a link of its own and the +/- opens the brief; a click anywhere else on a case row opens the case.
+                if ((e.event?.target as HTMLElement | null)?.closest?.("a, button")) return;
+                if (e.data && !kindOf(e.data)) router.push(`/case/${e.data.id}`);
+              }}
+              rowClass={styles.row}
+              getRowClass={(p: RowClassParams<DeskRow>) => {
+                const k = kindOf(p.data);
+                if (k === "group") return styles.groupRow;
+                if (k === "detail") return styles.detailRow;
+                return p.data?.mine ? styles.mine : undefined;
+              }}
+              domLayout="autoHeight"
+              suppressCellFocus
+              tooltipShowDelay={300}
+              overlayNoRowsTemplate="No cases yet. Open one and it lands here."
+              defaultColDef={{ sortable: true, resizable: true }}
+            />
+          ) : Enterprise !== "pending" ? (
+            <Enterprise
+              theme={theme}
+              cols={cols}
+              rows={enterpriseRows}
+              groupBy={groupBy}
+              chartSlot={chartSlot}
+              loadBrief={loadBrief}
+              onPainted={ready}
+              onOpen={openCase}
+            />
+          ) : null}
         </div>
       </div>
       {missed.length > 0 && (
