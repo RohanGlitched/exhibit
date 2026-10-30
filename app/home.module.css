@@ -75,6 +75,11 @@
   color: var(--ink-soft);
   max-width: 46ch;
 }
+.heroSide p.heroNote {
+  margin-top: 18px;
+  font-size: 15px;
+  max-width: 52ch;
+}
 .ctas {
   display: flex;
   flex-wrap: wrap;

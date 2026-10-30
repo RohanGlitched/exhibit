@@ -4,7 +4,10 @@ import Pleading from "@/components/home/Pleading";
 import { FIGURES, OPTIONS, CHARGEFLOW_PRICING, PROTECTION_SOURCES } from "@/lib/impact";
 import policies from "@/data/policies.json";
 import lane from "@/data/lane.json";
-import { day, usd, utcDay, utcTime } from "@/lib/format";
+import { usd, utcDay, utcShortDay, utcTime } from "@/lib/format";
+
+// Every run on this page is stamped in UTC with the hour, as the README and the case pages are.
+const day = utcTime;
 import proof from "@/data/proof.json";
 import toolkitBrief from "@/data/toolkit-brief.json";
 import styles from "./proof.module.css";
@@ -321,7 +324,7 @@ export default function ProofPage() {
   const firstRun = mainPrev?.previous ?? null;
   // The run the repeat runs and the ablation are from: the oldest one on record.
   const seeded = firstRun ?? mainPrev;
-  const seededDay = seeded ? day(seeded.at).replace(/ \d{4}$/, "") : "";
+  const seededDay = seeded ? utcShortDay(seeded.at) : "";
   // Runs re-run alone after the cards changed (30 Oct): the table shows their newer answers; the card run's own count uses the old ones.
   const rerun = P.main?.rerun ?? null;
   const rerunNow = rerun ? P.runs.filter((r) => rerun.keys.includes(r.key) && r.model?.correct).length : 0;
@@ -332,7 +335,7 @@ export default function ProofPage() {
     return was ? { ...r, model: was.model } : r;
   };
   const rerunChanges = rerun ? [...new Set(rerun.keys.map((k) => P.variants.find((v) => v.id === k.split("#")[0])?.change).filter(Boolean))] : [];
-  const prevDay = mainPrev ? day(mainPrev.at).replace(/ \d{4}$/, "") : "";
+  const prevDay = mainPrev ? utcShortDay(mainPrev.at) : "";
   const beforeOf = (key: string) => prevFirst.find((r) => r.key === key);
   const mainMoved = mainPrev
     ? P.variants
@@ -441,7 +444,7 @@ export default function ProofPage() {
             {seeds > 1
               ? `across ${seeds} runs of every case, lowest to highest`
               : mainPrev
-                ? `all ${s.modelRuns} measured on today's prompt, one run each; ${prevCorrect} on the ${prevDay} run${firstRun ? `, ${firstRun.summary.correct} on ${day(firstRun.at).replace(/ \d{4}$/, "")} before the card` : ""}`
+                ? `all ${s.modelRuns} measured on today's prompt, one run each; ${prevCorrect} on the ${prevDay} run${firstRun ? `, ${firstRun.summary.correct} on ${utcShortDay(firstRun.at)} before the card` : ""}`
                 : "of labelled runs, one run each"}
           </p>
         </div>

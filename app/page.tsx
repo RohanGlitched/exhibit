@@ -99,17 +99,15 @@ export default async function Home() {
       <section className={`shell ${styles.hero}`}>
         <div className={styles.heroText}>
           <h1>
-            Cross-examined before PayPal{" "}
+            Cross{"‑"}examined before PayPal{" "}
             <span className={styles.nowrap}>
               reads it.<span className={styles.sticker} data-side="respondent">A</span>
             </span>
           </h1>
           <div className={styles.heroSide}>
             <p>
-              Exhibit argues a small PayPal seller&apos;s disputes, then holds a hearing on the Bates-stamped PDF PayPal will read: a second model
-              plays the reviewer, the card network&apos;s requirements card presses every weak or missing item, and an answer stands only when the
-              checker matches it to the record it cites. On held-out cases decided by what someone wrote, it made the right call 16 times in 18; a
-              rules baseline that reads every record made it twice. Click once for a real PayPal sandbox chargeback, fought or refunded.
+              Exhibit argues a small PayPal seller&apos;s disputes, then holds a hearing on the PDF PayPal will read, pressed by the card
+              network&apos;s requirements. An answer stands only when the checker matches it to the record it cites.
             </p>
             <div className={styles.ctas}>
               <Link className="btn btnPrimary" href="/new">
@@ -119,6 +117,10 @@ export default async function Home() {
                 See the desk
               </Link>
             </div>
+            <p className={styles.heroNote}>
+              On 16 of 18 held-out free-text runs (9 cases &times; 2 customers, written and labelled by a separate AI agent), it made the right call; a
+              rules baseline that reads every structured record made it twice. <Link href="/proof#held-out">How it was measured</Link>
+            </p>
           </div>
         </div>
 
