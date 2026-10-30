@@ -183,11 +183,11 @@ async function argueWithReads(sys: string, user: string, tool: { name: string; d
       const t = Date.now();
       try {
         const v = await toolkitCall(c.name as (typeof DRAFTER_READS)[number], args);
-        log.push({ tool: c.name, args, ms: Date.now() - t, ok: true, summary: readSummary(c.name, v).slice(0, 160) });
+        log.push({ tool: c.name, args, at: new Date(t).toISOString(), ms: Date.now() - t, ok: true, summary: readSummary(c.name, v).slice(0, 160) });
         results.push({ toolResult: { toolUseId: c.toolUseId, content: [{ text: compactRead(v) }] } });
       } catch (e) {
         const why = (e as Error).message.slice(0, 160);
-        log.push({ tool: c.name, args, ms: Date.now() - t, ok: false, summary: why });
+        log.push({ tool: c.name, args, at: new Date(t).toISOString(), ms: Date.now() - t, ok: false, summary: why });
         results.push({ toolResult: { toolUseId: c.toolUseId, content: [{ text: `The read failed: ${why}` }], status: "error" } });
       }
     }
