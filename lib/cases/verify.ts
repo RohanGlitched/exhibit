@@ -43,7 +43,11 @@ const NAME_PART = String.raw`(?:(?:Mr|Mrs|Ms|Dr)\.|[A-Z]\.|[A-Z][A-Za-z'’-]*)`
 const SIGNER = new RegExp(String.raw`\bsign(?:ed|ature)(?: for)? by (${NAME_PART}(?: ${NAME_PART}){0,3})`, "g");
 const CARRIER = /\b(USPS|UPS|FedEx|Fed Ex|DHL|Royal Mail|Canada Post|OnTrac|LaserShip|Amazon Logistics|Purolator|Evri|Parcelforce|DPD|GLS)\b/g;
 const NUMBER = /(?<![\w.$])\d+(?:\.\d+)?(?![\w]|\.\d)/g;
-const NOT_A_COUNT = /\b3-?D[- ]?Secure\b|\b3DS\b|\b(?:sentences?|objections?) \d+(?:(?:,| and) \d+)*\b/gi;
+// A stated range of ages or spans: "120 to 365 days old", "between 120 and 365 days", "120-365 days". It is a window,
+// not a figure: it holds when a cited record states a value in that unit inside it (Exhibit L's "146 days ago" is
+// inside "120 to 365 days"), or prints the same range. Read before the counts, so 120 and 365 aren't looked for alone.
+const RANGE = /\bbetween (\d+) and (\d+) (day|week|month|year)s?\b|\b(\d+) ?(?:to|-|–|—) ?(\d+) (day|week|month|year)s?\b/gi;
+const NOT_A_COUNT =/\b3-?D[- ]?Secure\b|\b3DS\b|\b(?:sentences?|objections?) \d+(?:(?:,| and) \d+)*\b/gi;
 const WORDS: Record<string, string | null> = {
   two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10", eleven: "11", twelve: "12",
   twenty: "20", thirty: "30", forty: "40", fifty: "50", sixty: "60", seventy: "70", eighty: "80", ninety: "90",
@@ -100,7 +104,7 @@ export function figures(text: string) {
 
 /* ───────────── What a sentence asserts ───────────── */
 
-export type TokenKind = "money" | "date" | "day" | "time" | "id" | "percent" | "zip" | "place" | "signer" | "carrier" | "number" | "word";
+export type TokenKind = "money" | "date" | "day" | "time" | "id" | "percent" | "zip" | "place" | "signer" | "carrier" | "range" | "number" | "word";
 
 export interface Token {
   kind: TokenKind;
@@ -143,6 +147,7 @@ export function tokens(text: string): Token[] {
   take(PLACE, "place", (m) => norm(`${m[1]}, ${m[2]}`));
   take(SIGNER, "signer", (m) => norm(m[1].replace(/[.,'’]+$/, "")), 1);
   take(CARRIER, "carrier", (m) => norm(m[0]));
+  take(RANGE, "range", (m) => `${m[1] ?? m[4]}-${m[2] ?? m[5]} ${(m[3] ?? m[6]).toLowerCase()}`);
   // Names, not counts: "3-D Secure", and a hearing answer pointing at "sentence 2" or "objection 3".
   rest = rest.replace(NOT_A_COUNT, (m) => " ".repeat(m.length));
   take(NUMBER, "number", (m) => m[0]);
@@ -211,6 +216,13 @@ function holds(t: Token, h: { hay: string; counts: string; amounts: Set<string>;
       return new RegExp(`(?<![\\w])${esc(t.key)}(?![\\w])`).test(h.hay);
     case "percent":
       return h.hay.replace(/\s?percent\b/g, "%").replace(/(\d)\s%/g, "$1%").includes(t.key);
+    case "range": {
+      const [span, unit] = t.key.split(" ");
+      const [a, b] = span.split("-").map(Number);
+      const [lo, hi] = [Math.min(a, b), Math.max(a, b)];
+      if (new RegExp(`(?<![\\d.])${lo} ?(?:to|-|and) ?${hi} ${unit}`).test(h.hay)) return true;
+      return [...h.hay.matchAll(new RegExp(`(?<![\\d.])(\\d+) ${unit}s?\\b`, "g"))].some((m) => Number(m[1]) >= lo && Number(m[1]) <= hi);
+    }
     case "number":
       return new RegExp(`(?<![\\d.])${esc(t.key)}(?![\\d]|\\.\\d)`).test(h.counts);
     case "word": {
@@ -376,7 +388,15 @@ export function checkSentence(
   for (const t of toks) {
     if (holds(t, h)) continue;
     const what =
-      t.kind === "signer" ? `${t.raw} as the person who signed` : t.kind === "carrier" ? `${t.raw} as the carrier` : t.kind === "zip" ? `ZIP ${t.raw}` : t.raw;
+      t.kind === "signer"
+        ? `${t.raw} as the person who signed`
+        : t.kind === "carrier"
+          ? `${t.raw} as the carrier`
+          : t.kind === "zip"
+            ? `ZIP ${t.raw}`
+            : t.kind === "range"
+              ? `A span of ${t.raw.replace(/^between (\d+) and /i, "$1 to ")}`
+              : t.raw;
     return strike(s.text, known, `${what} isn't in ${where}.`, quote);
   }
 

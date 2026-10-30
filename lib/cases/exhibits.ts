@@ -380,7 +380,12 @@ export function buildExhibits(src: Sources): Exhibit[] {
         ...s.history.filter((h) => paid.has(h.ref)).map((h) => ({ label: `PayPal payment for ${h.ref}`, value: paid.get(h.ref)! })),
       ],
       lines: s.history.length
-        ? s.history.map((h) => `${h.ref}, ${h.daysAgo} days ago: ${h.item}, ${h.total}. ${h.outcome}.${h.device ? ` Device ${h.device}, IP address ${h.ip}.` : ""}`)
+        ? // Each earlier order on one line with its store date and, when it was re-created in the sandbox, its PayPal
+          // payment, so a sentence about it rests on one record ("#1077, 146 days ago, ordered 5 Jun 2026: ...").
+          s.history.map(
+            (h) =>
+              `${h.ref}, ${h.daysAgo} days ago, ordered ${day(clock.at(s.orderDaysAgo - h.daysAgo, 12))}: ${h.item}, ${h.total}. ${h.outcome}.${h.device ? ` Device ${h.device}, IP address ${h.ip}.` : ""}${paid.has(h.ref) ? ` PayPal payment ${paid.get(h.ref)}.` : ""}`,
+          )
         : ["First order from this customer."],
       sandbox: paid.size
         ? `The earlier orders' PayPal payments were made in the sandbox when this case was opened, with the same card, and never disputed; the order book dates them on the store's day. Device ids and IP addresses are the store's checkout log.`

@@ -183,9 +183,41 @@ test("Mastercard 4837: two earlier undisputed orders from the same device and IP
   const card = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), history]);
   assert.equal(status(card, "prior"), "on file");
   assert.equal(status(card, "device"), "on file");
-  // Too recent, or another device: not compelling evidence.
+  // The card prints the orders' own ages, as the history does, not a rule's window: BFL's drafter quoted the window.
+  const prior = card!.items.find((i) => i.id === "prior")!;
+  assert.equal(prior.detail, "2 earlier orders, 211 and 146 days old, never disputed, from the same device and IP address as this one");
+  // Mastercard's own route, worded without Visa's CE 3.0 label or day window.
+  assert.equal(prior.need, "Earlier undisputed orders from the same device or with the same details");
+  assert.doesNotMatch(cardText(card!), /CE 3\.0|Compelling Evidence 3\.0|120 to 365/);
+  // Mastercard sets no CE 3.0 window, so recent orders from the same device still count; another device doesn't.
   const recent = { ...history, lines: history.lines!.map((l) => l.replace(/\d+ days ago/, "40 days ago")) };
-  assert.notEqual(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), recent]), "prior"), "on file");
+  assert.equal(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), recent]), "prior"), "on file");
   const other = { ...history, lines: history.lines!.map((l) => l.replace("AGT-7F3A-90C2, IP address 198.51.100.23", "AGT-0000-0000, IP address 203.0.113.9")) };
   assert.notEqual(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), other]), "prior"), "on file");
+
+  // Visa 10.4 is CE 3.0 proper: two earlier transactions 120 to 365 days old, sharing the IP or device plus one more identifier.
+  const visa = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("VISA ending 4242"), history])!;
+  assert.equal(visa.code, "10.4");
+  assert.equal(status(visa, "prior"), "on file");
+  assert.match(visa.items.find((i) => i.id === "prior")!.need, /^Compelling Evidence 3\.0: two earlier undisputed transactions, 120 to 365 days old$/);
+  assert.match(visa.note!, /Compelling Evidence 3\.0 .*Visa 10\.4/);
+  assert.notEqual(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("VISA ending 4242"), recent]), "prior"), "on file");
+  // One shared identifier isn't enough for CE 3.0: the device alone, at another address and IP.
+  const deviceOnly = { ...history, lines: history.lines!.map((l) => l.replace("Delivered to the same address", "Delivered").replace("198.51.100.23", "203.0.113.9")) };
+  assert.equal(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("VISA ending 4242"), deviceOnly]), "prior"), "weak");
+  assert.equal(status(requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [order("MASTERCARD ending 0011"), deviceOnly]), "prior"), "on file");
+});
+
+test("a first-order fraud case signed for in the cardholder's own name at the billing address says so", () => {
+  const signedScans: Exhibit = { id: "E", kind: "scans", title: "USPS scan history", source: "USPS", facts: [], lines: ["8 Oct 2026, 10:00  Delivered, signed, Milwaukee, WI 53211. Signed for by L PENNINGTON"] };
+  const o = order("MASTERCARD ending 0011 in the name of Laura Pennington", "Laura Pennington, 2730 North Oakland Avenue, Milwaukee, WI 53211");
+  const card = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [o, signedScans])!;
+  assert.match(card.items.find((i) => i.id === "ship-billing")!.detail, /signed for as L PENNINGTON, the cardholder's name$/);
+  assert.match(card.note!, /signed for in the cardholder's own name at the billing address .* weaker than both/);
+  assert.equal(card.standing, "partly");
+  // Someone else's name: no such line.
+  const other = { ...signedScans, lines: ["8 Oct 2026, 10:00  Delivered, signed, Milwaukee, WI 53211. Signed for by R ALVARADO"] };
+  const card2 = requirementsFor({ reason: "UNAUTHORISED", amount: "180.00" }, [o, other])!;
+  assert.doesNotMatch(card2.items.find((i) => i.id === "ship-billing")!.detail, /cardholder's name/);
+  assert.doesNotMatch(card2.note!, /own name/);
 });

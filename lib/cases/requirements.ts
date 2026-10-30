@@ -238,18 +238,50 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
   const undisputed = (l: string) => /\bnever disputed\b|\bno dispute\b/i.test(l) || !/disput|chargeback/i.test(l);
   const prior = (history?.lines ?? []).filter((l) => !/^First order/.test(l) && /no issues|delivered/i.test(l) && undisputed(l));
   const device = (notes?.lines ?? []).find((l) => /\bdevice\b|\bIP\b|\bbrowser\b/i.test(l));
-  // Compelling evidence proper: earlier undisputed orders 120 to 365 days old from the same device or IP address as
-  // this order, by the store's checkout log (Visa CE 3.0 asks for two; Mastercard accepts the same kind of history).
+  // The customer's own history, by network, read from the store's checkout log. Each network's route is its own:
+  // - Visa 10.4 "Other Fraud: Card-Absent Environment", Compelling Evidence 3.0 (Visa Core Rules and Visa Product
+  //   and Service Rules, in force from 15 April 2023): at least two earlier undisputed transactions on the same card,
+  //   120 to 365 days before the dispute, each sharing with the disputed transaction the IP address or the device
+  //   id, plus at least one more of: IP address, device id, shipping address, account login.
+  // - Mastercard 4837 "No Cardholder Authorization" (Mastercard Chargeback Guide, Merchant Edition, second
+  //   presentment): documentation that the cardholder took part in the transaction, such as earlier undisputed
+  //   transactions from the same device or with the same details. The guide sets no CE 3.0-style day window or count,
+  //   so none is applied here.
   const thisDevice = fact(history, "This order's device");
   const thisIp = fact(history, "This order's IP address");
-  const sameSession = prior.filter((l) => {
-    const days = Number(l.match(/, (\d+) days ago:/)?.[1] ?? NaN);
+  const ageOf = (l: string) => Number(l.match(/, (\d+) days ago\b/)?.[1] ?? NaN);
+  const shared = (l: string) => {
     const dev = l.match(/\bDevice ([A-Z0-9-]+)/)?.[1];
-    const ip = l.match(/\bIP address ([0-9.]+)/)?.[1];
-    return days >= 120 && days <= 365 && ((thisDevice && dev === thisDevice) || (thisIp && ip === thisIp));
+    const ip = l.match(/\bIP address (\d{1,3}(?:\.\d{1,3}){3})/)?.[1];
+    return { device: !!thisDevice && dev === thisDevice, ip: !!thisIp && ip === thisIp, address: /\bsame address\b/i.test(l) };
+  };
+  const sameSession = prior.filter((l) => {
+    const s = shared(l);
+    if (!s.device && !s.ip) return false;
+    if (!visa) return true;
+    const days = ageOf(l);
+    return days >= 120 && days <= 365 && [s.device, s.ip, s.address].filter(Boolean).length >= 2;
   });
+  // What the matching orders share, and their ages as the order book prints them ("211 and 146 days old").
+  const and = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : (xs[0] ?? ""));
+  const ages = and(sameSession.map(ageOf).filter((n) => Number.isFinite(n)).map(String));
+  const sharedWords = (() => {
+    const all = sameSession.map(shared);
+    const what = [all.every((s) => s.device) ? "device" : "", all.every((s) => s.ip) ? "IP address" : ""].filter(Boolean);
+    return what.length ? `the same ${and(what)}` : "the same device or IP address";
+  })();
+  const PRIOR_NEED = visa ? "Compelling Evidence 3.0: two earlier undisputed transactions, 120 to 365 days old" : "Earlier undisputed orders from the same device or with the same details";
   const delivered = scans?.lines?.find((l) => /\bDelivered\b/.test(l) && !/to sender/i.test(l));
   const home = delivered && zipOf(delivered) === zipOf(fact(order, "Ship to")) && !billing;
+  // Signed for in the cardholder's own name ("Signed for by L PENNINGTON" on Laura Pennington's card).
+  const holder = (fact(order, "Paid with")?.match(/in the name of (.+)$/)?.[1] ?? buyerName(exhibits) ?? "").trim();
+  const signer = delivered?.match(/Signed for by ([A-Z][A-Za-z.'’ -]*?)(?: at\b|[.,]|$)/)?.[1]?.trim();
+  const signedByHolder = (() => {
+    if (!holder || !signer) return false;
+    const h = holder.toUpperCase().split(/\s+/);
+    const s = signer.toUpperCase().replace(/\./g, "").split(/\s+/);
+    return s.at(-1) === h.at(-1) && s[0]?.[0] === h[0]?.[0];
+  })();
   const out: Requirement[] = [];
 
   const avsOk = /^[YX]\b/.test(avs);
@@ -276,14 +308,26 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
       "No 3-D Secure result is on file, so liability did not shift. What else proves the cardholder authorised it?",
     ),
   );
+  const orders = (n: number) => `${n} earlier order${n === 1 ? "" : "s"}`;
+  // The card prints the orders' own ages, as Exhibit L does, not the rule's window: a drafter quotes what it reads.
   out.push(
-    sameSession.length >= 2
-      ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "on file", `${sameSession.length} earlier orders, 120 to 365 days old, never disputed, from the same device and IP address as this one`, letters(history), true, "")
-      : prior.length >= 2
-      ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "weak",`${prior.length} earlier orders delivered without dispute; CE 3.0 also needs them to share the IP or device with this one`, letters(history), true, "Do the earlier orders share an IP address or device id with this one, as compelling evidence requires?")
-      : prior.length === 1
-        ? item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "weak", "One earlier order; the standard asks for two", letters(history), true, "One earlier order isn't two. What else ties the cardholder to this order?")
-        : item("prior", `${visa ? "Compelling Evidence 3.0" : "Compelling-evidence"}: two earlier undisputed orders`, "missing", "No earlier orders from this customer", letters(history), true, "This is the customer's first order. What ties the cardholder to it?"),
+    (visa ? sameSession.length >= 2 : sameSession.length >= 1)
+      ? item("prior", PRIOR_NEED, "on file", `${orders(sameSession.length)}, ${ages} days old, never disputed, from ${sharedWords} as this one`, letters(history), true, "")
+      : prior.length >= 2 || (!visa && prior.length === 1)
+        ? item(
+            "prior",
+            PRIOR_NEED,
+            "weak",
+            visa
+              ? `${orders(prior.length)} delivered without dispute (${and(prior.map(ageOf).filter((n) => Number.isFinite(n)).map(String))} days old); CE 3.0 needs two of them 120 to 365 days old that share the IP address or device id with this one, plus one more identifier`
+              : `${orders(prior.length)} delivered without dispute; none on file shares this order's device or IP address`,
+            letters(history),
+            true,
+            "Do the earlier orders share an IP address or device id with this one?",
+          )
+        : prior.length === 1
+          ? item("prior", PRIOR_NEED, "weak", "One earlier order; CE 3.0 asks for two", letters(history), true, "One earlier order isn't two. What else ties the cardholder to this order?")
+          : item("prior", PRIOR_NEED, "missing", "No earlier orders from this customer", letters(history), true, "This is the customer's first order. What ties the cardholder to it?"),
   );
   out.push(
     sameSession.length && thisDevice
@@ -296,7 +340,17 @@ function fraud(exhibits: Exhibit[], visa: boolean): Requirement[] {
     billing
       ? item("ship-billing", "Shipped to the cardholder's billing address", "missing", "Shipped somewhere other than the billing address", letters(payment, order), false, "The parcel shipped away from the billing address. Why does that point to the cardholder?")
       : home && /\bsigned\b/i.test(delivered!)
-        ? item("ship-billing", "Shipped to the cardholder's billing address", "on file", "Delivered and signed for at the order's address, which is the billing address", letters(scans, order), false, "")
+        ? item(
+            "ship-billing",
+            "Shipped to the cardholder's billing address",
+            "on file",
+            signedByHolder
+              ? `Delivered to the order's address, which is the billing address, and signed for as ${signer}, the cardholder's name`
+              : "Delivered and signed for at the order's address, which is the billing address",
+            letters(scans, order),
+            false,
+            "",
+          )
         : item("ship-billing", "Shipped to the cardholder's billing address", home ? "weak" : "missing", home ? "Delivered at the order's address, unsigned" : "No delivery to the cardholder's address on file", letters(scans, order), false, "Who received the parcel at the cardholder's address?"),
   );
   // The cardholder's own words that they made the purchase or have the goods: read from the inbox by pattern.
@@ -376,7 +430,15 @@ export function requirementsFor(c: { reason: string; amount: string | number; br
       break;
     case "UNAUTHORISED":
       items = fraud(exhibits, network === "Visa");
-      note = "A 3-D Secure result or compelling evidence (two earlier undisputed orders sharing the IP or device) is what moves a fraud case; address and security-code matches alone don't.";
+      note =
+        network === "Visa"
+          ? "A 3-D Secure result or Compelling Evidence 3.0 (two earlier undisputed transactions 120 to 365 days old sharing the IP address or device id, plus one more identifier) is what moves a Visa 10.4 case; address and security-code matches alone don't."
+          : `A 3-D Secure result, or evidence the cardholder took part (earlier undisputed orders from the same device or with the same details), is what moves ${network === "Mastercard" ? "a Mastercard 4837" : "an unauthorised-transaction"} case; address and security-code matches alone don't.`;
+      if (
+        items.some((i) => i.id === "ship-billing" && i.status === "on file" && /the cardholder's name$/.test(i.detail)) &&
+        !items.some((i) => i.id === "prior" && i.status === "on file")
+      )
+        note += " Without either, delivery signed for in the cardholder's own name at the billing address is the record that the cardholder took part; it is weaker than both.";
       break;
     case "DUPLICATE_TRANSACTION":
       items = duplicate(exhibits);

@@ -1,0 +1,220 @@
+{
+ "note": "PP-R-BFL-10195216 as the live desk served it on 30 Oct 2026: its exhibits B, I and L, and the hearing on the PDF PayPal holds (29 Oct, 23:32 UTC).",
+ "exhibits": [
+  {
+   "kind": "order",
+   "title": "The order",
+   "source": "PayPal Orders v2 · GET /v2/checkout/orders/7PF547495X7955835",
+   "ref": "7PF547495X7955835",
+   "facts": [
+    {
+     "label": "Order",
+     "value": "7PF547495X7955835"
+    },
+    {
+     "label": "Store order",
+     "value": "HC-143974"
+    },
+    {
+     "label": "Total",
+     "value": "$180.00"
+    },
+    {
+     "label": "Ship to",
+     "value": "Zoe Fischer, 1118 Jenifer Street, Madison, WI 53703"
+    },
+    {
+     "label": "Paid with",
+     "value": "MASTERCARD ending 0011 in the name of Zoe Fischer"
+    },
+    {
+     "label": "Ordered",
+     "value": "21 Oct 2026, 15:53"
+    }
+   ],
+   "lines": [
+    "1 × Dinner plates, set of four, $168.00"
+   ],
+   "sandbox": "Sandbox payment made on 29 Oct 2026 to re-create store order HC-143974. The order date comes from the store's records.",
+   "id": "B"
+  },
+  {
+   "kind": "scans",
+   "title": "USPS scan history",
+   "source": "USPS tracking · 9405511206213814182466",
+   "ref": "9405511206213814182466",
+   "facts": [
+    {
+     "label": "Latest",
+     "value": "Delivered, signed"
+    }
+   ],
+   "lines": [
+    "22 Oct 2026, 15:00  Accepted, Portland, OR 97214",
+    "25 Oct 2026, 09:00  Out for delivery, Madison, WI 53703",
+    "25 Oct 2026, 14:00  Delivered, signed, Madison, WI 53703. Signed for by Z FISCHER"
+   ],
+   "sandbox": "Carrier scans are simulated: sandbox tracking numbers aren't real parcels.",
+   "id": "I"
+  },
+  {
+   "kind": "history",
+   "title": "This customer's history",
+   "source": "Store order book",
+   "facts": [
+    {
+     "label": "Customer",
+     "value": "Zoe Fischer, zoe.fischer@example.com"
+    },
+    {
+     "label": "Earlier orders",
+     "value": "2"
+    },
+    {
+     "label": "This order's device",
+     "value": "AGT-7F3A-90C2"
+    },
+    {
+     "label": "This order's IP address",
+     "value": "198.51.100.23"
+    },
+    {
+     "label": "PayPal payment for #1031",
+     "value": "98G26150E1354900K"
+    },
+    {
+     "label": "PayPal payment for #1077",
+     "value": "10U84625FJ391084A"
+    }
+   ],
+   "lines": [
+    "#1031, 211 days ago: Slate speckle mug, 12 oz, two, $84.00. Delivered to the same address, never disputed. Device AGT-7F3A-90C2, IP address 198.51.100.23.",
+    "#1077, 146 days ago: Nesting bowls, set of three, $136.00. Delivered to the same address, never disputed. Device AGT-7F3A-90C2, IP address 198.51.100.23."
+   ],
+   "sandbox": "The earlier orders' PayPal payments were made in the sandbox when this case was opened, with the same card, and never disputed; the order book dates them on the store's day. Device ids and IP addresses are the store's checkout log.",
+   "id": "L"
+  }
+ ],
+ "hearing": {
+  "at": "2026-10-29T23:32:34.626Z",
+  "mode": "cross",
+  "source": "paypal",
+  "response": [
+   {
+    "text": "Two earlier orders were never disputed and used the same device and IP address as this order.",
+    "cites": [
+     "L"
+    ]
+   },
+   {
+    "text": "USPS delivered the order signed in Madison, WI 53703 by Z FISCHER.",
+    "cites": [
+     "I"
+    ]
+   },
+   {
+    "text": "The cardholder's signed instruction asked her agent to buy four dinner plates under $200 delivered to her home.",
+    "cites": [
+     "D"
+    ]
+   },
+   {
+    "text": "The signed agent cart totaled $180.00 and used 1118 Jenifer Street, Madison, WI 53703.",
+    "cites": [
+     "E"
+    ]
+   },
+   {
+    "text": "The mandate check passed 8 of 8 checks and found the cardholder responsible for the exact cart matched to the PayPal order.",
+    "cites": [
+     "F"
+    ]
+   }
+  ],
+  "exchanges": [
+   {
+    "objection": {
+     "n": 1,
+     "sentence": null,
+     "text": "A signed mandate isn't authorisation evidence the networks recognise. What network-recognised evidence ties the cardholder to this order?",
+     "ground": "unsupported",
+     "pages": [
+      "HC-000007",
+      "HC-000005",
+      "HC-000006"
+     ],
+     "requirement": "mandate",
+     "pressed": true
+    },
+    "answer": {
+     "stance": "answer",
+     "text": "Our network-recognised compelling evidence is two earlier undisputed orders, 120 to 365 days old, from the same device and IP address as this order. This order was also delivered and signed for at the cardholder’s order address.",
+     "cites": [
+      "L",
+      "I",
+      "B"
+     ],
+     "kept": false,
+     "why": "120 isn't in Exhibit L, I, B.",
+     "effect": "none"
+    },
+    "ruling": "sustained",
+    "reason": "The checker struck the answer (120 isn't in Exhibit L, I, B), so the point stands unanswered",
+    "ruledBy": "checker"
+   },
+   {
+    "objection": {
+     "n": 2,
+     "sentence": 2,
+     "text": "What evidence recognized for this fraud claim shows the signed agent mandate itself constitutes cardholder authorisation, rather than merely a platform-generated instruction?",
+     "ground": "unsupported",
+     "pages": [
+      "HC-000005",
+      "HC-000006",
+      "HC-000007"
+     ],
+     "requirement": "ap2"
+    },
+    "answer": {
+     "stance": "concede",
+     "text": "We do not claim the mandate itself is network-recognised authorisation evidence. Sentence 3 remains a factual description of the signed instruction; the fraud claim rests on the two qualifying earlier undisputed orders sharing this order’s device and IP address.",
+     "cites": [],
+     "kept": true,
+     "effect": "none"
+    },
+    "ruling": "sustained",
+    "reason": "Exhibit conceded the point",
+    "ruledBy": "concession"
+   }
+  ],
+  "call": "fight",
+  "after": "fight",
+  "withdrawn": [],
+  "flipped": false,
+  "verdict": {
+   "side": "seller",
+   "reason": "Two earlier undisputed orders share this order’s device and IP, and the purchase was delivered signed to the matching address",
+   "by": "reviewer"
+  },
+  "agrees": true,
+  "engine": "model",
+  "ms": 10657,
+  "calls": 3,
+  "pages": [
+   "HC-000001",
+   "HC-000002",
+   "HC-143974",
+   "HC-000004",
+   "HC-000005",
+   "HC-000006",
+   "HC-000007",
+   "HC-000008",
+   "HC-000009",
+   "HC-000010",
+   "HC-000011",
+   "HC-000012",
+   "HC-000013",
+   "HC-000014"
+  ]
+ }
+}
