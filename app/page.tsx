@@ -138,19 +138,20 @@ export default async function Home() {
         {stats && (
           <dl className={styles.stats}>
             <div>
-              <dt>Cases argued</dt>
-              <dd>{stats.argued}</dd>
-              <p>on the shop&apos;s sandbox account</p>
-            </div>
-            <div>
-              <dt>Sentences checked</dt>
-              <dd>{stats.sentences}</dd>
-              <p>in those briefs</p>
+              <dt>Altered sentences struck</dt>
+              <dd>
+                {proof.summary.mutationsStruck.toLocaleString("en-US")} <small>of {proof.summary.mutations.toLocaleString("en-US")}</small>
+              </dd>
+              <p>
+                true sentences with one fact changed, in the eval; plain code, re-run with <Link href="/proof#checker">no model</Link>
+              </p>
             </div>
             <div>
               <dt>Struck before filing</dt>
               <dd>{stats.struck}</dd>
-              <p>by the checker{stats.withdrawn ? `; ${stats.withdrawn} more withdrawn at hearings` : ""}</p>
+              <p>
+                of {stats.sentences} sentences on the live desk, by the checker{stats.withdrawn ? `; ${stats.withdrawn} more withdrawn at hearings` : ""}
+              </p>
             </div>
             <div>
               <dt>Answered through PayPal</dt>
@@ -160,20 +161,22 @@ export default async function Home() {
               </p>
             </div>
             <div>
-              <dt>Won in the sandbox</dt>
-              <dd>{stats.won}</dd>
+              <dt>Ruled at Exhibit&apos;s request</dt>
+              <dd>{stats.wonAsked + stats.lostAsked}</dd>
               <p>
-                {stats.wonAsked} ruled at Exhibit&apos;s request, {stats.wonByItself} closed by the sandbox on its own; lost{" "}
-                {stats.lostAsked} at Exhibit&apos;s request, {stats.lostByItself} otherwise
+                {stats.wonAsked} for the seller, {stats.lostAsked} for the buyer: PayPal&apos;s sandbox ruled the side Exhibit asked for
                 {stats.askedBuyer + stats.askedSeller > 0
-                  ? `. Rulings asked for and not yet given: ${stats.askedBuyer} for the buyer, ${stats.askedSeller} for the seller${
-                      stats.askedUnauthorised === stats.askedBuyer + stats.askedSeller
-                        ? ", all unauthorised-transaction chargebacks, which the sandbox hasn't ruled on"
-                        : stats.askedUnauthorised
-                          ? `; ${stats.askedUnauthorised} of them unauthorised-transaction chargebacks, which the sandbox hasn't ruled on`
-                          : ""
+                  ? `. Asked and not yet given: ${stats.askedBuyer + stats.askedSeller}${
+                      stats.askedUnauthorised ? `, ${stats.askedUnauthorised} of them unauthorised-transaction chargebacks, which the sandbox hasn't ruled on` : ""
                     }`
                   : ""}
+              </p>
+            </div>
+            <div>
+              <dt>Closed by the sandbox on its own</dt>
+              <dd>{stats.wonByItself + stats.lostByItself}</dd>
+              <p>
+                {stats.wonByItself} won, {stats.lostByItself} lost, with no ruling asked; these say nothing about the filing
               </p>
             </div>
             <div>

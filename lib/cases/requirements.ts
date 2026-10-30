@@ -438,6 +438,21 @@ function duplicate(exhibits: Exhibit[]): Requirement[] {
   ];
 }
 
+/**
+ * On an order a buyer's AI agent placed, a not-received or not-as-described response has to say, in one sentence
+ * citing the mandate exhibits, that the cardholder's signed intent covered this cart and ship-to address and that the
+ * PayPal order carries the cart's SHA-256. The checker holds that sentence's figures to the exhibits it cites.
+ */
+export function agentOrderItem(exhibits: Exhibit[]): Requirement | null {
+  const check = exhibits.find((e) => e.kind === "check");
+  if (!check) return null;
+  const mandates = exhibits.filter((e) => e.kind === "mandate");
+  const need = "One sentence tying the agent's order to the cardholder: the signed intent covered this cart and ship-to address, and the PayPal order carries the cart's SHA-256";
+  return fact(check, "Responsible") === "Cardholder" && mandates.length
+    ? item("agent-order", need, "on file", "The signed intent and cart verify, the cart matches the intent, and the order's custom_id carries the cart's digest", letters(check, ...mandates), true, "Where does the response show the cardholder's signed intent covered this cart and ship-to address?")
+    : item("agent-order", need, "missing", "The agent's cart broke the cardholder's signed intent, or no mandate is on file", letters(check, ...mandates), true, "The agent bought outside what the cardholder signed. Why is the cardholder bound by it?");
+}
+
 /** The requirements card for a case, or null when Exhibit has none for its reason. */
 export function requirementsFor(c: { reason: string; amount: string | number; brand?: string | null; sandboxCode?: string | null }, exhibits: Exhibit[]): RequirementsCard | null {
   const brand = c.brand ?? brandOf(exhibits);
@@ -446,19 +461,17 @@ export function requirementsFor(c: { reason: string; amount: string | number; br
   let items: Requirement[];
   let note: string | undefined;
   switch (c.reason) {
-    case "MERCHANDISE_OR_SERVICE_NOT_RECEIVED":
+    case "MERCHANDISE_OR_SERVICE_NOT_RECEIVED": {
       items = delivery(exhibits, amount);
+      const agentOrder = agentOrderItem(exhibits);
+      if (agentOrder) items.push(agentOrder);
       break;
+    }
     case "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED":
       items = described(exhibits);
-      if (exhibits.some((e) => e.kind === "check")) {
-        const check = exhibits.find((e) => e.kind === "check")!;
-        const party = fact(check, "Responsible");
-        items.push(
-          party === "Cardholder"
-            ? item("mandate", "The cardholder agreed to what the agent bought", "on file", "The mandate check holds the cardholder responsible", letters(check), true, "")
-            : item("mandate", "The cardholder agreed to what the agent bought", "missing", "The agent's cart broke the cardholder's signed intent", letters(check), true, "The agent bought outside what the cardholder signed. Why is the cardholder bound by it?"),
-        );
+      {
+        const agentOrder = agentOrderItem(exhibits);
+        if (agentOrder) items.push(agentOrder);
       }
       break;
     case "UNAUTHORISED":

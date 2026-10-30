@@ -19,3 +19,14 @@ test("a concession letter on a card chargeback promises no second refund", () =>
   assert.ok(!/will refund/i.test(t));
   assert.match(concessionLetter("46.00", false), /PayPal returns the disputed \$46\.00 to the buyer/);
 });
+
+test("an agent-bought not-received or not-as-described case needs the sentence tying the order to the cardholder", async () => {
+  const { agentOrderItem } = await import("../lib/cases/requirements.ts");
+  const ex = (id: string, kind: string, facts: { label: string; value: string }[] = []) => ({ id, kind, title: kind, source: "x", facts, lines: [] }) as never;
+  assert.equal(agentOrderItem([ex("A", "claim")]), null, "not an agent purchase");
+  const ok = agentOrderItem([ex("D", "mandate"), ex("E", "mandate"), ex("F", "check", [{ label: "Responsible", value: "Cardholder" }])])!;
+  assert.equal(ok.status, "on file");
+  assert.equal(ok.required, true);
+  assert.deepEqual(ok.exhibits, ["F", "D", "E"]);
+  assert.equal(agentOrderItem([ex("F", "check", [{ label: "Responsible", value: "Agent platform" }])])!.status, "missing");
+});
