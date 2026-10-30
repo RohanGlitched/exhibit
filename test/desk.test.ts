@@ -183,3 +183,18 @@ test("rulings asked for and not yet given are counted by side", async () => {
   assert.equal(askedSide([{ action: "ruling", ok: true, detail: "Asked the sandbox to rule for the buyer, by the autopilot under house rule 5" }]), "buyer");
   assert.equal(askedSide([{ action: "evidence", ok: true }]), null);
 });
+
+test("the desk's money lines reconcile: what waits on the seller is part of what is still in play", () => {
+  const rows = [
+    row("W1", { where: "waiting", status: "WAITING_FOR_SELLER_RESPONSE", due: "2026-11-05T00:00:00Z", amount: 136, filed: null }),
+    row("W2", { where: "waiting", status: "WAITING_FOR_SELLER_RESPONSE", due: "2026-11-06T00:00:00Z", amount: 180, filed: null }),
+    row("F1", { where: "filed", amount: 640 }),
+    row("MISS", { where: "lapsed", status: "WAITING_FOR_SELLER_RESPONSE", due: "2026-10-16T00:00:00Z", amount: 999, filed: null }),
+    row("POOL", { where: "waiting", pooled: true, amount: 500 }),
+  ];
+  const t = deskTotals(rows);
+  assert.equal(t.waiting, 2);
+  assert.equal(t.waitingAmount, 316);
+  assert.equal(t.atStake, 956);
+  assert.ok(t.waitingAmount <= t.atStake);
+});

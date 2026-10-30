@@ -259,6 +259,7 @@ function StakeSpark({ rows }: { rows: DeskRow[] }) {
   const W = 9;
   const H = 30;
   const stake = days.reduce((n, d) => n + d.atStake, 0);
+  const opened = days.reduce((n, d) => n + d.opened, 0);
   const line = (d: (typeof days)[number]) => `${utcShortDay(`${d.day}T12:00:00Z`)}: ${usd(d.opened)} opened, ${usd(d.atStake)} still at stake`;
   const words = days.filter((d) => d.opened > 0).map(line);
   return (
@@ -283,7 +284,8 @@ function StakeSpark({ rows }: { rows: DeskRow[] }) {
         })}
       </svg>
       <figcaption>
-        Disputed money opened per day, last 14 days (UTC). <span className={styles.sparkKey}>Blue</span> is still at stake: {usd(stake)} of it.
+        {usd(opened)} disputed in cases opened in the last 14 days (UTC), by day. <span className={styles.sparkKey}>Blue</span> is still at stake:{" "}
+        {usd(stake)} of it, from cases opened in the last 14 days only.
       </figcaption>
     </figure>
   );
@@ -474,7 +476,6 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
   const live = desk.filter((r) => !isMissed(r));
   const test = FILTERS.find((f) => f.id === filter)?.test;
   const shown = live.filter((r) => (!mineOnly || r.mine) && (!test || test(r)) && matchesQuick(r, quick, reasonLabel));
-  const waitingCount = live.filter((r) => isLive(r)).length;
   const missedCount = missed.length;
   // The one count (lib/desk-counts.ts): the strip, this line and the home page's figures read the same snapshot.
   // A missed deadline is not money still in play: PayPal decides those for the buyer.
@@ -493,7 +494,8 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
       <DeskStrip c={totals} at={at} />
       <div className={styles.toolbar}>
         <p className={styles.counts}>
-          <strong>{waitingCount}</strong> waiting on the seller, <strong>{usd(atStake)}</strong> at stake
+          <strong>{usd(totals.waitingAmount)}</strong> on the {totals.waiting} case{totals.waiting === 1 ? "" : "s"} waiting on you;{" "}
+          <strong>{usd(atStake)}</strong> across every case still in play (waiting on you, or filed and with PayPal)
           {missedCount > 0 && <span className={styles.pool}>; {missedCount} missed PayPal&apos;s deadline (listed under the desk)</span>}
           {pooled > 0 && <span className={styles.pool}>, plus {pooled} opened ahead for the next visitors</span>}
           {retired > 0 && <span className={styles.pool}> ({retired} more retired from the pool unused)</span>}

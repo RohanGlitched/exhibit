@@ -68,6 +68,8 @@ export interface DeskTotals extends DeskCounts {
   filed: number;
   /** Money still in play: waiting on the seller with the deadline ahead, or filed and with PayPal. A missed deadline is not. */
   atStake: number;
+  /** The part of it on the cases waiting on the seller (the "Your move" count), deadline ahead. */
+  waitingAmount: number;
 }
 
 /** Every figure the home page and the desk print, from one set of rows. */
@@ -83,5 +85,6 @@ export function deskTotals(rows: Counted[]): DeskTotals {
     withdrawn: argued.reduce((n, r) => n + (r.withdrawn ?? 0), 0),
     filed: shop.filter((r) => r.filed && !/^Accepted/.test(r.filed)).length,
     atStake: shop.filter((r) => r.where === "waiting" || r.where === "filed" || r.where === "open").reduce((n, r) => n + r.amount, 0),
+    waitingAmount: shop.filter((r) => r.where === "waiting").reduce((n, r) => n + r.amount, 0),
   };
 }
