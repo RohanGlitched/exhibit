@@ -459,7 +459,8 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
       {
         field: "due",
         headerName: "Respond in",
-        width: 98,
+        // Wide enough for the header and its sort arrow at 1440 px.
+        width: 118,
         cellRenderer: Due,
         sort: "asc",
         // Live deadlines first, soonest at the top; missed ones after them; cases off the clock last.
