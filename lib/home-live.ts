@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { listCases } from "./store";
 import { caseView } from "./cases/view";
 import type { Exchange, Hearing } from "./cases/hearing";
+import { pressedNote } from "./cases/case-page";
 import type { AgentStep } from "./agentic/types";
 
 /**
@@ -19,6 +20,8 @@ export interface LiveHearing {
   at: string;
   verdict: Hearing["verdict"];
   exchanges: Exchange[];
+  /** For each shown exchange, the words that mark a card-pressed objection (lib/cases/case-page.ts), else null. */
+  pressed: (string | null)[];
   response: Hearing["response"];
   outcome: string | null;
 }
@@ -70,6 +73,7 @@ export const homeLive = unstable_cache(
         at: h.hearing.at,
         verdict: h.hearing.verdict,
         exchanges: h.hearing.exchanges.slice(0, 3),
+        pressed: h.hearing.exchanges.slice(0, 3).map((e) => pressedNote(e.objection, h.hearing!.exchanges)),
         response: h.hearing.response,
         outcome: v?.ending?.line ?? null,
       };
@@ -108,6 +112,6 @@ export const homeLive = unstable_cache(
     }
     return { hearing, lane, agent };
   },
-  ["home-live-v1"],
+  ["home-live-v2"],
   { revalidate: 300 },
 );

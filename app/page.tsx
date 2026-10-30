@@ -284,7 +284,7 @@ export default async function Home() {
               </span>
             </p>
             {live.hearing.exchanges.map((e, i) => (
-              <Exchange key={i} index={i} objection={e.objection} answer={e.answer} ruling={e.ruling} reason={e.reason} />
+              <Exchange key={i} index={i} objection={e.objection} answer={e.answer} ruling={e.ruling} reason={e.reason} pressed={live.hearing!.pressed?.[i] ?? null} />
             ))}
             <p className={styles.transcriptVerdict}>
               <strong>Verdict for the {live.hearing.verdict.side}:</strong> {live.hearing.verdict.reason}.

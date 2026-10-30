@@ -5,7 +5,8 @@ import styles from "./hearing.module.css";
 /**
  * One exchange of the hearing, as a transcript: the OBJECTION stamp and what it is to, Q. the reviewer's
  * question, A. Exhibit's answer with its exhibit marks (struck through when the checker strikes it), what the
- * checker found, and the SUSTAINED or OVERRULED stamp with the reason.
+ * checker found, and the SUSTAINED or OVERRULED stamp with the reason. An objection the requirements card put
+ * to proof in code (Objection.pressed) says so under its line, so it isn't read as the reviewer's own.
  */
 export default function Exchange({
   objection,
@@ -17,6 +18,7 @@ export default function Exchange({
   flipped,
   index = 0,
   who = "Reviewer",
+  pressed,
 }: {
   objection: Objection;
   answer: Answer;
@@ -27,6 +29,8 @@ export default function Exchange({
   flipped?: boolean;
   index?: number;
   who?: string;
+  /** The words for a card-pressed objection (lib/cases/case-page.ts pressedNote); null for the reviewer's own. */
+  pressed?: string | null;
 }) {
   // Everything the checker matched: amounts, dates, times and ids, and ZIPs, places, signers, carriers and counts.
   const hasFigures = tokens(answer.text).length > 0;
@@ -41,6 +45,7 @@ export default function Exchange({
           {objection.pages.length ? ` (${objection.pages.join(", ")})` : ""}
         </span>
       </p>
+      {pressed && <p className={styles.pressed}>{pressed}</p>}
       {quote && (
         <p className={`serif ${styles.quoted}`} data-withdrawn={withdrawn ? "true" : "false"}>
           &ldquo;{quote.text}&rdquo;

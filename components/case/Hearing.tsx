@@ -5,6 +5,7 @@ import Pleading from "@/components/home/Pleading";
 import Stamp from "@/components/Stamp";
 import type { Hearing as HearingRecord } from "@/lib/cases/hearing";
 import { hearingAnchor } from "@/lib/cases/hearing-log";
+import { draftHearingsNote, hearingTabs, pressedNote, type TabInput } from "@/lib/cases/case-page";
 import type { Brief } from "@/lib/cases/types";
 import type { CaseView } from "@/lib/cases/view";
 import { utcDay } from "@/lib/format";
@@ -24,6 +25,16 @@ function merged(a: HearingRecord[], b: HearingRecord[]): HearingRecord[] {
 
 const initialList = (view: CaseView) => merged(view.hearings ?? [], view.hearing ? [view.hearing] : []);
 
+/** What the tabs need besides the hearings: when Exhibit asked PayPal to rule, and which hearings the autopilot's lines rest on. */
+function tabInput(view: CaseView, hearings: HearingRecord[]): TabInput {
+  return {
+    hearings,
+    rulingAt: view.filings.filter((f) => f.action === "ruling" && f.ok !== false).map((f) => f.at).sort().at(-1) ?? null,
+    resolved: view.status === "RESOLVED",
+    linked: (view.house?.audit ?? []).map((a) => a.hearing).filter((a): a is string => !!a),
+  };
+}
+
 /**
  * Cross-examination on the case page. A second model plays PayPal's reviewer: it reads only the PDF (the copy
  * PayPal holds once the response is filed), objects where the reason code's requirements card is weak or
@@ -34,7 +45,8 @@ const initialList = (view: CaseView) => merged(view.hearings ?? [], view.hearing
  */
 export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (b: Brief) => void }) {
   const [list, setList] = useState<HearingRecord[]>(() => initialList(view));
-  const [selected, setSelected] = useState<string | null>(() => initialList(view).at(-1)?.at ?? null);
+  // A case whose ruling request followed a hearing on PayPal's copy opens on that hearing, not on a later re-hearing.
+  const [selected, setSelected] = useState<string | null>(() => hearingTabs(tabInput(view, initialList(view))).open);
   const [fresh, setFresh] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,11 +107,17 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
   }
 
   const latest = list.at(-1) ?? null;
-  const hearing = list.find((h) => h.at === selected) ?? latest;
+  const tabInfo = tabInput(view, list);
+  const { tabs, open } = hearingTabs(tabInfo);
+  const hearing = list.find((h) => h.at === selected) ?? list.find((h) => h.at === open) ?? latest;
+  const tab = tabs.find((t) => t.at === hearing?.at);
+  const draftNote = draftHearingsNote(tabInfo);
   // The latest hearing read the draft, but the response has been filed since: PayPal's copy is due a hearing.
   const stale = Boolean(latest && filed && latest.source === "draft");
-  // A hearing held after PayPal had already decided the case played no part in the outcome.
-  const afterRuling = Boolean(hearing && view.ruledAt && view.status === "RESOLVED" && hearing.at > view.ruledAt);
+  // A hearing held after PayPal had already decided the case (or after Exhibit asked it to) played no part in the outcome.
+  const afterRuled = Boolean(hearing && view.ruledAt && view.status === "RESOLVED" && hearing.at > view.ruledAt);
+  const afterRequest = Boolean(tab?.afterRuling && !afterRuled);
+  const askedAt = tabInfo.rulingAt;
   const response = latest && !stale ? latest.response : view.brief.sentences.filter((s) => s.kept).map((s) => ({ text: s.text, cites: s.cites }));
   const advisedRefund = !filed && view.brief.recommendation !== "fight";
   const lines = hearing ? Math.max(8, hearing.exchanges.length * 7 + 3) : 6;
@@ -142,21 +160,23 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
       </header>
 
       <div className={styles.transcript}>
+        {draftNote && <p className={styles.tabNote}>{draftNote}</p>}
         {list.length > 1 && (
           <div className={styles.tabs} role="tablist" aria-label="Hearings on this case">
-            {[...list].reverse().map((h) => (
+            {tabs.map((t) => (
               <button
-                key={h.at}
+                key={t.at}
                 type="button"
                 role="tab"
-                id={`${hearingAnchor(h)}-tab`}
-                aria-selected={h.at === hearing?.at}
-                aria-controls={hearingAnchor(h)}
+                id={`${hearingAnchor(t)}-tab`}
+                aria-selected={t.at === hearing?.at}
+                aria-controls={hearingAnchor(t)}
                 className={styles.tab}
-                onClick={() => setSelected(h.at)}
+                data-after={t.afterRuling ? "true" : undefined}
+                onClick={() => setSelected(t.at)}
               >
-                <strong>{h.source === "paypal" ? "On the PDF PayPal holds" : "On the draft"}</strong>
-                <span>{utcStamp(h.at)}</span>
+                <strong>{t.label}</strong>
+                <span>{utcStamp(t.at)}</span>
               </button>
             ))}
           </div>
@@ -165,7 +185,8 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
           <div id={hearingAnchor(hearing)} className={styles.anchor} role={list.length > 1 ? "tabpanel" : undefined} aria-labelledby={list.length > 1 ? `${hearingAnchor(hearing)}-tab` : undefined}>
             <Pleading lines={lines} className={styles.paper}>
               <p className={styles.caption}>
-                {view.id} · hearing transcript · {copyOf(hearing).toLowerCase()} · {utcStamp(hearing.at)} · {hearing.pages.length} page{hearing.pages.length === 1 ? "" : "s"} read
+                {view.id} · hearing transcript · {copyOf(hearing).toLowerCase()}
+                {tab && tab.label !== "On the draft" && tab.label !== "On the PDF PayPal holds" ? ` · ${tab.label.toLowerCase()}` : ""} · {utcStamp(hearing.at)} · {hearing.pages.length} page{hearing.pages.length === 1 ? "" : "s"} read
                 {hearing.pages.length > 1 ? ` (${hearing.pages[0]} to ${hearing.pages.at(-1)})` : ""}
               </p>
               {hearing.mode === "record" ? (
@@ -184,6 +205,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
                     quote={e.objection.sentence !== null ? hearing.response[e.objection.sentence] : null}
                     withdrawn={e.objection.sentence !== null && hearing.withdrawn.includes(e.objection.sentence) && e.ruling === "sustained"}
                     flipped={e.answer.stance === "concede" && e.answer.effect === "refund"}
+                    pressed={pressedNote(e.objection, hearing.exchanges)}
                   />
                 ))
               )}
@@ -198,18 +220,27 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
               />
               <div>
                 <h3>
-                  {afterRuling
-                    ? "Heard after PayPal ruled"
+                  {afterRuled
+                    ? "Heard again after PayPal ruled"
+                    : afterRequest
+                      ? "Heard again after the ruling request"
                     : hearing.verdict.by === "rules"
                       ? "Ruled by the rules engine"
                       : hearing.verdict.by === "concession"
                         ? "Conceded on the record"
                         : "Ruled by the simulated reviewer"}
                 </h3>
-                {afterRuling && (
+                {afterRuled && (
                   <p>
-                    PayPal had already closed this case on {utcDay(view.ruledAt!)}, so this verdict played no part in the outcome. It shows how the
-                    simulated reviewer reads the filing PayPal holds.
+                    PayPal had already closed this case on {utcDay(view.ruledAt!)}
+                    {askedAt ? `, at Exhibit's request of ${utcStamp(askedAt)}` : ""}, so this verdict played no part in the outcome. It shows how the
+                    simulated reviewer reads the filing PayPal holds when heard again.
+                  </p>
+                )}
+                {afterRequest && askedAt && (
+                  <p>
+                    Exhibit asked PayPal to rule at {utcStamp(askedAt)}, following an earlier hearing, so this verdict played no part in the request. It
+                    shows how the simulated reviewer reads the filing PayPal holds when heard again.
                   </p>
                 )}
                 <p>
