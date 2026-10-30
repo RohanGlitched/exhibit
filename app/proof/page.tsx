@@ -893,7 +893,9 @@ export default function ProofPage() {
             Nobody at PayPal reads evidence in the sandbox. Its simulator rules for whichever side it is asked to, and it also closes many cases on its
             own. So a won or lost case on the desk shows the lifecycle working through PayPal&apos;s API, not that a bank was persuaded. Since 25 Oct, the
             side Exhibit asks for is the verdict of the simulated reviewer that cross-examined the filing. Each case says whether PayPal ruled at
-            Exhibit&apos;s request or closed the case by itself.
+            Exhibit&apos;s request or closed the case by itself. The sandbox hasn&apos;t ruled on any unauthorised-transaction chargeback Exhibit
+            asked it to (the agent-bought cases among them), so those stay under review; the requested rulings it has given were on not received,
+            not as described and charged twice, and even there not every request has been ruled on yet.
           </li>
           <li>
             The checker matches figures and names to the record a sentence cites, ties each clause to one record, and catches denials its record

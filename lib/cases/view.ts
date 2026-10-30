@@ -154,14 +154,21 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
     notes.push("Script, stand-in key: this case was opened before the live buyer agent (26 Oct 2026). Its agent log is the story's script, and its mandates were signed with keys derived from the order number, not the published ones. Cases opened since are bought by the live agent and signed with the keys at /.well-known/exhibit-keys.json.");
   }
   const filed = ctx.filings.filter((f) => f.action === "evidence").map((f) => f.at).sort()[0];
-  if (d.reason === "UNAUTHORISED" && d.status === "UNDER_REVIEW" && filed && !allowed(d).has("adjudicate") && Date.now() - new Date(filed).getTime() > 3 * 86_400_000) {
+  // A ruling request PayPal took (fileAction saves one only after the call went through) is said as such.
+  const askedRuling = ctx.filings.filter((f) => f.action === "ruling" && f.ok !== false).at(-1);
+  const askedHourAgo = askedRuling && Date.now() - new Date(askedRuling.at).getTime() > 3_600_000;
+  if (
+    d.reason === "UNAUTHORISED" &&
+    d.status === "UNDER_REVIEW" &&
+    filed &&
+    (askedHourAgo || (!allowed(d).has("adjudicate") && Date.now() - new Date(filed).getTime() > 3 * 86_400_000))
+  ) {
     const tried = STUCK_TRIED[d.dispute_id];
-    // A ruling request PayPal took (fileAction saves one only after the call went through) is said as such.
-    const asked = ctx.filings.filter((f) => f.action === "ruling" && f.ok !== false).at(-1);
+    const asked = askedRuling;
     const side = asked ? rulingSide(asked) : null;
     notes.push(
       (asked
-        ? `Exhibit asked the sandbox to rule${side ? ` for the ${side}` : ""} on ${utcTime(asked.at)}, and PayPal took the request, but its sandbox hasn't ruled on this unauthorised-transaction chargeback since it was filed on ${utcDay(filed)}, and it offers no ruling now.`
+        ? `Exhibit asked the sandbox to rule${side ? ` for the ${side}` : ""} on ${utcTime(asked.at)}, and PayPal took the request, but its sandbox hasn't ruled on this unauthorised-transaction chargeback since it was filed on ${utcDay(filed)}. It hasn't ruled on any unauthorised-transaction chargeback Exhibit asked about; the requested rulings it has given were on not-received, not-as-described and charged-twice cases. This is a sandbox limit, not a verdict.`
         : `PayPal's sandbox hasn't opened this unauthorised-transaction chargeback for a ruling since it was filed on ${utcDay(filed)}. Exhibit will ask for the ruling the hearing on PayPal's copy reaches once PayPal opens it.`) +
         (tried ? ` On ${tried} Exhibit asked again through provide-supporting-info; the sandbox refused the call (HTTP 400, invalid request). The case stays under review.` : ""),
     );

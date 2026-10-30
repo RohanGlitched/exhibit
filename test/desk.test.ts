@@ -180,6 +180,9 @@ test("rulings asked for and not yet given are counted by side", async () => {
   const c = deskCounts([row("A", { where: "filed", askedFor: "buyer" }), row("B", { where: "filed", askedFor: "seller" }), row("C", { where: "filed" })]);
   assert.equal(c.askedBuyer, 1);
   assert.equal(c.askedSeller, 1);
+  // Unauthorised-transaction chargebacks among them are counted apart: the sandbox hasn't ruled on one yet.
+  const u = deskCounts([row("U", { where: "filed", askedFor: "buyer", reason: "UNAUTHORISED" }), row("N", { where: "filed", askedFor: "seller", reason: "MERCHANDISE_OR_SERVICE_NOT_RECEIVED" })]);
+  assert.equal(u.askedUnauthorised, 1);
   assert.equal(askedSide([{ action: "ruling", ok: true, detail: "Asked the sandbox to rule for the buyer, by the autopilot under house rule 5" }]), "buyer");
   assert.equal(askedSide([{ action: "evidence", ok: true }]), null);
 });

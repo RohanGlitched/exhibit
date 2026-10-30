@@ -10,9 +10,9 @@ const serif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"], style
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Exhibit: the dispute desk for PayPal sellers", template: "%s · Exhibit" },
+  title: { default: "Exhibit: PayPal dispute responses, cross-examined before filing", template: "%s · Exhibit" },
   description:
-    "Exhibit reads every PayPal dispute, gathers the order, payment and tracking, and writes a response where every sentence points to the record that proves it and every figure and name is checked against that record. Fight the cases you should win; refund the rest.",
+    "Exhibit argues a PayPal seller's disputes and holds a hearing on the PDF PayPal will read: a simulated reviewer objects, the reason code's requirements card presses what is weak or missing, and an answer stands only when the checker matches it to the record it cites. Fight the cases you should win; refund the rest.",
   openGraph: { type: "website", siteName: "Exhibit" },
   twitter: { card: "summary_large_image" },
 };

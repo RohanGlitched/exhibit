@@ -99,20 +99,17 @@ export default async function Home() {
       <section className={`shell ${styles.hero}`}>
         <div className={styles.heroText}>
           <h1>
-            Win the disputes you should{" "}
+            Cross-examined before PayPal{" "}
             <span className={styles.nowrap}>
-              win.<span className={styles.sticker} data-side="respondent">A</span>
-            </span>{" "}
-            Refund the ones you&apos;d{" "}
-            <span className={styles.nowrap}>
-              lose.<span className={styles.sticker} data-side="claimant">B</span>
+              reads it.<span className={styles.sticker} data-side="respondent">A</span>
             </span>
           </h1>
           <div className={styles.heroSide}>
             <p>
-              Exhibit is the dispute desk for small PayPal sellers. Click once and you get a real PayPal sandbox chargeback against a real card
-              payment. The model argues it with every sentence pinned to the record it cites, a checker holds every figure and name to that record and
-              strikes what it can&apos;t match, and it&apos;s filed with a Bates-stamped PDF, or refunded when you&apos;d lose.
+              Exhibit argues a small PayPal seller&apos;s disputes, then holds a hearing on the Bates-stamped PDF PayPal will read: a second model
+              plays the reviewer, the card network&apos;s requirements card presses every weak or missing item, and an answer stands only when the
+              checker matches it to the record it cites. On held-out cases decided by what someone wrote, it made the right call 16 times in 18; a
+              rules baseline that reads every record made it twice. Click once for a real PayPal sandbox chargeback, fought or refunded.
             </p>
             <div className={styles.ctas}>
               <Link className="btn btnPrimary" href="/new">
@@ -167,7 +164,13 @@ export default async function Home() {
                 {stats.wonAsked} ruled at Exhibit&apos;s request, {stats.wonByItself} closed by the sandbox on its own; lost{" "}
                 {stats.lostAsked} at Exhibit&apos;s request, {stats.lostByItself} otherwise
                 {stats.askedBuyer + stats.askedSeller > 0
-                  ? `. Rulings asked for and not yet given: ${stats.askedBuyer} for the buyer, ${stats.askedSeller} for the seller`
+                  ? `. Rulings asked for and not yet given: ${stats.askedBuyer} for the buyer, ${stats.askedSeller} for the seller${
+                      stats.askedUnauthorised === stats.askedBuyer + stats.askedSeller
+                        ? ", all unauthorised-transaction chargebacks, which the sandbox hasn't ruled on"
+                        : stats.askedUnauthorised
+                          ? `; ${stats.askedUnauthorised} of them unauthorised-transaction chargebacks, which the sandbox hasn't ruled on`
+                          : ""
+                    }`
                   : ""}
               </p>
             </div>
