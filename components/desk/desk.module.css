@@ -693,3 +693,20 @@
     display: none;
   }
 }
+
+.moreFilters {
+  position: relative;
+  font-size: 14px;
+}
+.moreFilters summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  padding: 6px 2px;
+  list-style-position: inside;
+}
+.moreFilters[open] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}

@@ -45,7 +45,7 @@ export default function DeskStrip({ c, at }: { c: DeskTotals; at: string }) {
         </div>
         <div>
           <dt>Soonest deadline</dt>
-          <dd>{c.soonest ? utcDay(c.soonest) : "None"}</dd>
+          <dd>{c.soonest ? utcDay(c.soonest) : "Nothing due"}</dd>
         </div>
       </dl>
       <p className={styles.asOf}>

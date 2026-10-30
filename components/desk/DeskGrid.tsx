@@ -535,17 +535,22 @@ export default function DeskGrid({ initial, at: initialAt }: { initial: DeskRow[
             <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
             Only cases I opened
           </label>
-          {scriptCount > 0 && (
-            <label className={styles.toggle}>
-              <input type="checkbox" checked={scripts} onChange={(e) => setScripts(e.target.checked)} />
-              Pre-agent scripts, stand-in keys ({scriptCount})
-            </label>
-          )}
-          {probeCount > 0 && (
-            <label className={styles.toggle}>
-              <input type="checkbox" checked={probes} onChange={(e) => setProbes(e.target.checked)} />
-              Build-day API probes ({probeCount})
-            </label>
+          {(scriptCount > 0 || probeCount > 0) && (
+            <details className={styles.moreFilters}>
+              <summary>More filters</summary>
+              {scriptCount > 0 && (
+                <label className={styles.toggle}>
+                  <input type="checkbox" checked={scripts} onChange={(e) => setScripts(e.target.checked)} />
+                  Pre-agent scripts, stand-in keys ({scriptCount})
+                </label>
+              )}
+              {probeCount > 0 && (
+                <label className={styles.toggle}>
+                  <input type="checkbox" checked={probes} onChange={(e) => setProbes(e.target.checked)} />
+                  Build-day API probes ({probeCount})
+                </label>
+              )}
+            </details>
           )}
         </div>
       </div>
