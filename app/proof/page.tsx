@@ -3,7 +3,8 @@ import Link from "next/link";
 import Pleading from "@/components/home/Pleading";
 import { FIGURES, OPTIONS, CHARGEFLOW_PRICING, PROTECTION_SOURCES } from "@/lib/impact";
 import policies from "@/data/policies.json";
-import { day, usd } from "@/lib/format";
+import lane from "@/data/lane.json";
+import { day, usd, utcDay, utcTime } from "@/lib/format";
 import proof from "@/data/proof.json";
 import toolkitBrief from "@/data/toolkit-brief.json";
 import styles from "./proof.module.css";
@@ -14,7 +15,7 @@ import TableToggle from "@/components/page/TableToggle";
 export const metadata: Metadata = {
   title: "Proof",
   description:
-    "Exhibit measured: the right call on labelled dispute variants against a rules baseline that reads every record, a held-out set, prompt injection, the checker against eleven kinds of false statement, latency and tokens, and the sourced cost of a dispute.",
+    "Exhibit measured: the right call on labelled dispute variants against a rules baseline that reads every record, a held-out set, prompt injection, the checker against true sentences with one thing changed, latency and tokens, and the sourced cost of a dispute.",
 };
 
 /* The shapes this page reads from data/proof.json (scripts/eval.ts writes it). */
@@ -142,22 +143,36 @@ interface Proof {
       runs: { key: string; variant: string; label: string; model: Answer | null }[];
     } | null;
   };
-  /** The main set's own re-run (scripts/eval.ts --update main), with the answers it replaced. */
+  /** The main set's own re-run (scripts/eval.ts --update main), with the run it replaced and that run's own history. */
   main?: {
     at: string;
     prompt: string;
     spend?: { calls: number; usd: number };
-    previous?: {
-      at: string;
-      prompt: string;
-      summary: { runs: number; correct: number; textRuns: number; textCorrect: number; recordRuns: number; recordCorrect: number; seedRuns?: SeedRun[]; seedSpread?: Spread | null };
-      runs: { key: string; variant: string; label: string; model: Answer | null }[];
-    } | null;
+    previous?: MainRun | null;
     /** Named main runs re-run alone since (scripts/eval.ts --update main --keys), with the answers they replaced. */
-    rerun?: { at: string; keys: string[]; why: string | null; prompt: string; spend?: { calls: number; usd: number }; previous: { key: string; label: string; model: Answer | null }[] };
+    rerun?: Rerun;
   };
   injection?: { variants: { id: string; change: string; label: string; attack: string }[]; runs: (Row & { wrotePlanted: boolean; keptPlanted: number })[] };
   repeats?: { main: { key: string; seed: number; call: string | null; correct: boolean | null }[]; heldout: { key: string; seed: number; call: string | null; correct: boolean | null }[]; injection: { key: string; seed: number; call: string | null; correct: boolean | null }[] };
+}
+/** Named main runs re-run alone (scripts/eval.ts --update main --keys), with the answers they replaced. */
+interface Rerun {
+  at: string;
+  keys: string[];
+  why: string | null;
+  prompt: string;
+  spend?: { calls: number; usd: number };
+  previous: { key: string; label: string; model: Answer | null }[];
+}
+/** A main-set run a later full re-run replaced, kept with its re-run misses and the run before it. */
+interface MainRun {
+  at: string;
+  prompt: string;
+  summary: { runs: number; correct: number; textRuns: number; textCorrect: number; recordRuns: number; recordCorrect: number; seedRuns?: SeedRun[]; seedSpread?: Spread | null };
+  runs: { key: string; variant: string; label: string; model: Answer | null }[];
+  spend?: { calls: number; usd: number } | null;
+  rerun?: Rerun | null;
+  previous?: MainRun | null;
 }
 const P = proof as unknown as Proof;
 
@@ -182,13 +197,43 @@ const WHY_MOVED: Record<string, string> = {
     "Won on both runs: since 29 Oct the requirements card reads a second order in the store's notes and history (“weak”, not “no second transaction on file”), and this is the first run to measure it.",
 };
 
-/** Why a main-set variant moved when the main set was re-run on today's prompt, as read from its answers. */
+/** Why a main-set variant moved between the 29 Oct run and the full re-run on today's prompt, as read from its answers. */
 const MAIN_MOVED: Record<string, string> = {
   "untracked-buyer-confirms":
-    "Lost on both customers: the requirements card marks tracking and a delivered scan missing, and the drafter refunded although the buyer's own email says the vase arrived. The card reads carrier records, not emails, for delivery.",
+    "Refunded on both customers on 29 Oct, when the card read carrier records, not emails, for delivery; since 30 Oct the not-received card counts the cardholder's own email that the vase arrived, and both fight.",
   "fraud-home-signed":
-    "Lost on one of two customers: with no 3-D Secure result and no earlier orders on the card, the drafter refunded a first order signed for at the billing address, where the label is fight.",
+    "Refunded on one of two customers on 29 Oct (no 3-D Secure result, no earlier orders on the card); since 30 Oct the fraud card words each network's own route and notes a delivery signed for in the cardholder's own name, and both fight.",
+  "colour-no-warning":
+    "Lost on one of two customers: with no warning anywhere, the drafter fought at an evidence balance of 67% on the buyer keeping the bowls after the offered return, where the label is refund; the other customer's run refunded.",
 };
+/** Minutes as the lane section says them: "17 min", "1 h 12 min", "75 s" under two minutes. */
+function minutes(m: number | null): string {
+  if (m === null) return "n/a";
+  if (m < 2) return `${Math.round(m * 60)} s`;
+  if (m < 60) return `${Math.round(m)} min`;
+  return `${Math.floor(m / 60)} h ${Math.round(m % 60)} min`;
+}
+
+/** The per-100 tables' assumed rows: what each policy keeps (and nets after fees) at a stated share of correct fights won. */
+function Sensitivity({ rows, span }: { rows: { id: string; name: string; atWinRate: { rate: number; keptUsd: number; netUsd: number }[] }[]; span: number }) {
+  const rates = rows[0]?.atWinRate.map((x) => x.rate) ?? [];
+  const money = (v: number) => (v < 0 ? `−${usd(-v)}` : usd(v));
+  return (
+    <tfoot>
+      {rates.map((rate, i) => (
+        <tr key={rate}>
+          <th scope="row">
+            If {Math.round(rate * 100)}% of correct fights are won<span className={styles.assumed}>assumed</span>
+          </th>
+          <td colSpan={span}>
+            {rows.map((t) => `${t.name} keeps ${usd(t.atWinRate[i].keptUsd)} (${money(t.atWinRate[i].netUsd)} after fees)`).join(" · ")}
+          </td>
+        </tr>
+      ))}
+    </tfoot>
+  );
+}
+
 const pct = (a: number, b: number) => (b ? `${Math.round((100 * a) / b)}%` : "n/a");
 const range = (s: Spread | null | undefined) => (s ? (s.min === s.max ? `${s.min}` : `${s.min} to ${s.max}`) : null);
 
@@ -261,9 +306,22 @@ export default function ProofPage() {
   const ablation = (s.ablationRuns ?? 0) > 0;
   const survivors = mutationKinds.flatMap(([kind, k]) => (k.survived ?? []).slice(0, 1).map((x) => ({ kind, ...x })));
   const unverified = s.unverifiedSentences ?? s.figurelessSentences;
-  // The main set's re-run on today's prompt, and the run it replaced.
+  // The main set's re-run on today's prompt, the run it replaced (with the misses re-run alone after it), and the
+  // run before that one, which carries the repeat runs and the rubric ablation.
   const mainRun = P.main?.previous ? P.main : null;
   const mainPrev = mainRun?.previous ?? null;
+  const prevRerun = mainPrev?.rerun ?? null;
+  // The replaced run as it was first answered, before its misses were re-run alone.
+  const prevFirst = mainPrev ? mainPrev.runs.map((r) => ({ ...r, model: prevRerun?.previous.find((x) => x.key === r.key)?.model ?? r.model })) : [];
+  const prevCorrect = prevFirst.filter((r) => r.model?.correct).length;
+  const textIds = new Set(P.variants.filter((v) => v.decidedBy === "text").map((v) => v.id));
+  const prevTextCorrect = prevFirst.filter((r) => textIds.has(r.variant) && r.model?.correct).length;
+  const prevRecordCorrect = prevFirst.filter((r) => !textIds.has(r.variant) && r.model?.correct).length;
+  const prevRerunNow = prevRerun ? mainPrev!.runs.filter((r) => prevRerun.keys.includes(r.key) && r.model?.correct).length : 0;
+  const firstRun = mainPrev?.previous ?? null;
+  // The run the repeat runs and the ablation are from: the oldest one on record.
+  const seeded = firstRun ?? mainPrev;
+  const seededDay = seeded ? day(seeded.at).replace(/ \d{4}$/, "") : "";
   // Runs re-run alone after the cards changed (30 Oct): the table shows their newer answers; the card run's own count uses the old ones.
   const rerun = P.main?.rerun ?? null;
   const rerunNow = rerun ? P.runs.filter((r) => rerun.keys.includes(r.key) && r.model?.correct).length : 0;
@@ -275,12 +333,12 @@ export default function ProofPage() {
   };
   const rerunChanges = rerun ? [...new Set(rerun.keys.map((k) => P.variants.find((v) => v.id === k.split("#")[0])?.change).filter(Boolean))] : [];
   const prevDay = mainPrev ? day(mainPrev.at).replace(/ \d{4}$/, "") : "";
-  const beforeOf = (key: string) => mainPrev?.runs.find((r) => r.key === key);
+  const beforeOf = (key: string) => prevFirst.find((r) => r.key === key);
   const mainMoved = mainPrev
     ? P.variants
         .map((v) => {
           const now = P.runs.map(asCardRun).filter((r) => r.variant === v.id && r.model);
-          const was = mainPrev.runs.filter((r) => r.variant === v.id && r.model);
+          const was = prevFirst.filter((r) => r.variant === v.id && r.model);
           return { id: v.id, change: v.change, after: now.filter((r) => r.model!.correct).length, before: was.filter((r) => r.model!.correct).length, of: now.length };
         })
         .filter((m) => m.before !== m.after)
@@ -315,6 +373,7 @@ export default function ProofPage() {
     { id: "limits", label: "What this doesn't show" },
     { id: "cost", label: "What a dispute costs" },
     { id: "per-100", label: "Per 100 disputes" },
+    { id: "lane", label: "Seller's lane, timed" },
     { id: "alternatives", label: "Alternatives" },
     { id: "agent-stack", label: "Agent stack" },
     { id: "run-it", label: "Run it yourself" },
@@ -351,7 +410,7 @@ export default function ProofPage() {
               </dd>
               <p>
                 model vs the stronger rules, of {textRuns} runs where it sits in an email, a listing or a note
-                {mainPrev ? `; ${mainPrev.summary.textCorrect} on the ${prevDay} prompt` : ""}
+                {mainPrev ? `; ${prevTextCorrect} on the ${prevDay} run` : ""}
               </p>
             </div>
             <div>
@@ -360,7 +419,7 @@ export default function ProofPage() {
                 {s.modelCorrectOnRecord} vs {s.strongCorrectOnRecord}
               </dd>
               <p>
-                of {s.recordRuns} runs; a rule reading the records does as well here{mainPrev ? `; ${mainPrev.summary.recordCorrect} on the ${prevDay} prompt` : ""}
+                of {s.recordRuns} runs; a rule reading the records does as well here{mainPrev ? `; ${prevRecordCorrect} on the ${prevDay} run` : ""}
               </p>
             </div>
           </>
@@ -382,7 +441,7 @@ export default function ProofPage() {
             {seeds > 1
               ? `across ${seeds} runs of every case, lowest to highest`
               : mainPrev
-                ? `today's prompt, one run each; ${mainPrev.summary.correct} of ${mainPrev.summary.runs} on the ${prevDay} prompt${mainPrev.summary.seedRuns && mainPrev.summary.seedRuns.length > 1 ? `, all ${mainPrev.summary.seedRuns.length} runs` : ""}`
+                ? `all ${s.modelRuns} measured on today's prompt, one run each; ${prevCorrect} on the ${prevDay} run${firstRun ? `, ${firstRun.summary.correct} on ${day(firstRun.at).replace(/ \d{4}$/, "")} before the card` : ""}`
                 : "of labelled runs, one run each"}
           </p>
         </div>
@@ -424,7 +483,7 @@ export default function ProofPage() {
             orders and read the mandate check; they never read an email or a listing. The model&apos;s number is the evidence balance from its own
             tally, not a chance of winning.
             {seeds > 1 ? ` Small marks after the model's call are its ${seeds - 1} repeat runs.` : ""}
-            {mainPrev ? ` The model's call is the run of ${day(mainRun!.at)} on today's prompt; the small mark after it is the run of ${day(mainPrev.at)} on the prompt before the requirements card.` : ""}
+            {mainPrev ? ` The model's call is the run of ${utcTime(mainRun!.at)} on today's prompt; the small mark after it is that case's answer on the ${day(mainPrev.at)} run, the first with the requirements card.` : ""}
             {rerun ? ` The ${rerun.keys.length} runs that run missed were re-run alone on ${day(rerun.at)} on the changed cards, and show that answer.` : ""}
           </p>
         </div>
@@ -512,9 +571,18 @@ export default function ProofPage() {
             </p>
             {mainPrev && (
               <p>
-                Re-run once on {day(mainRun!.at)} on the prompt {mainRun!.prompt}: {cardRunCorrect} of {s.modelRuns}, down from{" "}
-                {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)}, before the drafter read the requirements card. The card made it
-                warier where a required item is marked missing, and it lost these:
+                The main set&apos;s right calls over time:{" "}
+                {firstRun ? `${firstRun.summary.correct} of ${firstRun.summary.runs} on ${day(firstRun.at)}, before the requirements card${firstRun.summary.seedRuns && firstRun.summary.seedRuns.length > 1 ? `, on each of ${firstRun.summary.seedRuns.length} runs` : ""}; ` : ""}
+                {prevCorrect} of {mainPrev.runs.length} on {day(mainPrev.at)}, the first run with the card
+                {prevRerun
+                  ? `; on ${utcTime(prevRerun.at)} only its ${prevRerun.keys.length} misses were re-run alone after the cards changed, and ${prevRerunNow} of ${prevRerun.keys.length} fought, which read as ${mainPrev.summary.correct} of ${mainPrev.summary.runs}, an upper bound with the other ${mainPrev.runs.length - prevRerun.keys.length} answers older`
+                  : ""}
+                . Then on {utcTime(mainRun!.at)} all {s.modelRuns} were re-run once on today&apos;s prompt and cards ({mainRun!.prompt}):{" "}
+                <strong>
+                  {cardRunCorrect} of {s.modelRuns}
+                </strong>
+                , every answer from that run, so this is the measured number{mainRun!.spend ? ` ($${mainRun!.spend.usd.toFixed(2)} for ${mainRun!.spend.calls} calls)` : ""}.
+                Against the {prevDay} run, these moved:
               </p>
             )}
             {mainMoved.length > 0 && (
@@ -552,15 +620,15 @@ export default function ProofPage() {
             {ablation && (
               <p>
                 The prompt carries a short rubric, &ldquo;How cases are usually decided&rdquo;, that mirrors how the labels were set. With it taken out
-                {mainPrev ? `, on the ${prevDay} prompt,` : ","} the model got {s.ablationCorrect} of {s.ablationRuns} right, and {s.ablationCorrectOnText} of{" "}
-                {s.ablationTextRuns} free-text runs (with it{mainPrev ? ", on that prompt" : ""}: {mainPrev ? mainPrev.summary.correct : s.modelCorrect} of{" "}
-                {mainPrev ? mainPrev.summary.runs : s.modelRuns}, and {mainPrev ? mainPrev.summary.textCorrect : s.modelCorrectOnText} of {textRuns}).
+                {seeded ? `, on the ${seededDay} prompt,` : ","} the model got {s.ablationCorrect} of {s.ablationRuns} right, and {s.ablationCorrectOnText} of{" "}
+                {s.ablationTextRuns} free-text runs (with it{seeded ? ", on that prompt" : ""}: {seeded ? seeded.summary.correct : s.modelCorrect} of{" "}
+                {seeded ? seeded.summary.runs : s.modelRuns}, and {seeded ? seeded.summary.textCorrect : s.modelCorrectOnText} of {textRuns}).
               </p>
             )}
-            {seeds < 2 && mainPrev?.summary.seedRuns && mainPrev.summary.seedRuns.length > 1 ? (
+            {seeds < 2 && seeded?.summary.seedRuns && seeded.summary.seedRuns.length > 1 ? (
               <p>
-                On the {prevDay} prompt every case ran {mainPrev.summary.seedRuns.length} times: {mainPrev.summary.seedRuns.map((r) => r.correct).join(", ")} of{" "}
-                {mainPrev.summary.runs}. Today&apos;s prompt ran once, to keep the spend small.
+                On the {seededDay} prompt every case ran {seeded.summary.seedRuns.length} times: {seeded.summary.seedRuns.map((r) => r.correct).join(", ")} of{" "}
+                {seeded.summary.runs}. Today&apos;s prompt ran once, to keep the spend small.
               </p>
             ) : null}
             {seeds > 1 && s.seedRuns && (
@@ -913,11 +981,13 @@ export default function ProofPage() {
           </li>
           {mainPrev ? (
             <li>
-              The main set was re-run once on {day(mainRun!.at)} with the requirements card: {cardRunCorrect} of {s.modelRuns}, against{" "}
-              {mainPrev.summary.correct} of {mainPrev.summary.runs} on {day(mainPrev.at)} before the card. Its repeat runs and the rubric ablation are from the{" "}
-              {prevDay} prompt and were not re-run. The card makes the drafter warier of fraud and agent cases with no 3-D Secure result or compelling
-              evidence: on 29 Oct a live agent case inside the mandate (PP-R-UPI-10195190) was argued as a refund at an evidence balance of 50%.
-              {mainRun!.spend ? ` The re-run cost $${mainRun!.spend.usd.toFixed(2)} for ${mainRun!.spend.calls} calls.` : ""}
+              The main set was re-run in full, once, on {utcDay(mainRun!.at)} (UTC) on today&apos;s prompt and cards: {cardRunCorrect} of {s.modelRuns}, against{" "}
+              {prevCorrect} of {mainPrev.runs.length} on {day(mainPrev.at)} with the card&apos;s first version
+              {firstRun ? ` and ${firstRun.summary.correct} of ${firstRun.summary.runs} on ${day(firstRun.at)} before the card` : ""}. Its repeat runs and
+              the rubric ablation are from the {seededDay} prompt and were not re-run. The card makes the drafter warier of fraud and agent cases with no
+              3-D Secure result or compelling evidence: on 29 Oct a live agent case inside the mandate (PP-R-UPI-10195190) was argued as a refund at an
+              evidence balance of 50%.
+              {mainRun!.spend ? ` The full re-run cost $${mainRun!.spend.usd.toFixed(2)} for ${mainRun!.spend.calls} calls.` : ""}
               {rerun
                 ? ` On ${day(rerun.at)} only the ${rerun.keys.length} runs it missed were re-run on the changed cards, and ${rerunNow} of them now fight; the other ${s.modelRuns - rerun.keys.length} answers are still the ${day(mainRun!.at)} ones, so ${s.modelCorrect} of ${s.modelRuns} is an upper reading.`
                 : ""}
@@ -997,6 +1067,7 @@ export default function ProofPage() {
                     </tr>
                   ))}
                 </tbody>
+                <Sensitivity rows={policies.heldoutText.table} span={5} />
               </table>
             </div>
             </TableToggle>
@@ -1012,11 +1083,8 @@ export default function ProofPage() {
         <h3 className={styles.subhead}>The main set, per 100</h3>
         <p className={styles.note}>
           The {policies.from.runs} labelled runs of the main set above ({usd(policies.disputedUsdPer100)} per 100 in all, {usd(policies.winnableUsdPer100)}{" "}
-          of it on cases labelled fight). Exhibit is the model&apos;s run on {day(policies.from.measured)}
-          {policies.from.rerun
-            ? `, with the ${policies.from.rerun.keys.length} runs it missed re-run alone on ${day(policies.from.rerun.at)} on the changed cards (an upper reading, as said above)`
-            : ""}
-          . The last two columns read the requirements card of every case each policy fights: the share with every required network item on file, and
+          of it on cases labelled fight). Exhibit is the model&apos;s full run of {utcTime(policies.from.measured)}, every answer from that run. The last two
+          columns read the requirements card of every case each policy fights: the share with every required network item on file, and
           the share with none missing.
         </p>
         <TableToggle what="the table">
@@ -1048,6 +1116,7 @@ export default function ProofPage() {
                 </tr>
               ))}
             </tbody>
+            <Sensitivity rows={policies.table} span={7} />
           </table>
         </div>
         </TableToggle>
@@ -1062,11 +1131,103 @@ export default function ProofPage() {
           {strongRow && strongRow.keptUsd !== exhibitRow.keptUsd
             ? `The stronger rules keep ${usd(strongRow.keptUsd)} (${strongRow.netUsd < 0 ? `−${usd(-strongRow.netUsd)}` : usd(strongRow.netUsd)} after fees), against Exhibit's ${usd(exhibitRow.keptUsd)} (${usd(exhibitRow.netUsd)}). `
             : ""}
-          What Exhibit does instead is file {fightRow.responses - exhibitRow.responses} fewer responses per 100, none of them on a case the seller should
-          refund (always fighting files {fightRow.fightsOnRefundCases}), and {exhibitRow.completePct}% of the fights it files have every required item on
+          What Exhibit does instead is file {fightRow.responses - exhibitRow.responses} fewer responses per 100, with{" "}
+          {exhibitRow.fightsOnRefundCases === 0
+            ? "none on a case the seller should refund"
+            : `${exhibitRow.fightsOnRefundCases} per 100 on a case the seller should refund (the glaze-colour case with no warning, above)`}{" "}
+          against {fightRow.fightsOnRefundCases} for always fighting, and {exhibitRow.completePct}% of the fights it files have every required item on
           file, against {fightRow.completePct}% for always fighting ({exhibitRow.noneMissingPct}% and {fightRow.noneMissingPct}% with none missing). We
           found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by <code>scripts/policies.ts</code>{" "}
           into <code>data/policies.json</code>.
+        </p>
+        <p className={styles.note}>
+          The rows marked <em>assumed</em> under each table are not measured. &ldquo;Kept, at most&rdquo; counts every fight on a case labelled fight
+          as won; those rows instead take {policies.sensitivity.winRates.map((w) => `${Math.round(w * 100)}%`).join(" and ")} of them as won, keep
+          PayPal&apos;s fee on every case, and still win nothing on a fight the seller should have refunded, so they show how much of the upper figure is
+          left and whether it covers the fees. The real win rate isn&apos;t in our data: the sandbox rules on what is filed, not as a card issuer would.
+        </p>
+      </section>
+
+      <section className={styles.section} id="lane">
+        <div className={styles.sectionHead}>
+          <h2>The seller&apos;s lane, timed from its own records</h2>
+          <p>
+            The {lane.summary.cases} cases on the seller&apos;s lane, from PayPal&apos;s webhooks of {utcTime(lane.firstWebhook!)} to{" "}
+            {utcTime(lane.lastWebhook!)}, read from each case&apos;s record: PayPal&apos;s CUSTOMER.DISPUTE.CREATED webhook, the autopilot&apos;s argued
+            brief and its decision under the house rules, and every filing with who sent it. No outside sellers: these are the shop&apos;s own sandbox
+            disputes.
+          </p>
+        </div>
+        <dl className={`${styles.strip} ${styles.strip4}`}>
+          <div>
+            <dt>Webhook to argued brief</dt>
+            <dd>{lane.summary.medianToArguedS} s</dd>
+            <p>median, all {lane.summary.cases} cases</p>
+          </div>
+          <div>
+            <dt>Webhook to decision under the house rules</dt>
+            <dd>{minutes(lane.summary.medianToDecidedMin)}</dd>
+            <p>
+              median; {lane.summary.decided.file} to file, {lane.summary.decided.refund} to refund, {lane.summary.decided.left} left for the seller
+            </p>
+          </div>
+          <div>
+            <dt>Webhook to filed</dt>
+            <dd>{minutes(lane.summary.medianToFiledMin)}</dd>
+            <p>
+              median of the {lane.summary.filed} fights filed: {lane.summary.filedByAutopilot} by the autopilot ({minutes(lane.summary.medianToFiledByAutopilotMin)}),{" "}
+              {lane.summary.filedBySeller} by the seller ({minutes(lane.summary.medianToFiledBySellerMin)})
+            </p>
+          </div>
+          <div>
+            <dt>No human step</dt>
+            <dd>
+              {lane.summary.zeroHuman} of {lane.summary.cases}
+            </dd>
+            <p>
+              {lane.summary.oneHuman} needed one (a filing or refund the seller sent){lane.summary.moreHuman ? `, ${lane.summary.moreHuman} more than one` : ""}
+            </p>
+          </div>
+        </dl>
+        <TableToggle what="the table">
+          <div className={`sheet ${styles.compare}`}>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Case</th>
+                  <th scope="col">Decided</th>
+                  <th scope="col">Argued after</th>
+                  <th scope="col">Decided after</th>
+                  <th scope="col">Sent to PayPal after</th>
+                  <th scope="col">Human steps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lane.rows.map((r) => (
+                  <tr key={r.id}>
+                    <th scope="row">
+                      <Link href={`/case/${r.id}`}>{r.id}</Link>
+                    </th>
+                    <td>
+                      {r.decided}
+                      {r.rule ? ` (rule ${r.rule})` : ""}
+                    </td>
+                    <td>{r.toArguedS === null ? "n/a" : `${r.toArguedS} s`}</td>
+                    <td>{r.toDecidedS === null ? "n/a" : minutes(r.toDecidedS / 60)}</td>
+                    <td>{r.sent ? `${minutes(r.sent.afterS / 60)}, ${r.sent.what} by the ${r.sent.by}` : "not yet"}</td>
+                    <td>{r.humanSteps.length ? r.humanSteps.join("; ") : "none"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TableToggle>
+        <p className={styles.note}>
+          House rule 4 holds every send for 10 minutes so anyone working the desk can stop it, so the autopilot&apos;s time to filed includes that window.
+          The {lane.summary.oneHuman} cases with a human step are the ones the autopilot left for the seller (rule 3); their time to filed or refunded
+          is how long the person working the desk took, not something the product sped up. Where a ruling followed, the autopilot asked for it under rule
+          5, so it isn&apos;t counted as a human step. {lane.summary.cases} cases is a small base. Read by <code>scripts/lane.ts</code> from the
+          desk&apos;s public API into <code>data/lane.json</code>.
         </p>
       </section>
 

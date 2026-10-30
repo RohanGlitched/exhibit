@@ -6,6 +6,8 @@
 // given up; a case labelled "refund" ends with the money back with the buyer whichever way it goes, so fighting it
 // costs a response and wins nothing. Real representment wins less often than its label, so "kept" is the most
 // each policy could keep. The fee page doesn't say the fee is waived on a win, so it is counted on every case.
+// Each row also carries `atWinRate`: what it keeps, and nets after the fee, if only 30% or 50% of its fights on cases
+// labelled fight are won. Those shares are an assumption shown beside the table, not a measurement.
 //
 // Also, all from the same saved answers and the case's own exhibits:
 // - evidence completeness: of the fights each policy files, the share whose requirements card has every required
@@ -21,6 +23,7 @@ const { DISPUTE_FEE } = await import("../lib/impact.ts");
 const { buildExhibits, exhibitText } = await import("../lib/cases/exhibits.ts");
 const { requirementsFor } = await import("../lib/cases/requirements.ts");
 const { wordingMatch, WORDING_SHARE } = await import("../lib/cases/wording.ts");
+const { atWinRate, WIN_RATES } = await import("../lib/eval/per100.ts");
 type Exhibit = import("../lib/cases/types.ts").Exhibit;
 
 type Call = "fight" | "accept" | "offer";
@@ -112,6 +115,8 @@ async function tableFor(runs: Row[]) {
       completePct: responses ? Math.round((100 * complete) / responses) : null,
       noneMissingFights: noneMissing,
       noneMissingPct: responses ? Math.round((100 * noneMissing) / responses) : null,
+      // An assumption, not a measurement: the same row if only this share of the correct fights were won.
+      atWinRate: WIN_RATES.map((w) => atWinRate({ keptRaw: kept, n: runs.length, fees: runs.length * DISPUTE_FEE.card }, w)),
     };
   });
   return { runs: runs.length, fightLabels: runs.filter((r) => r.label === "fight").length, disputedUsdPer100: per100(disputed), winnableUsdPer100: per100(winnable), table };
@@ -158,6 +163,8 @@ const out = {
   disputedUsdPer100: main.disputedUsdPer100,
   winnableUsdPer100: main.winnableUsdPer100,
   feePerCase: DISPUTE_FEE.card,
+  // The win rates of each row's atWinRate: assumed, not measured; the label says every correct fight is won.
+  sensitivity: { winRates: WIN_RATES, assumption: "a stated share of the fights on cases labelled fight is won; fights on cases labelled refund still win nothing; the fee is counted on every case" },
   table: main.table,
   heldoutText: { measured: proof.heldout.at ?? proof.at, prompt: proof.heldout.prompt ?? null, ...held },
   secondPass,

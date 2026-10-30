@@ -1,25 +1,24 @@
 {
- "at": "2026-10-30T00:30:47.670Z",
+ "at": "2026-10-30T02:25:00.928Z",
  "from": {
   "file": "data/proof.json",
-  "measured": "2026-10-29T22:14:53.156Z",
-  "prompt": "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
+  "measured": "2026-10-30T02:24:28.949Z",
+  "prompt": "the 30 Oct prompt and cards: the requirements card reads the cardholder's own email of receipt (13.1/4853), each network's own fraud wording (Visa CE 3.0, Mastercard 4837), the return attempt and the 13.1 delivery window; the AP2 line and the agent-log consent check",
   "model": "GPT-5.6 on Azure OpenAI",
   "runs": 56,
   "fightLabels": 24,
-  "rerun": {
-   "at": "2026-10-30T00:26:41.472Z",
-   "keys": [
-    "untracked-buyer-confirms#0",
-    "untracked-buyer-confirms#2",
-    "fraud-home-signed#2"
-   ],
-   "why": "the three main-set misses of the 29 Oct run, re-run after the delivery card began reading the cardholder's own email of receipt and the fraud card each network's own wording"
-  }
+  "rerun": null
  },
  "disputedUsdPer100": 11786,
  "winnableUsdPer100": 4743,
  "feePerCase": 20,
+ "sensitivity": {
+  "winRates": [
+   0.3,
+   0.5
+  ],
+  "assumption": "a stated share of the fights on cases labelled fight is won; fights on cases labelled refund still win nothing; the fee is counted on every case"
+ },
  "table": [
   {
    "id": "fight",
@@ -34,7 +33,19 @@
    "completeFights": 12,
    "completePct": 21,
    "noneMissingFights": 36,
-   "noneMissingPct": 64
+   "noneMissingPct": 64,
+   "atWinRate": [
+    {
+     "rate": 0.3,
+     "keptUsd": 1423,
+     "netUsd": -577
+    },
+    {
+     "rate": 0.5,
+     "keptUsd": 2371,
+     "netUsd": 371
+    }
+   ]
   },
   {
    "id": "refund",
@@ -49,7 +60,19 @@
    "completeFights": 0,
    "completePct": null,
    "noneMissingFights": 0,
-   "noneMissingPct": null
+   "noneMissingPct": null,
+   "atWinRate": [
+    {
+     "rate": 0.3,
+     "keptUsd": 0,
+     "netUsd": -2000
+    },
+    {
+     "rate": 0.5,
+     "keptUsd": 0,
+     "netUsd": -2000
+    }
+   ]
   },
   {
    "id": "strong",
@@ -64,22 +87,46 @@
    "completeFights": 10,
    "completePct": 38,
    "noneMissingFights": 24,
-   "noneMissingPct": 92
+   "noneMissingPct": 92,
+   "atWinRate": [
+    {
+     "rate": 0.3,
+     "keptUsd": 1394,
+     "netUsd": -606
+    },
+    {
+     "rate": 0.5,
+     "keptUsd": 2323,
+     "netUsd": 323
+    }
+   ]
   },
   {
    "id": "exhibit",
    "name": "Exhibit (GPT-5.6)",
    "keptUsd": 4743,
    "givenUpUsd": 0,
-   "responses": 43,
-   "fightsOnRefundCases": 0,
+   "responses": 45,
+   "fightsOnRefundCases": 2,
    "feesUsd": 2000,
    "netUsd": 2743,
-   "fights": 24,
+   "fights": 25,
    "completeFights": 12,
-   "completePct": 50,
+   "completePct": 48,
    "noneMissingFights": 24,
-   "noneMissingPct": 100
+   "noneMissingPct": 96,
+   "atWinRate": [
+    {
+     "rate": 0.3,
+     "keptUsd": 1423,
+     "netUsd": -577
+    },
+    {
+     "rate": 0.5,
+     "keptUsd": 2371,
+     "netUsd": 371
+    }
+   ]
   }
  ],
  "heldoutText": {
@@ -103,7 +150,19 @@
     "completeFights": 2,
     "completePct": 11,
     "noneMissingFights": 12,
-    "noneMissingPct": 67
+    "noneMissingPct": 67,
+    "atWinRate": [
+     {
+      "rate": 0.3,
+      "keptUsd": 1643,
+      "netUsd": -357
+     },
+     {
+      "rate": 0.5,
+      "keptUsd": 2739,
+      "netUsd": 739
+     }
+    ]
    },
    {
     "id": "refund",
@@ -118,7 +177,19 @@
     "completeFights": 0,
     "completePct": null,
     "noneMissingFights": 0,
-    "noneMissingPct": null
+    "noneMissingPct": null,
+    "atWinRate": [
+     {
+      "rate": 0.3,
+      "keptUsd": 0,
+      "netUsd": -2000
+     },
+     {
+      "rate": 0.5,
+      "keptUsd": 0,
+      "netUsd": -2000
+     }
+    ]
    },
    {
     "id": "strong",
@@ -133,7 +204,19 @@
     "completeFights": 2,
     "completePct": 20,
     "noneMissingFights": 8,
-    "noneMissingPct": 80
+    "noneMissingPct": 80,
+    "atWinRate": [
+     {
+      "rate": 0.3,
+      "keptUsd": 453,
+      "netUsd": -1547
+     },
+     {
+      "rate": 0.5,
+      "keptUsd": 756,
+      "netUsd": -1244
+     }
+    ]
    },
    {
     "id": "exhibit",
@@ -148,41 +231,53 @@
     "completeFights": 0,
     "completePct": 0,
     "noneMissingFights": 6,
-    "noneMissingPct": 75
+    "noneMissingPct": 75,
+    "atWinRate": [
+     {
+      "rate": 0.3,
+      "keptUsd": 1553,
+      "netUsd": -447
+     },
+     {
+      "rate": 0.5,
+      "keptUsd": 2589,
+      "netUsd": 589
+     }
+    ]
    }
   ]
  },
  "secondPass": {
   "threshold": 0.6,
-  "kept": 366,
-  "unverified": 187,
-  "wordingMatched": 115,
-  "neither": 72,
+  "kept": 365,
+  "unverified": 192,
+  "wordingMatched": 114,
+  "neither": 78,
   "examples": {
    "matched": [
     {
-     "key": "delivered-unsigned#0",
-     "text": "The transaction address check confirmed that the street and ZIP matched.",
-     "cites": [
-      "C"
-     ],
-     "share": 0.71
-    },
-    {
-     "key": "delivered-buyer-admits#0",
-     "text": "The buyer later confirmed that she found the order at the front desk.",
-     "cites": [
-      "F"
-     ],
-     "share": 0.67
-    },
-    {
      "key": "delivered-buyer-admits#2",
-     "text": "The buyer later confirmed that she found the order at the front desk.",
+     "text": "The buyer then confirmed in writing that she found the order at the front desk.",
      "cites": [
       "F"
      ],
      "share": 0.67
+    },
+    {
+     "key": "untracked-base#2",
+     "text": "The order was shipped First-Class without tracking.",
+     "cites": [
+      "H"
+     ],
+     "share": 0.8
+    },
+    {
+     "key": "untracked-buyer-confirms#2",
+     "text": "We shipped this order First-Class without tracking under that threshold.",
+     "cites": [
+      "H"
+     ],
+     "share": 0.83
     }
    ],
    "unmatched": [
@@ -201,32 +296,35 @@
      ]
     },
     {
-     "key": "delivered-base#2",
-     "text": "We ask that the chargeback be denied based on the carrier’s signed delivery record.",
+     "key": "delivered-unsigned#0",
+     "text": "We ask that the chargeback be denied because carrier tracking confirms delivery to the transaction ZIP before the dispute opened.",
      "cites": [
       "E"
      ],
-     "share": 0.29,
+     "share": 0.11,
      "missing": [
       "ask",
       "denied",
-      "based",
-      "carrier's",
-      "record"
+      "carrier",
+      "tracking",
+      "confirms",
+      "transaction"
      ]
     },
     {
      "key": "delivered-unsigned#2",
-     "text": "We ask that the chargeback be denied based on the carrier's delivered scan.",
+     "text": "We ask that the chargeback be denied because carrier tracking confirms delivery to the transaction ZIP before the dispute opened.",
      "cites": [
       "E"
      ],
-     "share": 0.33,
+     "share": 0.11,
      "missing": [
       "ask",
       "denied",
-      "based",
-      "carrier's"
+      "carrier",
+      "tracking",
+      "confirms",
+      "transaction"
      ]
     }
    ]
