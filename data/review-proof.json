@@ -3192,5 +3192,291 @@
    "kept": false,
    "why": "two isn't in Exhibit F, H, E, J."
   }
- ]
+ ],
+ "repeat": {
+  "at": "2026-10-30T00:32:51.455Z",
+  "reviewer": "GPT-5.6 on Azure OpenAI",
+  "briefsAt": "2026-10-29T22:13:32.536Z",
+  "rule": "two hearings of the same PDF at once, a third only when they split; a ruling follows two that agree; a verdict for the seller resting on a sustained point counts for neither side",
+  "fights": 9,
+  "hearings": 20,
+  "pairs": 9,
+  "pairsAgree": 7,
+  "thirdHeard": 2,
+  "complete": 9,
+  "majority": 9,
+  "noMajority": 0,
+  "majorityMatchesLabel": 8,
+  "firstMatchesLabel": 7,
+  "flaggedVotes": 2,
+  "calls": 62,
+  "inputTokens": 138449,
+  "outputTokens": 10713,
+  "priceIn": 1.25,
+  "priceOut": 10,
+  "spendUsd": 0.2802,
+  "cap": 0.3,
+  "stopped": "stopped at $0.280 to stay under the $0.3 cap",
+  "rows": [
+   {
+    "key": "delivered-base#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows signed delivery in the order’s city and ZIP before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows signed delivery in the order’s ZIP on 4 October, before the dispute opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "delivered-unsigned#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows delivery in the order’s ZIP on 4 Oct 2026, before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows delivery in the order’s ZIP on 4 Oct 2026, before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 0
+     }
+    ]
+   },
+   {
+    "key": "delivered-buyer-admits#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "USPS shows signed delivery to the order ZIP before the case, and the buyer later confirmed receipt in writing",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS shows signed delivery to the order ZIP before the dispute, and the buyer confirmed finding the order",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "untracked-tracked#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows delivery in the order’s city and ZIP before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS tracking shows delivery in the order’s Dallas ZIP on 23 September, before the chargeback opened",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "untracked-buyer-confirms#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "The cardholder wrote that the vase arrived on 10 October, two days before opening the not-received chargeback",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 0
+     },
+     {
+      "side": "seller",
+      "reason": "The cardholder's 10 Oct email confirms the vase arrived before the 12 Oct chargeback opened",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 0
+     }
+    ]
+   },
+   {
+    "key": "colour-base#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "buyer",
+     "flagged",
+     "buyer"
+    ],
+    "majority": "buyer",
+    "majorityMatchesLabel": false,
+    "verdicts": [
+     {
+      "side": "buyer",
+      "reason": "The pages do not show the bowls’ much greener overall appearance was disclosed or matched the representative listing photos",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 0
+     },
+     {
+      "side": "seller",
+      "reason": "The seller offered the disclosed 30-day return, but the buyer kept the safely delivered bowls and did not attempt a return (but objection 1, which this rests on, was sustained against the seller)",
+      "caveat": "It rests on objection 1, which the hearing sustained against the seller",
+      "objections": 1,
+      "overruled": 0
+     },
+     {
+      "side": "buyer",
+      "reason": "The pages do not show the materially greener overall appearance was disclosed; the uncompleted return does not cure that difference",
+      "caveat": null,
+      "objections": 3,
+      "overruled": 0
+     }
+    ]
+   },
+   {
+    "key": "colour-late-complaint#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "Green glaze variation was disclosed, a timely refund return was offered, and the buyer kept the bowls without attempting return",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "The disclosed handmade glaze could vary toward green, and the buyer kept the bowls despite an offered return",
+      "caveat": null,
+      "objections": 1,
+      "overruled": 1
+     }
+    ]
+   },
+   {
+    "key": "fraud-returning-customer#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "Signed delivery to Daniel Brooks’s order address by D BROOKS shows the cardholder took part",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS shows signed delivery to D BROOKS at the cardholder’s matched order address, sufficiently showing his participation",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 2
+     }
+    ]
+   },
+   {
+    "key": "fraud-home-signed#0",
+    "label": "fight",
+    "brief": "fight",
+    "votes": [
+     "flagged",
+     "seller",
+     "seller"
+    ],
+    "majority": "seller",
+    "majorityMatchesLabel": true,
+    "verdicts": [
+     {
+      "side": "seller",
+      "reason": "USPS shows signed delivery to D BROOKS at the cardholder's billing address before the chargeback opened (but objection 4, which this rests on, was sustained against the seller)",
+      "caveat": "It rests on objection 4, which the hearing sustained against the seller",
+      "objections": 4,
+      "overruled": 1
+     },
+     {
+      "side": "seller",
+      "reason": "USPS shows D BROOKS signed for delivery at Daniel Brooks’s billing address before the case opened",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 2
+     },
+     {
+      "side": "seller",
+      "reason": "USPS shows signed delivery in Daniel Brooks’s name at his matching billing and shipping address before the claim",
+      "caveat": null,
+      "objections": 4,
+      "overruled": 1
+     }
+    ]
+   }
+  ]
+ }
 }

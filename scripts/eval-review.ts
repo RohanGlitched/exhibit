@@ -5,6 +5,8 @@
 //   npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.45 --steps hearings,careless
 //       --steps leaves out the repair step and keeps its rows from the file being replaced, with their date
 //   npx tsx --conditions=react-server scripts/eval-review.ts --recheck    no model calls: today's checker over the saved answers
+//   EXHIBIT_ENV_FILE=.env.local npx tsx --conditions=react-server scripts/eval-review.ts --provider azure --price-in 1.25 --price-out 10 --cap 0.3 --steps repeat
+//       the ruling panel on the labelled fights: two hearings of each PDF at once, a third on a split; written under `repeat`
 // Replays the briefs already measured in data/proof.json (no new briefs are written): renders each as the PDF
 // Exhibit files, reads the PDF back, and puts it before the simulated reviewer. Then measures the repair step on
 // sentences the checker struck (the careless drafter's planted facts, and true sentences given a wrong citation),
@@ -36,10 +38,10 @@ const { briefPdf } = await import("../lib/cases/pdf.ts");
 const { pdfLines, filedRecord } = await import("../lib/cases/pdftext.ts");
 const { crossExamine, answerObjections } = await import("../lib/cases/review.ts");
 const { repairBrief } = await import("../lib/cases/repair.ts");
-const { hearingStats, sideOfCall } = await import("../lib/cases/hearing.ts");
+const { hearingStats, sideOfCall, tallyPanel, panelNeeds, panelVote } = await import("../lib/cases/hearing.ts");
 const llm = await import("../lib/llm.ts");
 import type { Brief, BriefSentence } from "../lib/cases/types.ts";
-import type { Hearing } from "../lib/cases/hearing.ts";
+import type { Hearing, Panel, Side } from "../lib/cases/hearing.ts";
 
 const PRICE_IN = Number(arg("price-in", "NaN"));
 const PRICE_OUT = Number(arg("price-out", "NaN"));
@@ -73,9 +75,9 @@ const add = (t?: { input: number; output: number }, calls = 1) => {
 // call so far, or about 3,500 tokens in and 1,500 out before the first; a step never starts past the cap.
 const STEP_MAX = () => 4 * (spent.calls ? usd() / spent.calls : (3500 * PRICE_IN + 1500 * PRICE_OUT) / 1e6);
 let stopped = "";
-const room = () => {
+const room = (n = 1) => {
   if (stopped) return false;
-  if (usd() + STEP_MAX() > CAP) {
+  if (usd() + n * STEP_MAX() > CAP) {
     stopped = `stopped at $${usd().toFixed(3)} to stay under the $${CAP} cap`;
     console.log(stopped);
     return false;
@@ -158,6 +160,75 @@ if (recheckOnly) {
   console.log(recheck);
   // Kept beside the run's own figures, which stay as measured.
   writeFileSync(OUT, JSON.stringify({ ...before, recheck }, null, 1));
+  process.exit(0);
+}
+
+/*
+ * --steps repeat: the ruling panel, measured. Each labelled fight's brief is heard the way a live ruling request
+ * hears PayPal's copy (lib/cases/cross.ts hearingForRuling): two hearings at once, a third only when they split.
+ * Measures how often two hearings of the same PDF agree, and whether the majority matches the label. Written under
+ * `repeat` in the output file; everything else in it is kept as it was.
+ */
+if (STEPS.has("repeat")) {
+  if (!before) throw new Error(`No ${OUT} to add the repeat hearings to.`);
+  const fights = proof.runs.filter((r) => r.model && r.label === "fight" && BUYERS.includes(Number(r.key.split("#")[1]))).slice(0, LIMIT);
+  console.log(`${fights.length} labelled fights, heard two at a time, a third on a split; cap $${CAP}`);
+  const rows: { key: string; label: string; brief: string; votes: (Side | "flagged")[]; panel: Panel; majorityMatchesLabel: boolean | null; hearings: Hearing[] }[] = [];
+  for (const r of fights) {
+    const c = await caseOf(r.key);
+    const ex = exhibitsOf(c);
+    const brief = toBrief(r.model!, ex);
+    const record = filedRecord(await pdfLines(await briefPdf(c.dispute, brief, ex, c.invoiceId)));
+    const inp = { dispute: c.dispute, exhibits: ex, record, source: "draft" as const, call: (brief.recommendation === "fight" ? "fight" : "accept") as Brief["recommendation"] };
+    const held: Hearing[] = [];
+    let panel = tallyPanel(held);
+    while (panelNeeds(panel) > 0) {
+      const n = panelNeeds(panel);
+      if (!room(n)) break;
+      const got = await Promise.all(Array.from({ length: n }, (_, k) => retry(`${r.key} hearing ${held.length + k + 1}`, () => crossExamine(inp, { deadlineMs: 240_000 }))));
+      for (const h of got) if (h) {
+        add(h.tokens, h.calls);
+        held.push(h);
+      }
+      if (got.some((h) => !h)) break;
+      panel = tallyPanel(held.map((h, k) => ({ ...h, at: `${h.at}#${k}` })));
+    }
+    if (!held.length) continue;
+    rows.push({ key: r.key, label: r.label, brief: brief.recommendation, votes: held.map(panelVote), panel, majorityMatchesLabel: panel.majority ? panel.majority === sideOfCall(r.label) : null, hearings: held });
+    console.log(r.key.padEnd(34), `brief ${brief.recommendation.padEnd(6)}`, held.map(panelVote).join(" "), `majority ${panel.majority ?? "none"}`, `$${usd().toFixed(3)}`);
+  }
+  const done = rows.filter((x) => x.panel.majority || x.panel.heard >= 3);
+  const pairs = rows.filter((x) => x.votes.length >= 2);
+  const repeat = {
+    at: new Date().toISOString(),
+    reviewer: llm.llmModel(),
+    briefsAt: proof.at,
+    rule: "two hearings of the same PDF at once, a third only when they split; a ruling follows two that agree; a verdict for the seller resting on a sustained point counts for neither side",
+    fights: rows.length,
+    hearings: rows.reduce((n, x) => n + x.votes.length, 0),
+    pairs: pairs.length,
+    pairsAgree: pairs.filter((x) => x.votes[0] === x.votes[1]).length,
+    thirdHeard: rows.filter((x) => x.votes.length >= 3).length,
+    complete: done.length,
+    majority: rows.filter((x) => x.panel.majority).length,
+    noMajority: done.filter((x) => !x.panel.majority).length,
+    majorityMatchesLabel: rows.filter((x) => x.majorityMatchesLabel).length,
+    // The first hearing alone, as a ruling request followed it before the panel: how often it matched the label.
+    firstMatchesLabel: rows.filter((x) => x.votes[0] === sideOfCall(x.label as Brief["recommendation"])).length,
+    flaggedVotes: rows.reduce((n, x) => n + x.votes.filter((v) => v === "flagged").length, 0),
+    calls: spent.calls,
+    inputTokens: spent.input,
+    outputTokens: spent.output,
+    priceIn: PRICE_IN,
+    priceOut: PRICE_OUT,
+    spendUsd: Number(usd().toFixed(4)),
+    cap: CAP,
+    stopped: stopped || null,
+    rows: rows.map((x) => ({ key: x.key, label: x.label, brief: x.brief, votes: x.votes, majority: x.panel.majority, majorityMatchesLabel: x.majorityMatchesLabel, verdicts: x.hearings.map((h) => ({ side: h.verdict.side, reason: h.verdict.reason, caveat: h.verdict.caveat ?? null, objections: h.exchanges.length, overruled: h.exchanges.filter((e) => e.ruling === "overruled").length })) })),
+  };
+  console.log({ ...repeat, rows: repeat.rows.length });
+  writeFileSync(OUT, JSON.stringify({ ...before, repeat }, null, 1));
+  console.log(`wrote ${OUT} (repeat)`);
   process.exit(0);
 }
 
