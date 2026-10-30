@@ -20,7 +20,7 @@ export interface AuditLine {
 
 export interface AuditInput {
   rec: Pick<CaseRecord, "autopilot" | "house" | "events"> & Partial<Pick<CaseRecord, "trackedVia" | "openedAt">> | null;
-  filings: Pick<Filing, "action" | "at" | "ok" | "summary" | "detail">[];
+  filings: (Pick<Filing, "action" | "at" | "ok" | "summary" | "detail"> & Partial<Pick<Filing, "by">>)[];
   hearings: Hearing[];
   /** PayPal's status for the case now. */
   status: string;
@@ -81,6 +81,11 @@ export function houseAudit(i: AuditInput): AuditLine[] {
     if (p.failed) audit.push({ at: p.failed.at, text: `Couldn't send: ${p.failed.error}` });
   }
   const resolved = i.status === "RESOLVED";
+  // What the seller did on their own lane case: a filing or refund the autopilot didn't send (for example a fight
+  // filed after the autopilot left the case for the seller).
+  for (const f of i.filings.filter((f) => (f.action === "evidence" || f.action === "accept") && f.ok !== false && f.by === "seller")) {
+    audit.push({ at: f.at, text: `${f.action === "accept" ? "Refunded" : "Filed"} by the seller${after(f.at)}${p?.action === "queue" ? ", after the autopilot left the case to them" : ""}: ${f.summary}` });
+  }
   for (const f of i.filings.filter((f) => byAutopilot(f) && f.ok !== false)) {
     // The hearing on PayPal's copy that the request followed: the one carrying the panel's split, else the latest
     // one held before it (requests made before 30 Oct followed a single hearing).
