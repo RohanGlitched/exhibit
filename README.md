@@ -17,11 +17,11 @@
   <a href="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RohanGlitched/exhibit/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="PayPal sandbox" src="https://img.shields.io/badge/PayPal-Orders%20v2%20%C2%B7%20Payments%20v2%20%C2%B7%20Disputes%20%C2%B7%20Webhooks%20%C2%B7%20Agent%20Toolkit-2b63e8">
   <img alt="Model" src="https://img.shields.io/badge/model-GPT--5.6%20on%20Azure%20OpenAI-13203a">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-191-17845a">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-217-17845a">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-17845a">
 </p>
 
-**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. Re-run on 29 Oct on today's prompt, which reads the reason code's requirements card, the model made the right call on 53 of 56 labelled runs (56 of 56 on the 25 Oct prompt, before the card): where the deciding fact sits only in free text (an email, a listing), 8 of 10 against 4 for a rules baseline that reads every structured record; where the records decide, 45 of 46 against 46; on held-out cases written without the prompt, 15 of 18 free-text runs against 2. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
+**Click once and you get a real PayPal sandbox chargeback against a real card payment, argued live by GPT-5.6 on Azure OpenAI, with every figure and name checked against the record it cites and filed with a Bates-stamped PDF.** Sentences with nothing checkable in them are marked unverified, not passed as checked. On today's prompt, which reads the reason code's requirements card, the model made the right call on 56 of 56 labelled runs, an upper bound: 53 on the 29 Oct run, and its 3 misses re-run alone after the cards changed on 30 Oct. Where the deciding fact sits only in free text (an email, a listing), 10 of 10 against 4 for a rules baseline that reads every structured record; where the records decide, 46 of 46 against 46; on held-out cases written without the prompt, 16 of 18 free-text runs against 2. A drafter told to slip in facts no record holds wrote six of them, and the checker struck all six before filing ([the proof](https://exhibit-desk.vercel.app/proof)).
 
 When a buyer disputes a payment, a small seller has until the case's response date to answer PayPal (ten days on the sandbox chargebacks here), and a chargeback costs a $20 fee on top of the sale. Answering means digging out the order, the payment, the tracking, the carrier's scans and the emails, and writing it up. Many sellers don't, and lose cases they should have won. Others fight cases they can't win and pay for it.
 
@@ -155,7 +155,7 @@ The pool refill runs from [`.github/workflows/refill.yml`](.github/workflows/ref
 | Prompt without its "how cases are usually decided" rubric, 25 Oct prompt | 54 of 56 |
 | Facts no record holds, Exhibit's own prompt | wrote 0 of 6 |
 | Facts no record holds, a careless drafter told to use them | wrote 6 of 6; the checker struck 6 of 6 |
-| One thing changed in a true sentence (11 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4, a stated span moved off the record) | 1,042 of 1,060 struck, on the re-run's sentences (all 22 moved spans struck; 1,026 of 1,038 on the 25 Oct ones); what gets through is a real amount with no role word near it and a denial inside reported speech |
+| One thing changed in a true sentence (11 kinds: dates, amounts, times, ids, a real figure from another record, denials, carrier, signer, ZIP, card last-4, a stated span moved off the record) | 1,039 of 1,056 struck, on the sentences after the 30 Oct re-run of the misses (all 22 moved spans struck; 1,042 of 1,060 before it; 1,026 of 1,038 on the 25 Oct ones); what gets through is a real amount with no role word near it and a denial inside reported speech |
 | The model's own sentences struck | 2 of 369: both state the disputed amount while citing only the record that holds the reason (a scan, a note), not the amount |
 | Kept sentences with nothing to check, marked unverified | 180 of 367 (201 of 377 on 25 Oct) |
 | A second pass on those, their own words against only the text they cite ([lib/cases/wording.ts](lib/cases/wording.ts), at least 60% of content words) | 110 of 180 match; 70 of 367 kept sentences have neither a figure nor their wording matched |
@@ -185,7 +185,7 @@ npm run dev -- --port 3600
 
 ```bash
 npm run typecheck
-npm test                                                   # 191 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
+npm test                                                   # 217 tests: the checker, PayPal read-back, mandates, webhooks and replayed signed deliveries, health, hearing, requirements, autopilot house rules, studio
 npx tsx --conditions=react-server scripts/eval.ts --max-usd 2.5   # the eval behind /proof, capped at $2.50 (prices from lib/llm.ts)
 npx tsx --conditions=react-server scripts/eval.ts --recheck  # re-run the checker and baselines over saved answers, no model calls
 node scripts/e2e.cjs http://localhost:3600                  # open, argue and file a case in a real browser
