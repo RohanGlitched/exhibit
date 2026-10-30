@@ -2,6 +2,7 @@ import { DISPUTE_FEE } from "@/lib/impact";
 import { usd } from "@/lib/format";
 import type { CaseView } from "@/lib/cases/view";
 import { outcomeMoney } from "@/lib/cases/case-page";
+import { LABOUR, breakEvenWinRate, pct } from "@/lib/labour";
 import styles from "./ledger.module.css";
 
 /** The money on one case, computed from PayPal's record of it and the brief: no estimate, no probability. */
@@ -66,6 +67,14 @@ export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "
               <td>{signed(outcome.net)}</td>
             </tr>
           )}
+          {!outcome && (
+            <tr>
+              <th scope="row">
+                Worth fighting above a win chance of (your time at {LABOUR.minutes.join(" / ")} min, assumed {usd(LABOUR.usdPerHour)} an hour)
+              </th>
+              <td>{LABOUR.minutes.map((m) => pct(breakEvenWinRate(d.amount, m))).join(" / ")}</td>
+            </tr>
+          )}
           {d.balance !== null && !outcome && (
             <tr>
               <th scope="row">Evidence balance for you</th>
@@ -77,8 +86,9 @@ export default function DollarView({ view }: { view: Pick<CaseView, "amount" | "
       <p className={styles.foot}>
         The fee is PayPal&apos;s: {usd(DISPUTE_FEE.card)} on a card chargeback, {usd(DISPUTE_FEE.paypal)} on a dispute paid through a PayPal account. Its fee page
         doesn&apos;t say it&apos;s waived when you win, so it is counted either way.
-        {d.card ? " A card chargeback can only be fought or refunded in full." : ""} The evidence balance is the weight of the brief&apos;s points, not a
-        chance of winning.
+        {d.card ? " A card chargeback can only be fought or refunded in full." : ""} The break-even counts only your time, which is an assumption (no
+        sourced figure exists for how long a response takes): the fee is charged either way, so it cancels. The evidence balance is the weight of the
+        brief&apos;s points, not a chance of winning.
       </p>
     </section>
   );

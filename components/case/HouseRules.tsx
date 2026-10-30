@@ -29,7 +29,7 @@ export default function HouseRules({ id, house }: { id: string; house: HouseView
     }
   };
   return (
-    <section className={styles.panel} aria-label="Autopilot">
+    <section className={styles.panel} aria-label="Autopilot" id="autopilot">
       <p className={styles.head}>
         <span className={styles.tag}>{view.lane ? "Seller's lane · autopilot" : "Autopilot"}</span>
         <span>

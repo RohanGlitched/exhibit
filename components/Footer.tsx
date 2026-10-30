@@ -4,6 +4,7 @@ import { REPO_URL, VIDEO_URL } from "@/lib/site";
 import styles from "./chrome.module.css";
 
 const TRY: { href: string; label: string; note: string; external?: boolean }[] = [
+  { href: "/judges", label: "For judges", note: "three real cases, about 90 seconds" },
   { href: "/new", label: "Open a sandbox case", note: "a real sandbox chargeback, yours to argue" },
   { href: "/import", label: "Bring your own case", note: "paste an order, tracking and emails; never filed" },
   { href: "/desk", label: "The desk", note: "every dispute on the account" },
@@ -72,10 +73,6 @@ export default function Footer() {
             <li>
               <strong>GPT-5.6 on Azure OpenAI</strong>
               <small>writes the briefs, plays the simulated reviewer, and runs the analyst; live</small>
-            </li>
-            <li>
-              <strong>Claude Haiku 4.5 on Amazon Bedrock</strong>
-              <small>wired in behind the same interface; ready, not used live</small>
             </li>
             <li>
               <strong>The checker</strong>

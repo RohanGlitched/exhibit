@@ -176,7 +176,7 @@ What it doesn't show is on the page too: the main variants were written by the s
 ```bash
 git clone https://github.com/RohanGlitched/exhibit && cd exhibit
 npm install
-cp .env.example .env.local   # PayPal sandbox app keys, Bedrock IAM key
+cp .env.example .env.local   # PayPal sandbox app keys, Azure OpenAI key (Bedrock optional)
 npm run dev -- --port 3600
 ```
 

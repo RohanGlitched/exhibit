@@ -195,7 +195,7 @@ function caseNotes(ctx: CaseContext, agent: AgentView | null): string[] {
   const ev = ctx.filings.find((f) => f.action === "evidence");
   if (ev && /as proof of refund$/.test(ev.summary) && !ctx.refundId && ctx.brief && ctx.brief.recommendation !== "fight") {
     notes.push(
-      "Exhibit advised a refund, and the seller filed its response anyway. That response concedes the claim and no refund is on record, so it was a concession letter, though PayPal received it under the evidence type 'proof of refund'. Since 30 Oct 2026 such a filing goes to PayPal as a concession letter.",
+      "Exhibit advised a refund, and the seller filed its response anyway. That response concedes the claim and no refund is on record, so it was a concession letter, though PayPal received it under the evidence type 'proof of refund'. Its wording was corrected after filing: on a card chargeback a concession now says the disputed amount remains with the cardholder and no further refund will be issued (the filed text offered to refund, which invites a second refund), it leaves out the seller's own notes about unanswered emails, and where PayPal takes an acceptance it goes as an accepted claim instead.",
     );
   }
   return notes;

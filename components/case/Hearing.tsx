@@ -124,7 +124,7 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
   const animate = Boolean(hearing && fresh === hearing.at);
 
   return (
-    <section className={styles.hearing} aria-label="Cross-examination">
+    <section className={styles.hearing} aria-label="Cross-examination" id="cross-examination">
       <header className={styles.head}>
         <p className={styles.kicker}>
           <span className="bates">Cross-examination</span>

@@ -53,3 +53,44 @@ test("the Devpost paste file, when it sits beside the repo, carries the committe
   if (f.heldoutStrongUsd) assert.ok(md.includes(f.heldoutStrongUsd), `DEVPOST-UPDATE should say "${f.heldoutStrongUsd}"`);
   assert.ok(!/56 of 56 (right calls|on the labelled main set), an upper bound/.test(md), "no stale upper-bound headline");
 });
+
+// The hearing summary, the ruling panel and the seller's lane, wherever they are published beside the repo.
+const review = JSON.parse(read("../data/review-proof.json")) as {
+  summary: { hearings: number; overruled: number; overruledOnReviewer: number; sustained: number; pressedByCard: number };
+  repeat: { fights: number; pairsAgree: number; majorityMatchesLabel: number };
+};
+const lane = JSON.parse(read("../data/lane.json")) as { summary?: Record<string, number> } & Record<string, unknown>;
+const ls = (lane.summary ?? lane) as Record<string, number>;
+
+function published() {
+  const r = review.summary;
+  const p = review.repeat;
+  return {
+    hearings: `${r.overruled} overruled`,
+    hearingsAt: `${r.hearings} measured hearings`,
+    reviewerOwn: `${r.overruledOnReviewer} `,
+    sustained: `${r.sustained} `,
+    panel: `${p.pairsAgree}`,
+    panelOf: `${p.fights}`,
+    lanes: `${ls.zeroHuman} of ${ls.cases}`,
+  };
+}
+
+test("the hearing, panel and lane figures in the paste files beside the repo match the committed data", (t) => {
+  const files = ["../../DEVPOST-UPDATE-2026-10-30.md", "../../video/youtube-v4.txt", "../../video/cards4.html"].map((f) => new URL(f, import.meta.url));
+  const here = files.filter((f) => existsSync(f));
+  if (!here.length) return t.skip("not beside the repo (CI)");
+  const f = published();
+  for (const file of here) {
+    const text = readFileSync(file, "utf8");
+    assert.ok(text.includes(f.hearings), `${file.pathname}: "${f.hearings}"`);
+    if (!file.pathname.endsWith("cards4.html")) {
+      assert.ok(text.includes(f.lanes), `${file.pathname}: lane "${f.lanes}" (data/lane.json)`);
+      assert.ok(!/9 of 12\b/.test(text), `${file.pathname}: stale lane count "9 of 12"`);
+    }
+    assert.ok(!/1,039 of 1,056|1,015 of 1,051|56 of 56 right calls/.test(text), `${file.pathname}: a stale eval figure`);
+  }
+  const md = readFileSync(files[0], "utf8");
+  assert.ok(md.includes(`first two hearings agreed on ${f.panel}`) && md.includes(`${f.panelOf} labelled fights`), "panel figures in DEVPOST-UPDATE");
+  assert.ok(md.includes(`${review.summary.hearings} measured hearings`), "hearing count in DEVPOST-UPDATE");
+});

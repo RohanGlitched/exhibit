@@ -5,6 +5,7 @@ import { FIGURES, OPTIONS, CHARGEFLOW_PRICING, PROTECTION_SOURCES } from "@/lib/
 import policies from "@/data/policies.json";
 import lane from "@/data/lane.json";
 import { usd, utcDay, utcShortDay, utcTime } from "@/lib/format";
+import { LABOUR, labourFor } from "@/lib/labour";
 
 // Every run on this page is stamped in UTC with the hour, as the README and the case pages are.
 const day = utcTime;
@@ -1075,12 +1076,14 @@ export default function ProofPage() {
             </div>
             </TableToggle>
             <p className={styles.note}>
-              Exhibit keeps {usd(heldExhibit.keptUsd)} per 100 here and gives up {usd(heldExhibit.givenUpUsd)}; the stronger rules keep{" "}
-              {usd(heldStrong.keptUsd)} and give up {usd(heldStrong.givenUpUsd)}, because the fact that wins sits where a rule doesn&apos;t read. Always
-              fighting keeps {usd(heldFight.keptUsd)} only by also fighting {heldFight.fightsOnRefundCases} cases per 100 the seller should refund, which a
-              real reviewer would rule against, with {heldFight.responses - heldExhibit.responses} more responses to write. {policies.heldoutText.runs} runs
-              is a small base.
+              On money alone, always fighting keeps more here: {usd(heldFight.keptUsd)} per 100 against Exhibit&apos;s {usd(heldExhibit.keptUsd)}, and
+              it stays ahead at every assumed win rate. What Exhibit buys is {heldFight.responses - heldExhibit.responses} fewer responses to write per 100,
+              and {heldExhibit.fightsOnRefundCases} fights on cases the seller should refund, against {heldFight.fightsOnRefundCases} for always fighting.
+              Against the stronger rules, which keep {usd(heldStrong.keptUsd)} and give up {usd(heldStrong.givenUpUsd)}, Exhibit keeps{" "}
+              {usd(heldExhibit.keptUsd)}, because the fact that wins sits where a rule doesn&apos;t read. {policies.heldoutText.runs} runs is a small
+              base.
             </p>
+            <LabourTable rows={policies.heldoutText.table} label="held-out free-text" />
           </>
         )}
         <h3 className={styles.subhead}>The main set, per 100</h3>
@@ -1140,9 +1143,10 @@ export default function ProofPage() {
             : `${exhibitRow.fightsOnRefundCases} per 100 on a case the seller should refund (the glaze-colour case with no warning, above)`}{" "}
           against {fightRow.fightsOnRefundCases} for always fighting, and {exhibitRow.completePct}% of the fights it files have every required item on
           file, against {fightRow.completePct}% for always fighting ({exhibitRow.noneMissingPct}% and {fightRow.noneMissingPct}% with none missing). We
-          found no sourced figure for a seller&apos;s minutes per response, so time is counted in responses. Computed by <code>scripts/policies.ts</code>{" "}
-          into <code>data/policies.json</code>.
+          found no sourced figure for a seller&apos;s minutes per response, so the time table below rests on labelled assumptions. Computed by{" "}
+          <code>scripts/policies.ts</code> into <code>data/policies.json</code>.
         </p>
+        <LabourTable rows={policies.table} label="main-set" />
         <p className={styles.note}>
           The rows marked <em>assumed</em> under each table are not measured. &ldquo;Kept, at most&rdquo; counts every fight on a case labelled fight
           as won; those rows instead take {policies.sensitivity.winRates.map((w) => `${Math.round(w * 100)}%`).join(" and ")} of them as won, keep
@@ -1373,5 +1377,47 @@ export default function ProofPage() {
         </p>
       </section>
     </main>
+  );
+}
+
+/** The seller's time per 100 disputes at each assumed length of a response, and what that time leaves after fees. */
+function LabourTable({ rows, label }: { rows: { id: string; name: string; responses: number; netUsd: number }[]; label: string }) {
+  const shown = rows.filter((r) => r.id !== "refund");
+  return (
+    <div className={`sheet ${styles.compare}`}>
+      <table>
+        <caption className={styles.note}>
+          Seller&apos;s time per 100 {label} disputes, an assumption: {LABOUR.minutes.join(", ")} minutes per response, valued at{" "}
+          {usd(LABOUR.usdPerHour)} an hour. After fees and that time, at {LABOUR.minutes[1]} minutes.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Policy</th>
+            <th scope="col">Responses</th>
+            {LABOUR.minutes.map((m) => (
+              <th scope="col" key={m}>
+                Hours at {m} min
+              </th>
+            ))}
+            <th scope="col">Kept at most, after fees and {LABOUR.minutes[1]} min each</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((r) => {
+            const net = r.netUsd - labourFor(r.responses, LABOUR.minutes[1]).usd;
+            return (
+              <tr key={r.id}>
+                <th scope="row">{r.name}</th>
+                <td>{r.responses}</td>
+                {LABOUR.minutes.map((m) => (
+                  <td key={m}>{labourFor(r.responses, m).hours.toLocaleString("en-US", { maximumFractionDigits: 1 })}</td>
+                ))}
+                <td>{net < 0 ? `−${usd(-net)}` : usd(net)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -332,6 +332,9 @@ const EVIDENCE_NOUNS = "confirmation|proof|record|records|scan|scans|tracking|re
 
 /* ───────────── The check ───────────── */
 
+/** The seller admitting its own lapses in service (unanswered emails, no follow-up): true, but it only helps the buyer. */
+export const SELF_ADMISSION = /\bwe (?:did not|didn['’]t|never|failed to|forgot to)\s+(?:answer|repl|respond|get back|follow(?:ed)? up)\w*/i;
+
 const strike = (text: string, cites: string[], why: string, quote?: string): BriefSentence => ({ text, cites, kept: false, why, ...(quote ? { quote } : {}) });
 const clip = (s: string, n = 70) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
@@ -374,6 +377,11 @@ export function checkSentence(
   const cited = known.map((c) => exhibits.find((e) => e.id === c)!);
   const where = `Exhibit ${known.join(", ")}`;
   if (quote && !quoteFound(quote, cited, textOf)) return strike(s.text, known, `The words it quotes as proof aren't in ${where}: “${clip(quote)}”`, quote);
+
+  // The seller's own notes about its lapses stay out of what PayPal reads.
+  if (SELF_ADMISSION.test(s.text)) {
+    return strike(s.text, known, "An admission against the seller from its own notes (an unanswered message); it only helps the buyer, so it stays out of the filing.", quote);
+  }
 
   const h = held(cited, textOf);
 

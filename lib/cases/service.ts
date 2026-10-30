@@ -11,6 +11,7 @@ import { buildExhibits, exhibitText } from "./exhibits";
 import { checkSentence, oddsFor } from "./verify";
 import { argueBlocked } from "./guard";
 import { briefPdf } from "./pdf";
+import { concessionLetter } from "./concession";
 import { repairBrief } from "./repair";
 import { rulingRequest } from "./hearing";
 import { withHearing } from "./hearing-log";
@@ -260,9 +261,24 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
     return f;
   }
 
-  if (action === "evidence") {
+  const card = ctx.dispute.dispute_channel === "EXTERNAL";
+  const letter = concessionLetter(ctx.dispute.dispute_amount.value, card);
+  // A refund-advised brief, filed as evidence with no refund on record, concedes the case. Where PayPal takes an
+  // acceptance it goes as one (the money stays with the cardholder, nothing more is sent); otherwise as a letter.
+  const conceding = action === "evidence" && brief.recommendation !== "fight" && !ctx.refundId;
+  if (conceding && can.has("accept_claim")) {
+    await acceptClaim(id, letter, "REFUND");
+    filing = {
+      at: new Date().toISOString(),
+      action: "accept",
+      ok: true,
+      by,
+      summary: `The brief concedes the case, so it went to PayPal as an accepted claim, not a response: ${letter.replace(/\.$/, "")}`,
+    };
+  } else if (action === "evidence") {
     if (!can.has("provide_evidence")) throw new Error("PayPal isn't taking evidence on this case right now.");
-    const pdf = await briefPdf(ctx.dispute, brief, ctx.exhibits, ctx.invoiceId);
+    const filedBrief: Brief = conceding ? { ...brief, sentences: [{ text: letter, cites: ["A"], kept: true }] } : brief;
+    const pdf = await briefPdf(ctx.dispute, filedBrief, ctx.exhibits, ctx.invoiceId);
     const tracking = ctx.exhibits.find((e) => e.kind === "tracking");
     const number = tracking?.facts.find((f) => f.label === "Tracking number")?.value;
     const carrier = tracking?.facts.find((f) => f.label === "Carrier")?.value;
@@ -273,7 +289,7 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
     // A refund-advised brief filed anyway, with no refund on record, is a concession letter, not proof of a refund.
     const concession = chosen === "PROOF_OF_REFUND" && !ctx.refundId;
     const primary = concession ? "OTHER" : chosen;
-    const evidence: EvidenceInput = { evidence_type: primary, notes: response.slice(0, 2000), documents: [{ name: "response.pdf" }] };
+    const evidence: EvidenceInput = { evidence_type: primary, notes: (concession ? letter : response).slice(0, 2000), documents: [{ name: "response.pdf" }] };
     if (number && carrier && primary !== "PROOF_OF_REFUND") evidence.evidence_info = { tracking_info: [{ carrier_name: carrier, tracking_number: number }] };
     if (primary === "PROOF_OF_REFUND" && ctx.refundId) evidence.evidence_info = { refund_ids: [ctx.refundId] };
     const evidences = [evidence];
@@ -284,12 +300,13 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
       ok: true,
       by,
       summary: concession
-        ? `Filed a concession letter (${kept.length} sentences: the brief advised a refund and no refund is on record) and ${ctx.exhibits.length} exhibits`
+        ? `Filed a concession letter (the brief advised a refund and no refund is on record): ${letter.replace(/\.$/, "")}`
         : `Filed the response (${kept.length} sentences) and ${ctx.exhibits.length} exhibits as ${primary.toLowerCase().replace(/_/g, " ")}`,
     };
   } else if (action === "accept") {
     if (!can.has("accept_claim")) throw new Error("PayPal isn't taking an acceptance on this case right now.");
-    const note = kept.map((s) => s.text).join(" ").slice(0, 2000) || "We accept the claim and refund in full.";
+    // The acceptance says the money stays where the card issuer put it: no wording that invites a second refund.
+    const note = letter;
     let via = "";
     if (by === "autopilot" || opts.viaToolkit) {
       // The autopilot (and MCP's paypal_accept_dispute_claim) refund through PayPal's own Agent Toolkit; Exhibit's REST call is the fallback.

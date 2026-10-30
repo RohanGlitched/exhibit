@@ -1,27 +1,27 @@
 {
- "at": "2026-10-30T02:21:34.508Z",
- "source": "https://exhibit-desk.vercel.app/api/cases and /api/cases/<id> (the desk's own records), read 2026-10-30T02:18:32.545Z",
+ "at": "2026-10-30T04:12:45.037Z",
+ "source": "https://exhibit-desk.vercel.app/api/cases and /api/cases/<id> (the desk's own records), read 2026-10-30T04:04:20.642Z",
  "note": "The seller's lane is the shop's own PayPal sandbox disputes, opened on a schedule and worked by the autopilot under the house rules; there are no outside sellers. A seller's step is a filing or refund sent from the case page by the person working the desk, a ruling asked for by hand, or a stop in the undo window. Times run from PayPal's CUSTOMER.DISPUTE.CREATED webhook. House rule 4 holds every send for 10 minutes so a person can stop it, so the time to filed includes that window.",
  "firstWebhook": "2026-10-29T20:17:34.609Z",
- "lastWebhook": "2026-10-30T01:30:34.453Z",
+ "lastWebhook": "2026-10-30T03:07:34.898Z",
  "summary": {
-  "cases": 12,
-  "zeroHuman": 9,
+  "cases": 13,
+  "zeroHuman": 10,
   "oneHuman": 3,
   "moreHuman": 0,
   "decided": {
-   "file": 5,
+   "file": 6,
    "refund": 4,
    "left": 3
   },
-  "medianToArguedS": 9.5,
-  "medianToDecidedMin": 3,
-  "sent": 12,
-  "medianToSentMin": 17.4,
-  "filed": 7,
-  "medianToFiledMin": 17.1,
-  "filedByAutopilot": 5,
-  "medianToFiledByAutopilotMin": 17.1,
+  "medianToArguedS": 10,
+  "medianToDecidedMin": 2.6,
+  "sent": 13,
+  "medianToSentMin": 17.1,
+  "filed": 8,
+  "medianToFiledMin": 16.5,
+  "filedByAutopilot": 6,
+  "medianToFiledByAutopilotMin": 16.5,
   "filedBySeller": 2,
   "medianToFiledBySellerMin": 72.4,
   "refunded": 5,
@@ -238,6 +238,23 @@
     "by": "autopilot",
     "at": "2026-10-30T02:00:21.713Z",
     "afterS": 1787
+   },
+   "humanSteps": []
+  },
+  {
+   "id": "PP-R-YAC-10195241",
+   "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+   "status": "UNDER_REVIEW",
+   "where": "filed",
+   "decided": "file",
+   "rule": 2,
+   "toArguedS": 14,
+   "toDecidedS": 53,
+   "sent": {
+    "what": "filed",
+    "by": "autopilot",
+    "at": "2026-10-30T03:21:28.411Z",
+    "afterS": 834
    },
    "humanSteps": []
   }

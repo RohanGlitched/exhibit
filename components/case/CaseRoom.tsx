@@ -238,11 +238,6 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                     {phase === "filing" ? "Filing…" : rec === "offer" ? `Offer ${usd(verdict.offerAmount ?? "0")}` : "File the response"}
                   </button>
                 )}
-                {rec === "accept" && can.has("provide_evidence") && (
-                  <button className="btn btnQuiet" onClick={() => file("evidence")} disabled={Boolean(locked) || phase === "filing"}>
-                    Fight it anyway
-                  </button>
-                )}
                 {rec !== "accept" && can.has("accept_claim") && (
                   confirm === "accept" ? (
                     <button className="btn btnDanger" onClick={() => file("accept")} disabled={Boolean(locked) || phase === "filing"}>
