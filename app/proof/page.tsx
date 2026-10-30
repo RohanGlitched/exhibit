@@ -8,6 +8,8 @@ import proof from "@/data/proof.json";
 import toolkitBrief from "@/data/toolkit-brief.json";
 import styles from "./proof.module.css";
 import ReviewProof from "./ReviewProof";
+import SectionIndex from "@/components/page/SectionIndex";
+import TableToggle from "@/components/page/TableToggle";
 
 export const metadata: Metadata = {
   title: "Proof",
@@ -284,6 +286,24 @@ export default function ProofPage() {
     seeds < 2 && "repeat runs",
   ].filter(Boolean) as string[];
 
+  // The sticky index under the headline figures: one chip per section the page draws.
+  const proofIndex = [
+    { id: "variants", label: "Every variant" },
+    ...(hasStrong ? [{ id: "earns", label: "Where the model earns its place" }] : []),
+    ...(held ? [{ id: "held-out", label: "Held-out set" }] : []),
+    { id: "checker", label: "False statements" },
+    ...(survivors.length > 0 ? [{ id: "got-through", label: "What got through" }] : []),
+    { id: "careless", label: "Invented facts" },
+    ...(inj ? [{ id: "injection", label: "Prompt injection" }] : []),
+    { id: "cross-examination", label: "Cross-examination" },
+    { id: "limits", label: "What this doesn't show" },
+    { id: "cost", label: "What a dispute costs" },
+    { id: "per-100", label: "Per 100 disputes" },
+    { id: "alternatives", label: "Alternatives" },
+    { id: "agent-stack", label: "Agent stack" },
+    { id: "run-it", label: "Run it yourself" },
+  ];
+
   return (
     <main className={`shell ${styles.page}`}>
       <header className={styles.head}>
@@ -376,7 +396,9 @@ export default function ProofPage() {
         </div>
       </dl>
 
-      <section className={styles.section}>
+      <SectionIndex inShell items={proofIndex} />
+
+      <section className={styles.section} id="variants">
         <div className={styles.sectionHead}>
           <h2>Every variant, both customers</h2>
           <p>
@@ -389,6 +411,7 @@ export default function ProofPage() {
             {mainPrev ? ` The model's call is the run of ${day(mainRun!.at)} on today's prompt; the small mark after it is the run of ${day(mainPrev.at)} on the prompt before the requirements card.` : ""}
           </p>
         </div>
+        <TableToggle what={`the ${stories.length} tables`} note="One table per story; each row is a variant, run with both customers.">
         {stories.map((story) => (
           <div key={story} className={`sheet ${styles.ledger}`}>
             <h3>{STORY[story] ?? story}</h3>
@@ -456,10 +479,11 @@ export default function ProofPage() {
             </table>
           </div>
         ))}
+        </TableToggle>
       </section>
 
       {hasStrong && (
-        <section className={`${styles.section} ${styles.split}`}>
+        <section className={`${styles.section} ${styles.split}`} id="earns">
           <div>
             <h2>Where the model earns its place</h2>
             <p>
@@ -545,7 +569,7 @@ export default function ProofPage() {
       )}
 
       {held && (
-        <section className={styles.section}>
+        <section className={styles.section} id="held-out">
           <div className={styles.sectionHead}>
             <h2>A held-out set</h2>
             <p>
@@ -585,6 +609,7 @@ export default function ProofPage() {
               </p>
             )}
           </div>
+          <TableToggle what="the table">
           <div className={`sheet ${styles.ledger}`}>
             <table>
               <colgroup>
@@ -658,10 +683,11 @@ export default function ProofPage() {
               </tbody>
             </table>
           </div>
+          </TableToggle>
         </section>
       )}
 
-      <section className={`${styles.section} ${styles.split}`}>
+      <section className={`${styles.section} ${styles.split}`} id="checker">
         <div>
           <h2>The checker against false statements</h2>
           <p>
@@ -724,7 +750,7 @@ export default function ProofPage() {
       </section>
 
       {survivors.length > 0 && (
-        <section className={styles.section}>
+        <section className={styles.section} id="got-through">
           <div className={styles.sectionHead}>
             <h2>What got through</h2>
             <p>
@@ -747,7 +773,7 @@ export default function ProofPage() {
         </section>
       )}
 
-      <section className={styles.section}>
+      <section className={styles.section} id="careless">
         <div className={styles.sectionHead}>
           <h2>Asked to state what no record says</h2>
           <p>
@@ -785,7 +811,7 @@ export default function ProofPage() {
       </section>
 
       {inj && (
-        <section className={styles.section}>
+        <section className={styles.section} id="injection">
           <div className={styles.sectionHead}>
             <h2>Instructions hidden in the buyer&apos;s email</h2>
             <p>
@@ -820,7 +846,7 @@ export default function ProofPage() {
 
       <ReviewProof />
 
-      <section className={`${styles.section} ${styles.split}`}>
+      <section className={`${styles.section} ${styles.split}`} id="limits">
         <div>
           <h2>What this doesn&apos;t show</h2>
           <p>Read the numbers with these in mind.</p>
@@ -878,7 +904,7 @@ export default function ProofPage() {
         </ul>
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} id="cost">
         <div className={styles.sectionHead}>
           <h2>What a dispute costs a small seller</h2>
           <p>Every figure links to where we read it.</p>
@@ -906,6 +932,7 @@ export default function ProofPage() {
             with every required network item on file, and the share with none missing.
           </p>
         </div>
+        <TableToggle what="the table">
         <div className={`sheet ${styles.compare}`}>
           <table>
             <thead>
@@ -936,6 +963,7 @@ export default function ProofPage() {
             </tbody>
           </table>
         </div>
+        </TableToggle>
         <p className={styles.note}>
           How it is counted: a case labelled fight that is fought counts as kept and one that is refunded as given up; a case labelled refund ends with
           the money back with the buyer whichever way it goes, so fighting it only costs a response. Real responses win less often than their label, so
@@ -959,6 +987,7 @@ export default function ProofPage() {
               {usd(policies.heldoutText.winnableUsdPer100)} of it on cases labelled fight. This is where the model&apos;s right calls and the rules&apos; part
               ways.
             </p>
+            <TableToggle what="the table">
             <div className={`sheet ${styles.compare}`}>
               <table>
                 <thead>
@@ -985,6 +1014,7 @@ export default function ProofPage() {
                 </tbody>
               </table>
             </div>
+            </TableToggle>
             <p className={styles.note}>
               Exhibit keeps {usd(policies.heldoutText.table.find((t) => t.id === "exhibit")!.keptUsd)} per 100 here, the stronger rules{" "}
               {usd(policies.heldoutText.table.find((t) => t.id === "strong")!.keptUsd)}; always fighting keeps the most only by also fighting{" "}
@@ -995,7 +1025,7 @@ export default function ProofPage() {
         )}
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} id="alternatives">
         <div className={styles.sectionHead}>
           <h2>Why not the Resolution Center, or a chargeback service?</h2>
           <p>
@@ -1003,6 +1033,7 @@ export default function ProofPage() {
             small to give away a quarter of each win, too busy to write ten responses a month, and better off refunding the cases they would lose.
           </p>
         </div>
+        <TableToggle what="the table">
         <div className={`sheet ${styles.compare}`}>
           <table>
             <thead>
@@ -1027,6 +1058,7 @@ export default function ProofPage() {
             </tbody>
           </table>
         </div>
+        </TableToggle>
         <p className={styles.note}>
           Chargeback-service pricing from{" "}
           <a href={CHARGEFLOW_PRICING.href} target="_blank" rel="noreferrer">
@@ -1054,6 +1086,7 @@ export default function ProofPage() {
             client gets PayPal&apos;s tools and Exhibit&apos;s in one session.
           </p>
         </div>
+        <TableToggle what="the table">
         <div className={`sheet ${styles.compare}`}>
           <table>
             <thead>
@@ -1093,13 +1126,14 @@ export default function ProofPage() {
             </tbody>
           </table>
         </div>
+        </TableToggle>
         <p className={styles.note}>
           Exhibit&apos;s own MCP tools: list_cases, get_case, argue_case, file_response, cross_examine, open_case, preflight_cart and verify_mandate. A
           client config for both servers is in the README.
         </p>
       </section>
 
-      <section className={`${styles.section} ${styles.final}`}>
+      <section className={`${styles.section} ${styles.final}`} id="run-it">
         <h2>Run it yourself</h2>
         <p>
           The variants are in <code>lib/eval/variants.ts</code> and <code>lib/eval/heldout.ts</code>, the stronger rules in <code>lib/eval/baseline.ts</code>

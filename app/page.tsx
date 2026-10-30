@@ -16,6 +16,7 @@ import proof from "@/data/proof.json";
 import reviewProof from "@/data/review-proof.json";
 import Exchange from "@/components/case/Exchange";
 import { homeLive } from "@/lib/home-live";
+import SectionIndex from "@/components/page/SectionIndex";
 import { utcStamp } from "@/lib/webhooks/paypal";
 import styles from "./home.module.css";
 
@@ -77,6 +78,22 @@ export default async function Home() {
     homeLive().catch(() => ({ hearing: null, lane: null, agent: null })),
   ]);
   const sample = sampleMandateCheck();
+  // The sticky index under the hero: one chip per section the page draws.
+  const index = [
+    { id: "checker", label: "The checker" },
+    ...(show ? [{ id: "exhibits", label: "Exhibits" }] : []),
+    { id: "how", label: "How a case moves" },
+    ...(show ? [{ id: "filing", label: "What reaches PayPal" }] : []),
+    ...(live.hearing ? [{ id: "cross-examination", label: "Cross-examination" }] : []),
+    ...(live.lane || live.agent ? [{ id: "zero-touch", label: "Zero-touch" }] : []),
+    { id: "platform", label: "PayPal APIs" },
+    { id: "refund", label: "When to refund" },
+    { id: "agents", label: "Agent purchases" },
+    { id: "measured", label: "Measured" },
+    { id: "cost", label: "What a dispute costs" },
+    { id: "phone", label: "On a phone" },
+    { id: "try", label: "Try it" },
+  ];
   return (
     <main>
       <section className={`shell ${styles.hero}`}>
@@ -169,7 +186,9 @@ export default async function Home() {
         )}
       </section>
 
-      <section className={`shell ${styles.section} ${styles.split}`}>
+      <SectionIndex items={index} />
+
+      <section className={`shell ${styles.section} ${styles.split}`} id="checker">
         <div>
           <h2>No claim without a record</h2>
           <p>
@@ -207,7 +226,7 @@ export default async function Home() {
       </section>
 
       {show && (
-        <section className={`shell ${styles.section}`}>
+        <section className={`shell ${styles.section}`} id="exhibits">
           <div className={styles.lede}>
             <h2>Every record becomes an exhibit</h2>
             <p>
@@ -234,7 +253,7 @@ export default async function Home() {
       </section>
 
       {show && (
-        <section className={`shell ${styles.section} ${styles.split}`}>
+        <section className={`shell ${styles.section} ${styles.split}`} id="filing">
           <div>
             <h2>What reaches PayPal</h2>
             <p>
@@ -358,7 +377,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section className={`shell ${styles.section}`}>
+      <section className={`shell ${styles.section}`} id="platform">
         <div className={styles.lede}>
           <h2>Built on the PayPal platform</h2>
           <p>
@@ -369,7 +388,7 @@ export default async function Home() {
         <Docket />
       </section>
 
-      <section className={`shell ${styles.section} ${styles.split}`}>
+      <section className={`shell ${styles.section} ${styles.split}`} id="refund">
         <div>
           <h2>It tells you when to give up</h2>
           <p>
@@ -407,7 +426,7 @@ export default async function Home() {
         </ul>
       </section>
 
-      <section className={`shell ${styles.section} ${styles.split}`}>
+      <section className={`shell ${styles.section} ${styles.split}`} id="agents">
         <div>
           <h2>When the buyer&apos;s AI agent did the buying</h2>
           <p>
@@ -453,7 +472,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className={`shell ${styles.section}`}>
+      <section className={`shell ${styles.section}`} id="measured">
         <div className={styles.lede}>
           <h2>Measured, not promised</h2>
           <p>
@@ -500,7 +519,7 @@ export default async function Home() {
         </p>
       </section>
 
-      <section className={`shell ${styles.section}`}>
+      <section className={`shell ${styles.section}`} id="cost">
         <div className={styles.lede}>
           <h2>What a dispute costs a small seller</h2>
           <p>
@@ -521,7 +540,7 @@ export default async function Home() {
         </ul>
       </section>
 
-      <section className={`shell ${styles.section} ${styles.split} ${styles.phoneSec}`}>
+      <section className={`shell ${styles.section} ${styles.split} ${styles.phoneSec}`} id="phone">
         <div>
           <h2>Made for the phone in your apron pocket</h2>
           <p>
@@ -534,7 +553,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className={`shell ${styles.section} ${styles.final}`}>
+      <section className={`shell ${styles.section} ${styles.final}`} id="try">
         <h2>Try it as the seller</h2>
         <p>
           Open a case and Exhibit takes a real sandbox card payment, ships it, and has the card issuer file a chargeback through PayPal. Then it&apos;s on

@@ -72,6 +72,10 @@ button {
   margin: 0 auto;
   padding: 0 var(--gutter);
 }
+/* A section a page's sticky index links to lands below the site header and the index bar. */
+main section[id] {
+  scroll-margin-top: 48px;
+}
 .srOnly {
   position: absolute;
   width: 1px;
