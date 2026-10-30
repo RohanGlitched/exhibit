@@ -150,8 +150,9 @@ export async function briefPdf(d: Dispute, brief: Brief, exhibits: Exhibit[], in
         y -= 5;
       }
     }
-    // The demo-key note on a mandate is for the person reading the case page; the reviewer reads the record.
-    if (e.sandbox && e.kind !== "mandate") {
+    // The demo-key note on a mandate and the note on how a returning customer's earlier orders were re-created are
+    // for the person reading the case page (where both are shown); the reviewer reads the record as a seller files it.
+    if (e.sandbox && e.kind !== "mandate" && e.kind !== "history") {
       y -= 8;
       for (const l of wrap(`Note: ${e.sandbox}`, sans, 8.5, W - 2 * M)) {
         room(12);
