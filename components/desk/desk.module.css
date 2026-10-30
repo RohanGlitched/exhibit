@@ -605,3 +605,91 @@
     gap: 6px 12px;
   }
 }
+
+/* AG Grid Enterprise, behind a licence key only (EnterpriseGrid.tsx): none of these is used without one. */
+.chartSlot:empty {
+  display: none;
+}
+.stakeChart {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.stakeChartHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.stakeChartHead strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.stakeChartBox {
+  height: 220px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--sheet);
+  overflow: hidden;
+}
+.chartOnly {
+  margin: 0;
+  font-size: 13px;
+  color: var(--respondent-ink);
+}
+.chartOnly button {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.entGroupRow {
+  cursor: default;
+  background: #eef2f8;
+}
+.entGroup {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.entGroup strong {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.entGroup span {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.detailGrid {
+  margin-top: 4px;
+}
+.sentenceStruck {
+  text-decoration: line-through;
+  text-decoration-color: var(--due);
+  color: var(--ink-faint);
+}
+.sentenceWithdrawn {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+  color: var(--ink-faint);
+}
+.wordGood {
+  color: var(--won);
+}
+.wordBad {
+  color: var(--due);
+}
+.wordFaint {
+  color: var(--ink-faint);
+}
+@media (max-width: 760px) {
+  .chartSlot {
+    display: none;
+  }
+}

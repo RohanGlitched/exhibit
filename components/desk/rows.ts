@@ -1,4 +1,6 @@
 import type { DeskRow } from "@/lib/desk";
+import type { BriefSentence } from "@/lib/cases/types";
+import type { SentenceState } from "@/lib/cases/sentence-state";
 import { daysToDue } from "../../lib/format";
 
 /** How the desk words a row, apart from the grid so it can be tested. No I/O, no React. */
@@ -187,6 +189,20 @@ export function stakeByDay(
   }
   return out;
 }
+
+const BADGE: Record<string, string> = { struck: "Struck", withdrawn: "Withdrawn at the hearing", unverified: "Unverified", kept: "Kept" };
+
+/** The checker's word on a sentence of an opened brief: the Community grid's brief rows and the Enterprise detail grid. */
+export function sentenceWord(s: Pick<BriefSentence, "checked" | "cites" | "why">, st: SentenceState): string {
+  if (st.kind === "checked") return `Checked: ${(s.checked ?? []).join(", ")}`;
+  if (st.kind === "quoted") return `Quote matched in Exhibit ${st.exhibit ?? s.cites.join(" or ")}`;
+  if (st.kind === "struck" && s.why) return `Struck: ${s.why}`;
+  return BADGE[st.kind];
+}
+
+/** Who argued a brief, in words, from its engine. */
+export const arguedBy = (engine: string | null | undefined) =>
+  engine === "model" ? "argued by the model" : engine === "rules" ? "argued by the rules engine" : "read back from PayPal";
 
 /** A quick filter over what a row shows: case id, buyer, reason and story. */
 export function matchesQuick(r: Pick<DeskRow, "id" | "buyer" | "reason" | "story">, q: string, reasonLabel: (r: string) => string): boolean {
