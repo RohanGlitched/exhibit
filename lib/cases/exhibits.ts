@@ -92,6 +92,8 @@ export interface Sources {
   refundedCapture?: Capture | null;
   /** A returning customer's earlier orders, as real sandbox payments (CaseRecord.priorPayments). */
   priorPayments?: { ref: string; captureId: string }[];
+  /** The trackers were written and read through PayPal's Agent Toolkit (PayPal's shipping trackers). */
+  trackerSource?: "toolkit";
   agent?: AgentRun; // an agent story's purchase, signed and kept on the case record
 }
 
@@ -314,7 +316,7 @@ export function buildExhibits(src: Sources): Exhibit[] {
     out.push({
       kind: "tracking",
       title: "Tracking on file with PayPal",
-      source: `PayPal Orders v2 · trackers on order ${order!.id}`,
+      source: src.trackerSource === "toolkit" ? `PayPal shipping trackers · get_shipment_tracking (PayPal Agent Toolkit) for payment ${capture?.id ?? ""}` : `PayPal Orders v2 · trackers on order ${order!.id}`,
       ref: t.id,
       facts: [
         { label: "Tracking number", value: (capture && t.id.startsWith(`${capture.id}-`) ? t.id.slice(capture.id.length + 1) : undefined) ?? s?.carrier?.number ?? t.id.split("-").slice(1).join("-") },

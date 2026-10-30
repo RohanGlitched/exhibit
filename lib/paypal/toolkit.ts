@@ -8,13 +8,15 @@ import { PAYPAL_BASE } from "./client";
  * it before deciding under the house rules, and Exhibit's MCP server passes these tools through, so one MCP
  * client gets PayPal's tools and Exhibit's evidence layer (argue, cross-examine, file, verify mandates) together.
  *
- * Writes stay on Exhibit's own clients: the toolkit's accept_dispute_claim only takes a note matching
- * ^[A-Za-z0-9_-]{1,255}$ (no spaces), and its create_order has no card payment source or custom_id, so an
- * agent can't pay against its signed cart with it (lib/agentic/buyer.ts).
+ * Two writes go through it too: the autopilot's refunds (accept_dispute_claim) and the tracking upload on the
+ * seller's own lane (create_shipment_tracking), each with Exhibit's REST client as the fallback. The toolkit's
+ * accept_dispute_claim only takes a note matching ^[A-Za-z0-9_-]{1,255}$ (no spaces), so the note is a short
+ * hyphenated reason; its create_order has no card payment source or custom_id, so an agent can't pay against its
+ * signed cart with it (lib/agentic/buyer.ts).
  */
 
 export const TOOLKIT_TOOLS = ["get_dispute", "list_disputes", "get_shipment_tracking", "get_refund", "get_order"] as const;
-export type ToolkitTool = (typeof TOOLKIT_TOOLS)[number];
+export type ToolkitTool = (typeof TOOLKIT_TOOLS)[number] | "accept_dispute_claim" | "create_shipment_tracking";
 
 let kit: PayPalAgentToolkit | null = null;
 function toolkit(): PayPalAgentToolkit {
@@ -25,7 +27,7 @@ function toolkit(): PayPalAgentToolkit {
     clientId,
     clientSecret,
     configuration: {
-      actions: { disputes: { list: true, get: true }, shipment: { get: true }, payments: { getRefunds: true }, orders: { get: true } },
+      actions: { disputes: { list: true, get: true, create: true }, shipment: { get: true, create: true }, payments: { getRefunds: true }, orders: { get: true } },
       context: { sandbox: PAYPAL_BASE.includes("sandbox") },
     },
   });
@@ -75,4 +77,30 @@ export async function readThroughToolkit(disputeId: string): Promise<ToolkitRead
   } catch (e) {
     return { at, dispute: null, tracking: null, error: (e as Error).message.slice(0, 200) };
   }
+}
+
+/** The toolkit's note pattern: letters, digits, hyphens and underscores, at most 255. */
+export const toolkitNote = (text: string) =>
+  text
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 255) || "Refund";
+
+/** Accepts a claim (a full refund) through PayPal's Agent Toolkit accept_dispute_claim. */
+export async function toolkitAccept(disputeId: string, reason: string): Promise<void> {
+  const r = await toolkitCall<{ links?: unknown[]; name?: string; message?: string }>("accept_dispute_claim", { dispute_id: disputeId, note: toolkitNote(reason) });
+  if (!r.links) throw new Error(`accept_dispute_claim answered ${r.name ?? ""} ${r.message ?? ""}`.trim());
+}
+
+/** Adds a shipment tracker for a captured payment through PayPal's Agent Toolkit create_shipment_tracking. */
+export async function toolkitTrack(o: { orderId: string; captureId: string; number: string; carrier: string }): Promise<void> {
+  const r = await toolkitCall<{ tracker_identifiers?: unknown[]; errors?: unknown[] }>("create_shipment_tracking", {
+    order_id: o.orderId,
+    transaction_id: o.captureId,
+    tracking_number: o.number,
+    carrier: o.carrier,
+    status: "SHIPPED",
+  });
+  if (!r.tracker_identifiers?.length || r.errors?.length) throw new Error(`create_shipment_tracking answered ${JSON.stringify(r.errors ?? r).slice(0, 160)}`);
 }

@@ -19,7 +19,7 @@ export interface AuditLine {
 }
 
 export interface AuditInput {
-  rec: Pick<CaseRecord, "autopilot" | "house" | "events"> | null;
+  rec: Pick<CaseRecord, "autopilot" | "house" | "events"> & Partial<Pick<CaseRecord, "trackedVia" | "openedAt">> | null;
   filings: Pick<Filing, "action" | "at" | "ok" | "summary" | "detail">[];
   hearings: Hearing[];
   /** PayPal's status for the case now. */
@@ -55,6 +55,7 @@ export function houseAudit(i: AuditInput): AuditLine[] {
   const hook = rec?.autopilot?.receivedAt ?? null;
   const after = (at: string) => (hook ? ` ${sinceWords(hook, at)} after PayPal's webhook` : "");
   const audit: AuditLine[] = [];
+  if (rec?.trackedVia === "toolkit" && rec.openedAt) audit.push({ at: rec.openedAt, text: "Shipped: the shop put the tracking up through PayPal's Agent Toolkit (create_shipment_tracking)" });
   if (rec?.autopilot) audit.push({ at: rec.autopilot.arguedAt, text: `Argued by the autopilot${after(rec.autopilot.arguedAt)}, with the ${rec.autopilot.engine === "model" ? "model" : "rules engine"}` });
   const p: HousePlan | undefined = rec?.house;
   if (p) {

@@ -329,6 +329,28 @@ const TOOLKIT_PASS = [
 ] as const;
 
 function registerPayPalToolkit(server: McpServer) {
+  // The one toolkit write on MCP: PayPal's accept_dispute_claim, guarded like file_response (PayPal's links, the
+  // per-address limit, an explicit confirm), and recorded on the case.
+  server.registerTool(
+    "paypal_accept_dispute_claim",
+    {
+      title: "PayPal: accept a claim and refund (Agent Toolkit)",
+      description:
+        "Accepts the claim on a sandbox case through PayPal's own Agent Toolkit accept_dispute_claim: PayPal refunds the buyer in full and the case closes. Real in the sandbox and can't be undone, so pass confirm: true only after the user agrees. Exhibit argues the case first if it hasn't.",
+      inputSchema: z.object({ id: z.string().regex(CASE_ID), confirm: z.literal(true) }),
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+    },
+    async ({ id }) => {
+      if (!allow("mcp-file", await ipKey(), 10, 10 * MINUTE)) return text("That's a lot of filings from one place. Try again in a few minutes.");
+      try {
+        const f = await fileAction(id, "accept", "seller", { ip: await ipKey(), viaToolkit: true });
+        return text(`${id}: ${f.summary}. Case page: ${caseLink(id)}`);
+      } catch (e) {
+        return text(`Couldn't accept ${id}: ${(e as Error).message}`);
+      }
+    },
+  );
+
   for (const t of TOOLKIT_PASS) {
     server.registerTool(t.name, { title: t.title, description: t.description, inputSchema: t.schema, annotations: { readOnlyHint: true, openWorldHint: true } }, async (args: Record<string, unknown>) => {
       if (!allow("mcp-toolkit", await ipKey(), 60, 10 * MINUTE)) return text("That's a lot of PayPal reads in ten minutes from one place. Try again in a few minutes.");

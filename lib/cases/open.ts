@@ -110,7 +110,19 @@ export async function openCase(story: Scenario, opts: { visitor?: string; lane?:
   const capture = order.purchase_units[0]?.payments?.captures?.[0];
   if (!capture || capture.status !== "COMPLETED") throw new Error("The sandbox payment didn't complete.");
 
-  if (s.carrier) await addTracking(order.id, capture.id, s.carrier.code, s.carrier.number, s.items);
+  let trackedVia: CaseRecord["trackedVia"];
+  if (s.carrier && opts.lane) {
+    // The seller's own lane uploads its tracking through PayPal's Agent Toolkit (create_shipment_tracking, PayPal's
+    // shipping trackers); Exhibit's Orders v2 /track call is the fallback.
+    try {
+      const { toolkitTrack } = await import("../paypal/toolkit");
+      await toolkitTrack({ orderId: order.id, captureId: capture.id, number: s.carrier.number, carrier: s.carrier.code });
+      trackedVia = "toolkit";
+    } catch (e) {
+      console.error("toolkit tracking", (e as Error).message);
+      await addTracking(order.id, capture.id, s.carrier.code, s.carrier.number, s.items);
+    }
+  } else if (s.carrier) await addTracking(order.id, capture.id, s.carrier.code, s.carrier.number, s.items);
 
   // A returning customer: their earlier orders become real sandbox card payments too (never disputed), so the
   // order book's compelling evidence points at PayPal's own records. The store dates them on its own day.
@@ -162,6 +174,7 @@ export async function openCase(story: Scenario, opts: { visitor?: string; lane?:
     refundId,
     filings: [],
     ...(opts.lane ? { lane: opts.lane } : {}),
+    ...(trackedVia ? { trackedVia } : {}),
     ...(priorPayments.length ? { priorPayments } : {}),
   };
   await saveCase(rec);

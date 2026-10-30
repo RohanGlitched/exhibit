@@ -48,6 +48,18 @@ export async function caseContext(id: string): Promise<CaseContext> {
   // The payment the refund was made against (the duplicate charge's own capture), so it gets its own exhibit.
   const refundedId = refund ? refundedCaptureId(refund) : undefined;
   const refundedCapture = refundedId && refundedId !== captureId ? await getCapture(refundedId).catch(() => null) : null;
+  // Tracking the seller's lane put up through PayPal's Agent Toolkit sits in PayPal's shipping trackers, not on the
+  // order: read it back the same way and show it where the order's trackers would be.
+  let trackerSource: "toolkit" | undefined;
+  if (record?.trackedVia === "toolkit" && order && captureId && !order.purchase_units[0]?.shipping?.trackers?.length) {
+    const { toolkitCall } = await import("../paypal/toolkit");
+    const t = await toolkitCall<{ trackers?: { tracking_number?: string; status?: string; created_time?: string }[] }>("get_shipment_tracking", { transaction_id: captureId }).catch(() => null);
+    const found = (t?.trackers ?? []).filter((x) => x.tracking_number).map((x) => ({ id: `${captureId}-${x.tracking_number}`, status: x.status, create_time: x.created_time }));
+    if (found.length && order.purchase_units[0]) {
+      order.purchase_units[0].shipping = { ...(order.purchase_units[0].shipping ?? {}), trackers: found } as typeof order.purchase_units[0]["shipping"];
+      trackerSource = "toolkit";
+    }
+  }
   const tracking = record?.tracking ?? trackerNumber(order, captureId);
   const scenario = record?.scenarioId
     ? findScenario(record.scenarioId, { buyer: record.buyer ?? tx?.buyer?.name ?? 0, tracking })
@@ -63,6 +75,7 @@ export async function caseContext(id: string): Promise<CaseContext> {
     refund,
     refundedCapture,
     priorPayments: record?.priorPayments,
+    trackerSource,
     agent: record?.agent,
   });
   const filings = mergeFilings(record?.filings ?? [], paypalFilings(dispute));
@@ -207,7 +220,7 @@ export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<Arg
 export type FileAction = "evidence" | "accept" | "offer" | "message" | "ruling";
 
 /** Does what the seller approved, through the Disputes API, and records it on the case. */
-export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller", opts: { ip?: string; panelMs?: number } = {}): Promise<Filing> {
+export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller", opts: { ip?: string; panelMs?: number; viaToolkit?: boolean } = {}): Promise<Filing> {
   const ctx = await caseContext(id);
   const brief = ctx.brief;
   if (!brief) throw new Error("Argue the case before filing anything.");
@@ -266,8 +279,22 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
   } else if (action === "accept") {
     if (!can.has("accept_claim")) throw new Error("PayPal isn't taking an acceptance on this case right now.");
     const note = kept.map((s) => s.text).join(" ").slice(0, 2000) || "We accept the claim and refund in full.";
-    await acceptClaim(id, note, "REFUND");
-    filing = { at: new Date().toISOString(), action, ok: true, by, summary: `Accepted the claim; PayPal refunds ${usd(ctx.dispute.dispute_amount.value)} to the buyer` };
+    let via = "";
+    if (by === "autopilot" || opts.viaToolkit) {
+      // The autopilot (and MCP's paypal_accept_dispute_claim) refund through PayPal's own Agent Toolkit; Exhibit's REST call is the fallback.
+      try {
+        const { toolkitAccept } = await import("../paypal/toolkit");
+        await toolkitAccept(id, by === "autopilot" ? `Refund under the seller's house rule 1: ${brief.headline}` : `Refund: ${brief.headline}`);
+        via = " through PayPal's Agent Toolkit (accept_dispute_claim)";
+      } catch (e) {
+        console.error("toolkit accept", (e as Error).message);
+        await acceptClaim(id, note, "REFUND");
+        via = " (PayPal's Agent Toolkit didn't answer; sent through the Disputes API)";
+      }
+    } else {
+      await acceptClaim(id, note, "REFUND");
+    }
+    filing = { at: new Date().toISOString(), action, ok: true, by, summary: `Accepted the claim${via}; PayPal refunds ${usd(ctx.dispute.dispute_amount.value)} to the buyer` };
   } else if (action === "offer") {
     if (!can.has("make_offer") || !brief.offerAmount) throw new Error("Offers are only possible while a case is an inquiry.");
     await makeOffer(id, brief.buyerMessage ?? "We'd like to offer a partial refund so you can keep the item.", { currency_code: "USD", value: brief.offerAmount });
