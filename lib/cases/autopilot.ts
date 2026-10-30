@@ -21,7 +21,10 @@ export const HOUSE_RULES = {
     { n: 2, text: "File the response on its own when the brief says fight, the checker struck no sentence, the hearing on the draft ends for the seller, and at least 48 hours remain before PayPal's deadline." },
     { n: 3, text: "Leave everything else for the seller, with the reason." },
     { n: 4, text: "Send nothing until 10 minutes after the decision; anyone working the desk can stop it on the case page in that time." },
-    { n: 5, text: "Once PayPal opens a filed case for a ruling, ask for the ruling the hearing on PayPal's own copy of the filing reached." },
+    {
+      n: 5,
+      text: "Once PayPal opens a filed case for a ruling, ask for the ruling the hearings on PayPal's own copy of the filing reached. Since 30 Oct 2026 that copy is heard up to three times (two, when the first two agree), and the ruling is asked for only when two hearings agree; otherwise the case is left for the seller.",
+    },
   ],
 } as const;
 

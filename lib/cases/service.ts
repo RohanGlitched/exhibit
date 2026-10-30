@@ -207,7 +207,7 @@ export async function* argue(id: string, opts: ArgueOptions): AsyncGenerator<Arg
 export type FileAction = "evidence" | "accept" | "offer" | "message" | "ruling";
 
 /** Does what the seller approved, through the Disputes API, and records it on the case. */
-export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller", opts: { ip?: string } = {}): Promise<Filing> {
+export async function fileAction(id: string, action: FileAction, by: Filing["by"] = "seller", opts: { ip?: string; panelMs?: number } = {}): Promise<Filing> {
   const ctx = await caseContext(id);
   const brief = ctx.brief;
   if (!brief) throw new Error("Argue the case before filing anything.");
@@ -219,11 +219,19 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
 
   if (action === "ruling") {
     // Sandbox only: nobody at PayPal reads sandbox evidence, so the simulated reviewer does. It cross-examines the
-    // PDF PayPal holds (or a hearing already held on it after the filing is reused), and its verdict is the
-    // outcome Exhibit asks for. Without a model the rules engine decides from the filing, and the case says so.
+    // PDF PayPal holds up to three times (hearings already held on it after the filing count), and the outcome
+    // Exhibit asks for is the verdict two of them agree on; with no such majority nothing is asked and the case
+    // stays with the seller. Without a model the rules engine decides from the filing, and the case says so.
     if (!can.has("adjudicate")) throw new Error("PayPal hasn't opened this case for a ruling yet. It usually takes about 20 minutes after filing.");
     const { hearingForRuling } = await import("./cross");
-    const { hearing, fresh } = await hearingForRuling(ctx, opts.ip ?? "ruling");
+    const { hearing, fresh, held } = await hearingForRuling(ctx, opts.ip ?? "ruling", { deadlineMs: opts.panelMs });
+    // Every hearing held for the request is kept, and the one the ruling follows carries the panel's split.
+    const keep = <R extends CaseRecord>(r: R) => [...fresh, ...(hearing && hearing.engine === "model" ? [hearing] : [])].reduce((x, h) => withHearing(x, h), r);
+    if (!hearing) {
+      // No two hearings agree (or not enough could be held): nothing is asked of PayPal, and the case stays with the seller.
+      if (fresh.length) await updateCase(id, (r) => keep(r));
+      throw new Error(held ?? "Left for the seller: no two hearings on PayPal's copy agree.");
+    }
     const { outcome, summary } = rulingRequest(hearing);
     await adjudicate(id, outcome);
     const f: Filing = {
@@ -235,7 +243,7 @@ export async function fileAction(id: string, action: FileAction, by: Filing["by"
       detail: `Asked the sandbox to rule ${outcome === "SELLER_FAVOR" ? "for the seller" : "for the buyer"}${by === "autopilot" ? ", by the autopilot under house rule 5" : ""}`,
     };
     // The hearing the ruling followed is kept beside the earlier ones (the draft's included), so each stays readable.
-    await updateCase(id, (r) => ({ ...(fresh && hearing.engine === "model" ? withHearing(r, hearing) : r), filings: [...r.filings, f] }));
+    await updateCase(id, (r) => ({ ...keep(r), filings: [...r.filings, f] }));
     return f;
   }
 

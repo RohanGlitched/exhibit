@@ -11,6 +11,7 @@ import { isFiled } from "./guard";
 import { HOUSE_RULES, laneStoryFor, planDue, planFor, rulingDue, toolkitDisagrees, type HousePlan } from "./autopilot";
 import { readThroughToolkit, toolkitCall } from "../paypal/toolkit";
 import { hearingsOf, latestOn } from "./hearing-log";
+import { PANEL_SIZE, panelWords, tallyPanel } from "./hearing";
 import type { Brief, CaseRecord } from "./types";
 
 /**
@@ -19,7 +20,7 @@ import type { Brief, CaseRecord } from "./types";
  * 1. a lane case PayPal has passed to the seller with a brief but no plan: hold a hearing on the draft, then
  *    decide under the rules (refund, file, or leave it for the seller) and start the undo window;
  * 2. a plan whose undo window has passed: send it through the Disputes API, as the autopilot;
- * 3. a filed fight PayPal has opened for a ruling: ask for the ruling the hearing on PayPal's copy reaches
+ * 3. a filed fight PayPal has opened for a ruling: ask for the ruling two hearings on PayPal's copy agree on
  *    (lane cases at once; anyone else's after two hours, so a visitor can still ask first);
  * 4. once a day, open the next lane case, so the loop keeps running through judging.
  * Every step is bounded by the time left in the request.
@@ -113,9 +114,9 @@ async function sendPlan(rec: CaseRecord): Promise<string> {
   }
 }
 
-/** Step 3: the ruling, on PayPal's own copy of the filing. */
+/** Step 3: the ruling, on PayPal's own copy of the filing, heard up to three times (house rule 5). */
 async function askRuling(rec: CaseRecord): Promise<string> {
-  const f = await fileAction(rec.disputeId, "ruling", "autopilot", { ip: IP });
+  const f = await fileAction(rec.disputeId, "ruling", "autopilot", { ip: IP, panelMs: 110_000 });
   return `${rec.disputeId}: ${f.detail ?? "asked for a ruling"} (${f.summary})`;
 }
 
@@ -171,12 +172,19 @@ export async function autopilotTick(deadline: number, opts: { open?: string | nu
     .sort((a, b) => Number(Boolean(b.lane)) - Number(Boolean(a.lane)) || b.openedAt.localeCompare(a.openedAt));
   let ruled = 0;
   for (const c of filed) {
-    if (ruled >= 2 || left(deadline) < 50_000) break;
+    if (ruled >= 2 || left(deadline) < 65_000) break;
     const d = await getDispute(c.disputeId).catch(() => null);
     if (!d || d.status === "RESOLVED") continue;
     if (!rulingDue({ lane: c.lane === "autopilot", filings: c.filings, adjudicable: allowed(d).has("adjudicate"), now: Date.now() })) continue;
+    // Three hearings already held on PayPal's copy and no two agree: the case is the seller's; nothing is asked again.
+    const filedAt = c.filings.filter((f) => f.action === "evidence").map((f) => f.at).sort().at(-1) ?? "";
+    const panel = tallyPanel(hearingsOf(c).filter((h) => h.source === "paypal" && h.engine === "model" && h.at >= filedAt));
+    if (panel.heard >= PANEL_SIZE && !panel.majority) {
+      report.steps.push(`${c.disputeId}: left for the seller under house rule 5 (${panelWords(panel)})`);
+      continue;
+    }
     ruled++;
-    await step(`ruling ${c.disputeId}`, 45_000, () => askRuling(c));
+    await step(`ruling ${c.disputeId}`, 60_000, () => askRuling(c));
   }
 
   // The webhook backstop, through PayPal's Agent Toolkit.

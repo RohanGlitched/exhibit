@@ -70,8 +70,9 @@ export function houseAudit(i: AuditInput): AuditLine[] {
   }
   const resolved = i.status === "RESOLVED";
   for (const f of i.filings.filter((f) => byAutopilot(f) && f.ok !== false)) {
-    // The hearing on PayPal's copy that the request followed: the latest one held before it.
-    const h = latestOn(i.hearings, "paypal", f.at);
+    // The hearing on PayPal's copy that the request followed: the one carrying the panel's split, else the latest
+    // one held before it (requests made before 30 Oct followed a single hearing).
+    const h = i.hearings.filter((x) => x.source === "paypal" && x.panel && x.at <= f.at).at(-1) ?? latestOn(i.hearings, "paypal", f.at);
     const side = rulingSide(f);
     const text = resolved
       ? `Ruling asked for by the autopilot${after(f.at)} under house rule 5: ${f.summary}`

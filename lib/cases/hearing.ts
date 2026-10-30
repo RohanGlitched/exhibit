@@ -90,6 +90,63 @@ export interface Hearing {
   tokens?: { input: number; output: number };
   /** The reviewer was asked once more: objections it left unruled, and sustained points its verdict leaned on. */
   reasked?: { unruled: number[]; rests: number[] };
+  /** On the hearing a ruling request followed: how the repeat hearings of PayPal's copy split (lib/cases/hearing.ts tallyPanel). */
+  panel?: Panel;
+}
+
+/**
+ * Repeat hearings of one copy, before Exhibit asks PayPal for a ruling: the reviewer is one model call that can
+ * land on either side of a close case, so the copy is heard up to three times and the ruling follows two that
+ * agree. A verdict for the seller still resting on a point the hearing sustained (Verdict.caveat) is no clean vote
+ * for the seller, so it counts as flagged, for neither side.
+ */
+export const PANEL_SIZE = 3;
+export const PANEL_MAJORITY = 2;
+
+export interface Panel {
+  seller: number;
+  buyer: number;
+  flagged: number;
+  heard: number;
+  /** The side two hearings agree on, or null. */
+  majority: Side | null;
+  /** When each hearing counted was held (Hearing.at), oldest first. */
+  hearings: string[];
+}
+
+export const panelVote = (h: Pick<Hearing, "verdict">): Side | "flagged" => (h.verdict.side === "seller" && h.verdict.caveat ? "flagged" : h.verdict.side);
+
+export function tallyPanel(hs: Pick<Hearing, "verdict" | "at">[]): Panel {
+  const counted = [...hs].sort((a, b) => a.at.localeCompare(b.at)).slice(0, PANEL_SIZE);
+  const votes = counted.map(panelVote);
+  const seller = votes.filter((v) => v === "seller").length;
+  const buyer = votes.filter((v) => v === "buyer").length;
+  const majority: Side | null = seller >= PANEL_MAJORITY ? "seller" : buyer >= PANEL_MAJORITY ? "buyer" : null;
+  return { seller, buyer, flagged: votes.length - seller - buyer, heard: counted.length, majority, hearings: counted.map((h) => h.at) };
+}
+
+/** How many more hearings the panel needs: none once two agree or three are heard, else enough to reach two, then one. */
+export const panelNeeds = (p: Panel) => (p.majority || p.heard >= PANEL_SIZE ? 0 : Math.max(1, PANEL_MAJORITY - p.heard));
+
+/** "2 of 3 hearings for the seller", "2 of 2 hearings for the buyer". */
+export const panelWords = (p: Panel) =>
+  p.majority
+    ? `${p.majority === "seller" ? p.seller : p.buyer} of ${p.heard} hearings for the ${p.majority}`
+    : `no two of ${p.heard} hearings agree (${[p.seller ? `${p.seller} for the seller` : "", p.buyer ? `${p.buyer} for the buyer` : "", p.flagged ? `${p.flagged} for the seller on a sustained point` : ""].filter(Boolean).join(", ")})`;
+
+/** The hearing a majority ruling follows: the latest of the majority's hearings, with the panel on it. */
+export function panelHearing<H extends Hearing>(hs: H[], p: Panel): H | null {
+  if (!p.majority) return null;
+  const h = hs.filter((x) => p.hearings.includes(x.at) && panelVote(x) === p.majority).sort((a, b) => a.at.localeCompare(b.at)).at(-1);
+  return h ? { ...h, panel: p } : null;
+}
+
+/** Who raised an objection, as the case page says it: null for the reviewer's own, a line for one the card put. */
+export function objectionOrigin(h: Pick<Hearing, "exchanges">, o: Pick<Objection, "pressed">): string | null {
+  if (!o.pressed) return null;
+  return h.exchanges.some((e) => !e.objection.pressed)
+    ? "Put to proof from the requirements card, on an item the reviewer left alone."
+    : "Put to proof from the requirements card; the reviewer raised no objection of its own.";
 }
 
 /** One objection a visitor raised from the reviewer's chair. Never saved. */
@@ -346,9 +403,12 @@ export function applyHearing(brief: Brief, h: Hearing): Brief {
 }
 
 /** The outcome Exhibit asks the sandbox for, and the line the case shows. */
-export function rulingRequest(h: Pick<Hearing, "verdict">): { outcome: "SELLER_FAVOR" | "BUYER_FAVOR"; summary: string } {
+export function rulingRequest(h: Pick<Hearing, "verdict" | "panel">): { outcome: "SELLER_FAVOR" | "BUYER_FAVOR"; summary: string } {
   const reason = h.verdict.reason.replace(/[.\s]+$/, "");
-  const who = h.verdict.by === "rules" ? "Ruled by the rules engine (no model reviewer was available)" : "Ruled by the simulated reviewer";
+  const who =
+    h.verdict.by === "rules"
+      ? "Ruled by the rules engine (no model reviewer was available)"
+      : `Ruled by the simulated reviewer${h.panel?.majority ? `, ${panelWords(h.panel)}` : ""}`;
   return { outcome: h.verdict.side === "seller" ? "SELLER_FAVOR" : "BUYER_FAVOR", summary: `${who}: ${reason}` };
 }
 

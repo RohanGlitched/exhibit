@@ -7,8 +7,12 @@ import type { Hearing } from "./hearing";
 
 type Kept = { hearing?: Hearing; hearings?: Hearing[] };
 
-/** At most this many hearings are kept on a record; the oldest go first (a draft hearing is never dropped for a re-run on PayPal's copy). */
-export const HEARINGS_KEPT = 6;
+/**
+ * At most this many hearings are kept on a record; the oldest go first (a draft hearing is never dropped for a re-run
+ * on PayPal's copy, and the newest three on PayPal's copy, a ruling's panel, are never dropped).
+ */
+export const HEARINGS_KEPT = 9;
+const PANEL_KEPT = 3;
 
 /** Every hearing on a record, oldest first, one per time: `hearings` when it is there, else the single `hearing`. */
 export function hearingsOf(r: Kept | null | undefined): Hearing[] {
@@ -24,7 +28,8 @@ export function withHearing<R extends Kept>(r: R, h: Hearing): R & { hearing: He
   let list = [...hearingsOf(r).filter((x) => x.at !== h.at), h].sort((a, b) => a.at.localeCompare(b.at));
   // Over the cap, drop the oldest hearing on PayPal's copy first, then the oldest of any kind.
   while (list.length > HEARINGS_KEPT) {
-    const i = list.findIndex((x) => x.source === "paypal" && x !== h);
+    const newest = new Set(list.filter((x) => x.source === "paypal").slice(-PANEL_KEPT));
+    const i = list.findIndex((x) => x.source === "paypal" && x !== h && !newest.has(x));
     list = list.filter((_, k) => k !== (i >= 0 ? i : 0));
   }
   return { ...r, hearing: list.at(-1)!, hearings: list };

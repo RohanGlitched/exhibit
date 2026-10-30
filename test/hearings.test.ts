@@ -43,11 +43,14 @@ test("every hearing is kept: an old record's single hearing is read, a new one i
 
 test("over the cap, re-runs on PayPal's copy go before the draft hearing", () => {
   let r: { hearing?: Hearing; hearings?: Hearing[] } = { hearing: h("2026-10-30T09:00:00.000Z", "draft") };
-  for (let i = 0; i < HEARINGS_KEPT + 2; i++) r = withHearing(r, h(`2026-10-30T1${i}:00:00.000Z`, "paypal"));
+  const at = (i: number) => `2026-10-30T${String(10 + i).padStart(2, "0")}:00:00.000Z`;
+  for (let i = 0; i < HEARINGS_KEPT + 2; i++) r = withHearing(r, h(at(i), "paypal"));
   const list = hearingsOf(r);
   assert.equal(list.length, HEARINGS_KEPT);
   assert.equal(list[0].source, "draft");
-  assert.equal(list.at(-1)!.at, `2026-10-30T1${HEARINGS_KEPT + 1}:00:00.000Z`);
+  assert.equal(list.at(-1)!.at, at(HEARINGS_KEPT + 1));
+  // The newest three on PayPal's copy, a ruling's panel, are all there.
+  for (let i = HEARINGS_KEPT - 1; i <= HEARINGS_KEPT + 1; i++) assert.ok(list.some((x) => x.at === at(i)));
 });
 
 const GQZ_PLAN: HousePlan = {
