@@ -19,6 +19,10 @@ const APIS: { name: string; calls: string }[] = [
   { name: "Disputes v1", calls: "read, provide-evidence, accept-claim, adjudicate (sandbox only), and the filed documents" },
   { name: "Webhooks", calls: "dispute events, each checked with verify-webhook-signature" },
   { name: "Sandbox chargeback simulator", calls: "the card issuer's chargeback, with Visa and Mastercard reason codes" },
+  {
+    name: "PayPal Agent Toolkit",
+    calls: "get_dispute, get_shipment_tracking, get_order, get_refund, list_disputes; accept_dispute_claim and create_shipment_tracking on the seller's lane",
+  },
 ];
 
 /** Every page ends here: what to try, which PayPal APIs and which model it runs on, the source, the team, and what is simulated. */

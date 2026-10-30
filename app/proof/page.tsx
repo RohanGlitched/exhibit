@@ -1287,7 +1287,7 @@ export default function ProofPage() {
         <div className={styles.sectionHead}>
           <h2>PayPal&apos;s agent stack, and the layer Exhibit adds</h2>
           <p>
-            Exhibit runs PayPal&apos;s own Agent Toolkit (<code>@paypal/agent-toolkit</code> 1.11.0) for the seller agent&apos;s reads, and adds what the
+            Exhibit runs PayPal&apos;s own Agent Toolkit (<code>@paypal/agent-toolkit</code> 1.11.0) for reads and two writes, and adds what the
             toolkit doesn&apos;t have: evidence, cross-examination and signed mandates. Its MCP server at <code>/api/mcp</code> carries both, so one MCP
             client gets PayPal&apos;s tools and Exhibit&apos;s in one session.
           </p>
@@ -1323,7 +1323,20 @@ export default function ProofPage() {
               </tr>
               <tr>
                 <th scope="row">accept_dispute_claim</th>
-                <td>Not used. Its note must match <code>^[A-Za-z0-9_-]{"{1,255}"}$</code> (no spaces), so the seller&apos;s cited reason for refunding can&apos;t be sent; Exhibit accepts through its own Disputes client.</td>
+                <td>
+                  The autopilot&apos;s refunds on the seller&apos;s lane, and MCP&apos;s guarded paypal_accept_dispute_claim. Its note must match{" "}
+                  <code>^[A-Za-z0-9_-]{"{1,255}"}$</code> (no spaces), so the note is a short hyphenated reason; Exhibit&apos;s own Disputes client is
+                  the fallback, and the case says which one sent it. First live use: <a href="/case/PP-R-DNN-10195228">PP-R-DNN-10195228</a>, refunded
+                  30 Oct 2026.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">create_shipment_tracking</th>
+                <td>
+                  The seller&apos;s lane puts its tracking up through it (PayPal&apos;s shipping trackers), and reads it back with get_shipment_tracking for
+                  the tracking exhibit; Orders v2 <code>/track</code> is the fallback. First live use:{" "}
+                  <a href="/case/PP-R-IPX-10195230">PP-R-IPX-10195230</a>, 30 Oct 2026.
+                </td>
               </tr>
               <tr>
                 <th scope="row">create_order</th>
@@ -1334,7 +1347,7 @@ export default function ProofPage() {
         </div>
         </TableToggle>
         <p className={styles.note}>
-          Exhibit&apos;s own MCP tools: list_cases, get_case, argue_case, file_response, cross_examine, open_case, preflight_cart and verify_mandate. A
+          Exhibit&apos;s own MCP tools: list_cases, get_case, argue_case, file_response, cross_examine, open_case, preflight_cart and verify_mandate, plus the guarded paypal_accept_dispute_claim. A
           client config for both servers is in the README.
         </p>
       </section>
