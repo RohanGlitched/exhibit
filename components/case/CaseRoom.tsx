@@ -215,7 +215,7 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                 <h2>{rec === "accept" ? "Refund and close it" : rec === "offer" ? "Offer a partial refund" : "File the response"}</h2>
                 <p>
                   {rec === "accept"
-                    ? `Accepting tells PayPal to refund ${amount} to the buyer and closes the case. It saves the fee and the time a losing fight costs.`
+                    ? `Accepting tells PayPal to refund ${amount} to the buyer and closes the case. PayPal's fee is charged either way; refunding saves the time a losing fight costs.`
                     : `Exhibit sends PayPal the response, the evidence types it chose and a PDF with every exhibit, Bates-stamped.`}
                 </p>
               </div>

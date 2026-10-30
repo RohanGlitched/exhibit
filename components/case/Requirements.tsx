@@ -33,6 +33,8 @@ export default function Requirements({ card, disclosure }: { card: RequirementsC
               <p className={styles.need}>
                 {i.need}
                 {!i.required && <small> strengthens the case</small>}
+                {/* Signed proof over $750 is PayPal Seller Protection's rule, not the card network's. */}
+                {i.id === "signature" && /750/.test(i.need) && <small> PayPal Seller Protection&apos;s rule, not the network&apos;s</small>}
               </p>
               <p className={styles.detail}>
                 {i.detail}

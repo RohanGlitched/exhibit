@@ -9,28 +9,33 @@ export const metadata: Metadata = {
     "Paste an order, its tracking and the emails with the buyer. Exhibit letters the exhibits, marks what the card network asks for, and writes a checked brief. It never files anything and never calls PayPal.",
 };
 
-const NEEDS: { reason: string; codes: string; reads: string; paste: string }[] = [
+/**
+ * What each reason needs, by network. Amex's codes are Amex's own (C08, C31, F29, P08). `protection` is what
+ * PayPal's Seller Protection adds on top, which is PayPal's rule, not the card network's.
+ */
+const NEEDS: { reason: string; codes: string; reads: string; protection?: string; paste: string }[] = [
   {
     reason: "Not received",
-    codes: "Visa 13.1 · Mastercard 4853",
-    reads: "Carrier and tracking number, a delivered scan with its date, delivery in the ship-to ZIP, a signature over $750",
-    paste: "The carrier's scan history and the ship-to address with its ZIP",
+    codes: "Visa 13.1 · Mastercard 4853 · Amex C08",
+    reads: "Carrier and tracking number, a delivered scan with its date, delivery in the ship-to ZIP",
+    protection: "Signed proof of delivery on orders over $750",
+    paste: "The carrier's scan history, any signature, and the ship-to address with its ZIP",
   },
   {
     reason: "Not as described",
-    codes: "Visa 13.3 · Mastercard 4853",
+    codes: "Visa 13.3 · Mastercard 4853 · Amex C31",
     reads: "The listing as sold, words that disclose the difference, a return offered under your policy",
     paste: "The listing text, your return policy, and the emails where you offered a return",
   },
   {
     reason: "Unauthorised",
-    codes: "Visa 10.4 · Mastercard 4837",
+    codes: "Visa 10.4 · Mastercard 4837 · Amex F29",
     reads: "Address and security-code checks, two earlier undisputed orders, a matching device or IP, delivery to the cardholder",
     paste: "The AVS and CVV results, the billing address, and this customer's earlier orders",
   },
   {
     reason: "Charged twice",
-    codes: "Visa 12.6.1 · Mastercard 4834",
+    codes: "Visa 12.6.1 · Mastercard 4834 · Amex P08",
     reads: "A credit on the duplicate, or two distinct transactions",
     paste: "The refund id and amount, or the second charge's transaction id",
   },
@@ -84,7 +89,8 @@ export default function ImportPage() {
         </h2>
         <p className={styles.explainLead}>
           The requirements card reads the exhibits by code, never by the model, and marks each item on file, weak or missing. Paste what the right-hand
-          column names and the card has something to find.
+          column names and the card has something to find. Amex cases are labelled with Amex&apos;s own reason codes; the card marks the same evidence
+          for them, as Exhibit doesn&apos;t model Amex&apos;s rules item by item.
         </p>
         <div className={`sheet ${styles.tableWrap}`}>
           <table className={styles.table}>
@@ -102,7 +108,14 @@ export default function ImportPage() {
                     {n.reason}
                     <small>{n.codes}</small>
                   </th>
-                  <td>{n.reads}</td>
+                  <td>
+                    {n.reads}
+                    {n.protection && (
+                      <span className={styles.protection}>
+                        <strong>PayPal Seller Protection, not the network:</strong> {n.protection.charAt(0).toLowerCase() + n.protection.slice(1)}
+                      </span>
+                    )}
+                  </td>
                   <td>{n.paste}</td>
                 </tr>
               ))}

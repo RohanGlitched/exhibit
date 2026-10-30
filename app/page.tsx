@@ -7,7 +7,7 @@ import PdfSpread from "@/components/home/PdfSpread";
 import Pleading from "@/components/home/Pleading";
 import { deskStats, showcase } from "@/lib/showcase";
 import { usd } from "@/lib/format";
-import { FIGURES } from "@/lib/impact";
+import { DISPUTE_FEE, FIGURES } from "@/lib/impact";
 import { cartFor, intentFor, shipLine } from "@/lib/agentic/story";
 import { customIdFor, priceCart, signMandate, verifyAgentOrder } from "@/lib/agentic/mandate";
 import { sampleKeys } from "@/lib/agentic/keys";
@@ -373,8 +373,10 @@ export default async function Home() {
         <div>
           <h2>It tells you when to give up</h2>
           <p>
-            Fighting a case you&apos;ll lose costs a dispute fee and a customer. When the records point the other way (no tracking, a likely stolen card),
-            Exhibit says so, shows the tally that decided it, and accepts the claim for you with one confirmed click.
+            PayPal charges its {usd(DISPUTE_FEE.card)} chargeback fee whether you fight or refund, so the fee isn&apos;t what a losing fight costs. The
+            cost is the time it takes to answer by the response date, and then the sale goes back to the buyer anyway. When the records point the other
+            way (no tracking, a likely stolen card), Exhibit says so, shows the tally that decided it, and accepts the claim for you with one confirmed
+            click.
           </p>
         </div>
         <ul className={styles.calls}>
