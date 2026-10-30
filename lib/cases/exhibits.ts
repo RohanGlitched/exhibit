@@ -381,10 +381,11 @@ export function buildExhibits(src: Sources): Exhibit[] {
       ],
       lines: s.history.length
         ? // Each earlier order on one line with its store date and, when it was re-created in the sandbox, its PayPal
-          // payment, so a sentence about it rests on one record ("#1077, 146 days ago, ordered 5 Jun 2026: ...").
+          // payment, so a sentence about it rests on one record ("... Ordered 19 May 2026. PayPal payment 10U8...").
+          // Added at the end, so words quoted from the line before 30 Oct 2026 still read the same.
           s.history.map(
             (h) =>
-              `${h.ref}, ${h.daysAgo} days ago, ordered ${day(clock.at(s.orderDaysAgo - h.daysAgo, 12))}: ${h.item}, ${h.total}. ${h.outcome}.${h.device ? ` Device ${h.device}, IP address ${h.ip}.` : ""}${paid.has(h.ref) ? ` PayPal payment ${paid.get(h.ref)}.` : ""}`,
+              `${h.ref}, ${h.daysAgo} days ago: ${h.item}, ${h.total}. ${h.outcome}.${h.device ? ` Device ${h.device}, IP address ${h.ip}.` : ""} Ordered ${day(clock.at(s.orderDaysAgo - h.daysAgo, 12))}.${paid.has(h.ref) ? ` PayPal payment ${paid.get(h.ref)}.` : ""}`,
           )
         : ["First order from this customer."],
       sandbox: paid.size
