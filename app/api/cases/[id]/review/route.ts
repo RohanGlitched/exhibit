@@ -4,6 +4,8 @@ import { BudgetSpent } from "@/lib/cases/review";
 import { CASE_ID } from "@/lib/store";
 import { clientIp } from "@/lib/visitor";
 import { MINUTE, allow } from "@/lib/limits";
+import { loadCase } from "@/lib/store";
+import { publicWriteBlocked, shopRequest } from "@/lib/cases/locks";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,6 +18,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!allow("review", ip, 6, 10 * MINUTE)) {
     return NextResponse.json({ error: "That's six hearings in ten minutes from one place. Give it a few minutes." }, { status: 429 });
   }
+  const locked = shopRequest(_req) ? null : publicWriteBlocked(id, await loadCase(id).catch(() => null), "hearing");
+  if (locked) return NextResponse.json({ error: locked }, { status: 403 });
   try {
     return NextResponse.json(await reviewCase(id, ip));
   } catch (e) {

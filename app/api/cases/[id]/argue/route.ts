@@ -2,6 +2,8 @@ import { argue } from "@/lib/cases/service";
 import { CASE_ID } from "@/lib/store";
 import { clientIp } from "@/lib/visitor";
 import { MINUTE, allow } from "@/lib/limits";
+import { loadCase } from "@/lib/store";
+import { publicWriteBlocked, shopRequest } from "@/lib/cases/locks";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,6 +12,8 @@ export const maxDuration = 60;
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!CASE_ID.test(id)) return Response.json({ error: "That isn't a PayPal case id." }, { status: 400 });
+  const locked = shopRequest(req) ? null : publicWriteBlocked(id, await loadCase(id).catch(() => null), "argue");
+  if (locked) return Response.json({ error: locked }, { status: 403 });
   const paced = new URL(req.url).searchParams.get("paced") !== "0";
   const ip = await clientIp();
   if (!allow("argue", ip, 30, 10 * MINUTE)) {

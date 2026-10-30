@@ -7,7 +7,8 @@ import { caseView } from "./cases/view";
 import { argue, fileAction } from "./cases/service";
 import { claimFresh, claimReady } from "./cases/open";
 import { SCENARIOS, scenario } from "./shop/scenarios";
-import { CASE_ID } from "./store";
+import { CASE_ID, loadCase } from "./store";
+import { publicWriteBlocked, type PublicWrite } from "./cases/locks";
 import { clientIp } from "./visitor";
 import { HOUR, MINUTE, allow } from "./limits";
 import { SITE_URL } from "./site";
@@ -85,6 +86,11 @@ function briefText(id: string, b: Brief): string {
     ...b.tally.map((t) => `- ${t.side === "seller" ? "Seller" : "Buyer"}, weight ${t.weight}: ${t.point} [${t.cites.join(", ")}]`),
     `Engine: ${b.engine === "model" ? (b.model ?? "model") : b.engine === "rules" ? "rules engine" : "read back from PayPal"}. Case page: ${caseLink(id)}`,
   ].join("\n");
+}
+
+/** Anonymous MCP clients get the same locks as the public site (lib/cases/guard.ts). */
+async function lockedFor(id: string, what: PublicWrite): Promise<string | null> {
+  return publicWriteBlocked(id, await loadCase(id).catch(() => null), what);
 }
 
 async function ipKey(): Promise<string> {
@@ -224,6 +230,8 @@ function register(server: McpServer) {
     async ({ id }) => {
       const key = await ipKey();
       if (!allow("mcp-argue", key, 12, 10 * MINUTE)) return text("That's a lot of arguments in ten minutes from one place. Try again in a few minutes.");
+      const locked = await lockedFor(id, "argue");
+      if (locked) return text(locked);
       let brief: Brief | null = null;
       for await (const ev of argue(id, { ip: key, paced: false })) {
         if (ev.type === "error") return text(`Couldn't argue ${id}: ${ev.text}`);
@@ -248,8 +256,11 @@ function register(server: McpServer) {
     },
     async ({ id, action }) => {
       if (!allow("mcp-file", await ipKey(), 30, 10 * MINUTE)) return text("That's a lot of filings in ten minutes from one place. Try again in a few minutes.");
+      const locked = await lockedFor(id, "file");
+      if (locked) return text(locked);
       try {
-        const f = await fileAction(id, action, "autopilot", { ip: await ipKey() });
+        // An MCP client files as the seller's own agent, on its own per-address model limit, not the autopilot's.
+        const f = await fileAction(id, action, "seller", { ip: await ipKey() });
         return text(`${f.summary}. PayPal now holds it on ${id}. Case page: ${caseLink(id)}`);
       } catch (e) {
         return text(`PayPal didn't take it: ${(e as Error).message}`);
@@ -285,6 +296,8 @@ function register(server: McpServer) {
             ].join("\n"),
           );
         }
+        const locked = await lockedFor(id, "hearing");
+        if (locked) return text(locked);
         const { hearing } = await reviewCase(id, key);
         return text(`${transcriptText(hearing)}\nCase page: ${caseLink(id)}`);
       } catch (e) {
@@ -342,6 +355,8 @@ function registerPayPalToolkit(server: McpServer) {
     },
     async ({ id }) => {
       if (!allow("mcp-file", await ipKey(), 10, 10 * MINUTE)) return text("That's a lot of filings from one place. Try again in a few minutes.");
+      const locked = await lockedFor(id, "file");
+      if (locked) return text(locked);
       try {
         const f = await fileAction(id, "accept", "seller", { ip: await ipKey(), viaToolkit: true });
         return text(`${id}: ${f.summary}. Case page: ${caseLink(id)}`);

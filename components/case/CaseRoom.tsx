@@ -138,6 +138,8 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
   const amount = usd(view.amount.value);
   const due = view.due ? daysToDue(view.due) : null;
   const can = new Set(view.actions);
+  // A case the pitch points to, or the seller's lane: the public site reads it but doesn't file, re-argue or re-hear it.
+  const locked = view.locked;
   // PayPal's record decides: a case is filed when PayPal holds the seller's response, whoever filed it.
   const filed = view.filings.some((f) => f.action === "evidence" || f.action === "accept");
   // A new chargeback stays with PayPal (open, or under review with nothing filed) for a few minutes.
@@ -196,9 +198,10 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                     filing before a simulated PayPal reviewer (the hearing below), and asks the simulator to rule the way that reviewer decided. PayPal
                     opens the case for a ruling about 20 minutes after filing.
                   </p>
-                  <button className="btn btnQuiet" onClick={() => file("ruling")} disabled={phase === "filing" || !can.has("adjudicate")}>
+                  <button className="btn btnQuiet" onClick={() => file("ruling")} disabled={Boolean(locked) || phase === "filing" || !can.has("adjudicate")}>
                     {can.has("adjudicate") ? "Ask the sandbox to rule" : "Waiting for PayPal to open the ruling"}
                   </button>
+                  {locked && <p className={styles.hint}>{locked}</p>}
                 </div>
               )}
             </div>
@@ -222,31 +225,31 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
               <div className={styles.buttons}>
                 {rec === "accept" ? (
                   confirm === "accept" ? (
-                    <button className="btn btnDanger" onClick={() => file("accept")} disabled={phase === "filing" || !can.has("accept_claim")}>
+                    <button className="btn btnDanger" onClick={() => file("accept")} disabled={Boolean(locked) || phase === "filing" || !can.has("accept_claim")}>
                       Confirm refund of {amount}
                     </button>
                   ) : (
-                    <button className="btn btnPrimary" onClick={() => setConfirm("accept")} disabled={phase === "filing" || !can.has("accept_claim")}>
+                    <button className="btn btnPrimary" onClick={() => setConfirm("accept")} disabled={Boolean(locked) || phase === "filing" || !can.has("accept_claim")}>
                       Accept and refund
                     </button>
                   )
                 ) : (
-                  <button className="btn btnPrimary" onClick={() => file(rec === "offer" ? "offer" : "evidence")} disabled={phase === "filing" || !can.has(rec === "offer" ? "make_offer" : "provide_evidence")}>
+                  <button className="btn btnPrimary" onClick={() => file(rec === "offer" ? "offer" : "evidence")} disabled={Boolean(locked) || phase === "filing" || !can.has(rec === "offer" ? "make_offer" : "provide_evidence")}>
                     {phase === "filing" ? "Filing…" : rec === "offer" ? `Offer ${usd(verdict.offerAmount ?? "0")}` : "File the response"}
                   </button>
                 )}
                 {rec === "accept" && can.has("provide_evidence") && (
-                  <button className="btn btnQuiet" onClick={() => file("evidence")} disabled={phase === "filing"}>
+                  <button className="btn btnQuiet" onClick={() => file("evidence")} disabled={Boolean(locked) || phase === "filing"}>
                     Fight it anyway
                   </button>
                 )}
                 {rec !== "accept" && can.has("accept_claim") && (
                   confirm === "accept" ? (
-                    <button className="btn btnDanger" onClick={() => file("accept")} disabled={phase === "filing"}>
+                    <button className="btn btnDanger" onClick={() => file("accept")} disabled={Boolean(locked) || phase === "filing"}>
                       Confirm refund of {amount}
                     </button>
                   ) : (
-                    <button className="btn btnQuiet" onClick={() => setConfirm("accept")} disabled={phase === "filing"}>
+                    <button className="btn btnQuiet" onClick={() => setConfirm("accept")} disabled={Boolean(locked) || phase === "filing"}>
                       Refund instead
                     </button>
                   )
@@ -256,7 +259,8 @@ export default function CaseRoom({ initial }: { initial: CaseView }) {
                 </a>
               </div>
               {waiting && <p className={styles.hint}>Filing opens when PayPal passes the case to the seller.</p>}
-              <button className={styles.again} onClick={argue} disabled={phase !== "argued"}>
+              {locked && <p className={styles.hint}>{locked}</p>}
+              <button className={styles.again} onClick={argue} disabled={Boolean(locked) || phase !== "argued"}>
                 Argue it again
               </button>
             </div>

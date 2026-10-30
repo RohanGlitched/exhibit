@@ -14,6 +14,7 @@ import { HOUSE_RULES, undoable, type HousePlan } from "./autopilot";
 import { hearingsOf } from "./hearing-log";
 import { houseAudit, rulingSide, type AuditLine } from "./house-audit";
 import { utcDay, utcTime } from "../format";
+import { publicWriteBlocked } from "./locks";
 
 /** What the buyer's agent did on an agent story, and who the mandate check holds responsible. */
 function agentView(ctx: CaseContext): AgentView | null {
@@ -106,6 +107,8 @@ export interface CaseView {
   house: HouseView | null;
   /** Honest notes about this case's record: a brief older than a fix, an agent story's stand-in keys, a sandbox that never rules. */
   notes: string[];
+  /** Why the public site can't file, re-argue or re-hear this case (a case the pitch points to, or the seller's lane), or null. */
+  locked: string | null;
   /** A returning customer's earlier orders, re-created as sandbox card payments when the case was opened (disclosed on the page). */
   priorPayments: { ref: string; captureId: string; at: string }[] | null;
 }
@@ -211,6 +214,7 @@ export async function caseView(id: string, visitor: string | null): Promise<Case
     story: s ? { title: s.title, blurb: s.blurb, buyer: s.buyer.name } : null,
     invoiceId: ctx.invoiceId ?? null,
     mine: Boolean(visitor && ctx.record?.claimedBy === visitor),
+    locked: publicWriteBlocked(d.dispute_id, ctx.record, "file"),
     openedAt: ctx.record?.openedAt ?? d.create_time,
     // The page says the response is PayPal's only when it is: read back from the evidence PayPal holds.
     restored: ctx.brief?.engine === "paypal",

@@ -139,12 +139,12 @@ export default function Hearing({ view, onBrief }: { view: CaseView; onBrief?: (
         </p>
         <div className={styles.call}>
           {!latest || stale ? (
-            <button className="btn btnPrimary" onClick={run} disabled={busy}>
+            <button className="btn btnPrimary" onClick={run} disabled={busy || Boolean(view.locked)} title={view.locked ?? undefined}>
               {busy ? "The reviewer is reading…" : advisedRefund ? "Ask the reviewer" : filed ? "Cross-examine the filed PDF" : "Call the reviewer"}
             </button>
           ) : (
             !ruled && (
-              <button className={styles.again} onClick={run} disabled={busy}>
+              <button className={styles.again} onClick={run} disabled={busy || Boolean(view.locked)} title={view.locked ?? undefined}>
                 {busy ? "The reviewer is reading…" : "Hear it again"}
               </button>
             )
