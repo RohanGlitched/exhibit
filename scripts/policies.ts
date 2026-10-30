@@ -42,7 +42,7 @@ interface Row {
 const proof = JSON.parse(readFileSync("data/proof.json", "utf8")) as {
   at: string;
   summary: { model: string; keptSentences: number; unverifiedSentences: number };
-  main?: { at: string; prompt: string };
+  main?: { at: string; prompt: string; rerun?: { at: string; keys: string[]; why: string | null } };
   runs: Row[];
   heldout: { at?: string; prompt?: string; runs: Row[] };
 };
@@ -145,7 +145,16 @@ const secondPass = {
 
 const out = {
   at: new Date().toISOString(),
-  from: { file: "data/proof.json", measured: proof.main?.at ?? proof.at, prompt: proof.main?.prompt ?? null, model: proof.summary.model, runs: main.runs, fightLabels: main.fightLabels },
+  from: {
+    file: "data/proof.json",
+    measured: proof.main?.at ?? proof.at,
+    prompt: proof.main?.prompt ?? null,
+    model: proof.summary.model,
+    runs: main.runs,
+    fightLabels: main.fightLabels,
+    // Main runs re-run alone since (--update main --keys): which, when, and why; the rest are from `measured`.
+    rerun: proof.main?.rerun ? { at: proof.main.rerun.at, keys: proof.main.rerun.keys, why: proof.main.rerun.why } : null,
+  },
   disputedUsdPer100: main.disputedUsdPer100,
   winnableUsdPer100: main.winnableUsdPer100,
   feePerCase: DISPUTE_FEE.card,

@@ -1,12 +1,21 @@
 {
- "at": "2026-10-29T22:21:52.532Z",
+ "at": "2026-10-30T00:30:47.670Z",
  "from": {
   "file": "data/proof.json",
   "measured": "2026-10-29T22:14:53.156Z",
   "prompt": "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
   "model": "GPT-5.6 on Azure OpenAI",
   "runs": 56,
-  "fightLabels": 24
+  "fightLabels": 24,
+  "rerun": {
+   "at": "2026-10-30T00:26:41.472Z",
+   "keys": [
+    "untracked-buyer-confirms#0",
+    "untracked-buyer-confirms#2",
+    "fraud-home-signed#2"
+   ],
+   "why": "the three main-set misses of the 29 Oct run, re-run after the delivery card began reading the cardholder's own email of receipt and the fraud card each network's own wording"
+  }
  },
  "disputedUsdPer100": 11786,
  "winnableUsdPer100": 4743,
@@ -22,10 +31,10 @@
    "feesUsd": 2000,
    "netUsd": 2743,
    "fights": 56,
-   "completeFights": 10,
-   "completePct": 18,
-   "noneMissingFights": 34,
-   "noneMissingPct": 61
+   "completeFights": 12,
+   "completePct": 21,
+   "noneMissingFights": 36,
+   "noneMissingPct": 64
   },
   {
    "id": "refund",
@@ -60,21 +69,21 @@
   {
    "id": "exhibit",
    "name": "Exhibit (GPT-5.6)",
-   "keptUsd": 4325,
-   "givenUpUsd": 418,
-   "responses": 38,
+   "keptUsd": 4743,
+   "givenUpUsd": 0,
+   "responses": 43,
    "fightsOnRefundCases": 0,
    "feesUsd": 2000,
-   "netUsd": 2325,
-   "fights": 21,
-   "completeFights": 10,
-   "completePct": 48,
-   "noneMissingFights": 21,
+   "netUsd": 2743,
+   "fights": 24,
+   "completeFights": 12,
+   "completePct": 50,
+   "noneMissingFights": 24,
    "noneMissingPct": 100
   }
  ],
  "heldoutText": {
-  "measured": "2026-10-29T22:20:53.596Z",
+  "measured": "2026-10-30T00:29:52.010Z",
   "prompt": "with the requirements card (return attempt, 13.1 delivery window), the AP2 line and the agent-log consent check",
   "runs": 18,
   "fightLabels": 10,
@@ -129,26 +138,26 @@
    {
     "id": "exhibit",
     "name": "Exhibit (GPT-5.6)",
-    "keptUsd": 4178,
-    "givenUpUsd": 1300,
-    "responses": 39,
+    "keptUsd": 5178,
+    "givenUpUsd": 300,
+    "responses": 44,
     "fightsOnRefundCases": 0,
     "feesUsd": 2000,
-    "netUsd": 2178,
-    "fights": 7,
+    "netUsd": 3178,
+    "fights": 8,
     "completeFights": 0,
     "completePct": 0,
     "noneMissingFights": 6,
-    "noneMissingPct": 86
+    "noneMissingPct": 75
    }
   ]
  },
  "secondPass": {
   "threshold": 0.6,
-  "kept": 367,
-  "unverified": 180,
-  "wordingMatched": 110,
-  "neither": 70,
+  "kept": 366,
+  "unverified": 187,
+  "wordingMatched": 115,
+  "neither": 72,
   "examples": {
    "matched": [
     {

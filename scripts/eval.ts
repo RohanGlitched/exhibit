@@ -8,6 +8,9 @@
 //   npx tsx --conditions=react-server scripts/eval.ts --update heldout --max-usd 0.25
 //       the held-out set alone through the model, once; every other answer is kept from data/proof.json and
 //       re-checked, and the held-out answers it replaces are kept under heldout.previous
+//   npx tsx --conditions=react-server scripts/eval.ts --update main --keys untracked-buyer-confirms#0,fraud-home-signed#2 --why "..." --max-usd 0.1
+//       only the named main runs through the model, once; every other answer is kept and re-checked, and the answers
+//       they replace are kept under main.rerun.previous
 //   npx tsx --conditions=react-server scripts/eval.ts --update main --max-usd 0.52
 //       the 56 main runs alone through the model, once, on today's prompt; the held-out, injection, pressure and
 //       ablation answers are kept and re-checked, and the main answers it replaces are kept under main.previous
@@ -103,7 +106,12 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T, i: number) => Promis
 const spend = { calls: 0, failed: 0, skipped: 0, inputTokens: 0, outputTokens: 0, usd: 0 };
 const usdOf = (i: number, o: number) => (i * PRICE_IN + o * PRICE_OUT) / 1e6;
 const nextCost = () => (spend.calls ? usdOf(spend.inputTokens / spend.calls, spend.outputTokens / spend.calls) : usdOf(3500, 1500));
-const PARALLEL = 4;
+// Calls at once (--parallel 1 near a tight cap: less is held back for calls in flight).
+const PARALLEL = Math.max(1, Number(arg("parallel") ?? 4));
+// The dearest call so far (or a generous guess before the first), held back for each call still in flight.
+let dearest = 0;
+let inFlight = 0;
+const reserve = () => (spend.calls ? Math.max(dearest, nextCost()) : usdOf(3500, 1500));
 
 // The adversarial drafter: no honesty rules, told to use everything the seller says. What it writes goes
 // through the same checker the product uses, so this measures the checker on false figures a model wrote.
@@ -112,13 +120,15 @@ const CARELESS = `You draft chargeback responses for a small online shop. Write 
 async function modelBrief(c: Ev, opts: { note?: string; system?: string } = {}): Promise<Brief | null> {
   if (!useModel) return null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    // Leave room for the calls already in flight.
-    if (spend.usd + nextCost() * (PARALLEL + 1) > CAP) {
+    // Leave room for this call and the calls already in flight, each at the dearest call's cost.
+    if (spend.usd + reserve() * (inFlight + 1) > CAP) {
       spend.skipped++;
       return null;
     }
+    inFlight++;
     try {
-      const b = await argueWithModel(c.dispute, exhibitsOf(c), { ...opts, toolkit: false });
+      const b = await argueWithModel(c.dispute, exhibitsOf(c), { ...opts, toolkit: false }).finally(() => inFlight--);
+      dearest = Math.max(dearest, usdOf(b.tokens?.input ?? 0, b.tokens?.output ?? 0));
       spend.calls++;
       spend.inputTokens += b.tokens?.input ?? 0;
       spend.outputTokens += b.tokens?.output ?? 0;
@@ -238,11 +248,15 @@ let at = new Date().toISOString();
 const reasoning = useModel && /Azure/.test(llmModel()) ? process.env.AZURE_OPENAI_REASONING || "low" : null;
 let heldPrevious: unknown = null;
 let mainPrevious: unknown = null;
+// --update main --keys a#0,b#2: only those main runs through the model (--why says why those).
+const KEYS = arg("keys") ? new Set(arg("keys")!.split(",").map((k) => k.trim()).filter(Boolean)) : null;
+const KEYS_WHY = arg("why") ?? null;
+let mainRerun: Record<string, unknown> | null = null;
 
 if (recheck || update) {
   if (!saved) throw new Error(`No ${SAVED} to recheck.`);
   // A main re-run dates the file; a held-out re-run or a recheck keeps the main run's date.
-  at = updateSet === "main" ? new Date().toISOString() : saved.at;
+  at = updateSet === "main" && !KEYS ? new Date().toISOString() : saved.at;
   modelName = saved.summary.model;
   const merge = (rows: Row[] | undefined, cases: Ev[]) =>
     cases.map((c) => {
@@ -255,7 +269,31 @@ if (recheck || update) {
   repeats = saved.repeats ?? { main: [], heldout: [], injection: [] };
   ablation = saved.ablation?.runs ?? [];
   pressure = saved.pressure ?? [];
-  if (updateSet === "main") {
+  if (updateSet === "main" && KEYS) {
+    // Named main runs again, once, on today's prompt and cards; every other main answer is kept as it was. What the
+    // re-run replaces is kept under main.rerun.previous, with the run's date, so /proof can say which answers are newer.
+    const unknown = [...KEYS].filter((k) => !mainCases.some((c) => c.key === k));
+    if (unknown.length) throw new Error(`Not main runs: ${unknown.join(", ")}`);
+    const picked = mainCases.filter((c) => KEYS.has(c.key));
+    console.log(`main, ${picked.length} named runs: about $${(nextCost() * picked.length).toFixed(3)}, cap $${CAP}`);
+    const fresh = new Map(
+      await pool(picked, PARALLEL, async (c) => {
+        const r: Row = { ...baseRow(c), model: answer(await modelBrief(c), c.variant.label, true) };
+        log("main", r);
+        return [c.key, r] as const;
+      }),
+    );
+    mainRerun = {
+      at: new Date().toISOString(),
+      reasoning,
+      keys: [...KEYS],
+      why: KEYS_WHY ?? null,
+      prompt: "with the requirements card reading the cardholder's own email of receipt (13.1/4853) and each network's own fraud wording (Visa CE 3.0, Mastercard 4837)",
+      previous: (saved.runs ?? []).filter((r: Row) => KEYS.has(r.key)).map((r: Row) => ({ key: r.key, label: r.label, model: r.model ? { call: r.model.call, odds: r.model.odds, correct: r.model.correct } : null })),
+    };
+    // A run the cap skipped keeps its earlier answer rather than going blank.
+    runs = runs.map((r) => (fresh.get(r.key)?.model ? fresh.get(r.key)! : r));
+  } else if (updateSet === "main") {
     // The main set again, once, on today's prompt; what it replaces is kept beside it, with its date and prompt.
     const s0 = saved.summary;
     mainPrevious = {
@@ -716,12 +754,14 @@ writeFileSync(
   JSON.stringify(
     {
       at,
-      ...(recheck || updateSet === "heldout" ? { recheckedAt: new Date().toISOString() } : {}),
-      reasoning: updateSet === "main" ? reasoning : recheck || update ? saved.reasoning : reasoning,
+      ...(recheck || updateSet === "heldout" || KEYS ? { recheckedAt: new Date().toISOString() } : {}),
+      reasoning: updateSet === "main" && !KEYS ? reasoning : recheck || update ? saved.reasoning : reasoning,
       summary,
       spend: useModel && !update ? runSpend : previousSpend,
       // The main set's own run, when it was re-run alone (--update main), with the answers it replaced.
-      ...(updateSet === "main"
+      ...(updateSet === "main" && mainRerun
+        ? { main: { ...saved.main, rerun: { ...mainRerun, spend: runSpend, ...(saved.main?.rerun ? { before: saved.main.rerun } : {}) } } }
+        : updateSet === "main"
         ? {
             main: {
               at: new Date().toISOString(),
